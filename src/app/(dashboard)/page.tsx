@@ -174,11 +174,11 @@ export default async function DashboardPage() {
                 <div className="flex items-center gap-3 min-w-0">
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${VEHICLE_DOT[v.status] ?? 'bg-gray-300'}`} />
                   <div className="min-w-0">
-                    <div className="text-sm font-medium text-gray-800 truncate">{v.name}</div>
+                    <div className="text-sm font-medium text-gray-800 truncate">{v.vehicle_group?.name ?? '-'}</div>
                     <div className="text-xs text-gray-400 flex items-center gap-1.5">
-                      <span>{v.vehicle_group?.name ?? '-'}</span>
-                      {v.license_plate && <><span className="text-gray-300">·</span><span>{v.license_plate}</span></>}
-                      {v.capacity && <><span className="text-gray-300">·</span><span>{v.capacity}명</span></>}
+                      {v.license_plate && <span>{v.license_plate}</span>}
+                      {v.license_plate && v.capacity && <span className="text-gray-300">·</span>}
+                      {v.capacity && <span>{v.capacity}명</span>}
                     </div>
                   </div>
                 </div>
