@@ -276,8 +276,8 @@ export default function VehiclesPage() {
                 className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all group">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{vehicleName(v)}</h3>
-                    <p className="text-sm text-gray-400 font-mono">{v.license_plate}</p>
+                    <p className="text-xs text-gray-400 font-medium mb-0.5">{vehicleName(v)}</p>
+                    <h3 className="text-lg font-bold text-gray-900 font-mono tracking-wider group-hover:text-blue-600 transition-colors">{v.license_plate}</h3>
                   </div>
                   {dateBadge && (
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${dateBadge.badgeColor}`}>
