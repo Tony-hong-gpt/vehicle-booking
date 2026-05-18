@@ -8,16 +8,19 @@ export async function GET() {
     if (!user) return createUnauthorizedResponse();
 
     const adminSupabase = await createAdminClient();
-    const { data, error } = await adminSupabase
+
+    // 1단계: user_departments에서 department_id 목록만 조회 (join 없이)
+    const { data: udRows, error } = await adminSupabase
       .from('user_departments')
-      .select('department:departments(id, name)')
+      .select('department_id')
       .eq('user_id', user.id);
 
     if (error) return createErrorResponse(error.message);
-    const depts = (data || []).map((row: any) => row.department).filter(Boolean);
+
+    let deptIds: string[] = (udRows || []).map((r: any) => r.department_id).filter(Boolean);
 
     // user_departments가 비어 있으면 users.department_id로 자동 복구
-    if (depts.length === 0) {
+    if (deptIds.length === 0) {
       const { data: profile } = await adminSupabase
         .from('users')
         .select('department_id')
@@ -28,18 +31,21 @@ export async function GET() {
         await adminSupabase
           .from('user_departments')
           .insert({ user_id: user.id, department_id: profile.department_id });
-
-        const { data: recovered } = await adminSupabase
-          .from('user_departments')
-          .select('department:departments(id, name)')
-          .eq('user_id', user.id);
-
-        const recoveredDepts = (recovered || []).map((row: any) => row.department).filter(Boolean);
-        return Response.json({ data: recoveredDepts, error: null });
+        deptIds = [profile.department_id];
       }
     }
 
-    return Response.json({ data: depts, error: null });
+    if (deptIds.length === 0) {
+      return Response.json({ data: [], error: null });
+    }
+
+    // 2단계: department_id 목록으로 departments 조회
+    const { data: depts } = await adminSupabase
+      .from('departments')
+      .select('id, name')
+      .in('id', deptIds);
+
+    return Response.json({ data: depts || [], error: null });
   } catch {
     return createErrorResponse('서버 오류가 발생했습니다');
   }
