@@ -7,9 +7,6 @@ export async function GET(request: Request) {
   try {
     const user = await getCurrentUser();
     if (!user) return createUnauthorizedResponse();
-    if (user.role !== 'admin' && user.role !== 'manager') {
-      return createUnauthorizedResponse();
-    }
 
     const { searchParams } = new URL(request.url);
     const fromParam = searchParams.get('from');

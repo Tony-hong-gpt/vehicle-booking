@@ -39,41 +39,48 @@ function getDateKey(dt: string): string {
 
 export default function RequestsExportBtn() {
   const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState<string | null>(null);
 
   async function handleExport() {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/requests/export');
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error ?? `서버 오류 (${res.status})`);
+      }
+
       const json = await res.json();
-      if (!json.data) return;
+      const records: any[] = json.data ?? [];
 
       const rows: any[][] = [];
 
       // 헤더 행
-      const headers = [
+      rows.push([
         '신청번호', '신청자', '부서', '목적지', '사용목적',
         '차량군', '배차차량', '출발일시', '반납일시',
         '동승인원', '기사명', '기사연락처', '상태',
-      ];
-      rows.push(headers);
+      ]);
 
-      // 날짜별 그룹화
+      // 날짜별 그룹화 (출발일 기준, Map으로 순서 유지)
       const grouped = new Map<string, any[]>();
-      for (const req of json.data) {
+      for (const req of records) {
         const key = getDateKey(req.start_datetime);
         if (!grouped.has(key)) grouped.set(key, []);
         grouped.get(key)!.push(req);
       }
 
-      for (const [, reqs] of grouped) {
-        // 날짜 구분 행
+      for (const reqs of grouped.values()) {
+        // 날짜 구분 행 (A열만 채우고 나머지 빈칸)
         const dateLabel = formatDateHeader(reqs[0].start_datetime);
         rows.push([dateLabel, '', '', '', '', '', '', '', '', '', '', '', '']);
 
         for (const req of reqs) {
           const vehicle = req.dispatches?.[0]?.vehicle;
           const vehicleLabel = vehicle
-            ? `${vehicle.name}${vehicle.model ? ' ' + vehicle.model : ''}${vehicle.license_plate ? ' (' + vehicle.license_plate + ')' : ''}`
+            ? [vehicle.name, vehicle.model, vehicle.license_plate ? `(${vehicle.license_plate})` : '']
+                .filter(Boolean).join(' ')
             : '-';
 
           rows.push([
@@ -96,51 +103,49 @@ export default function RequestsExportBtn() {
 
       const ws = XLSX.utils.aoa_to_sheet(rows);
 
-      // 날짜 구분 행 스타일 (회색 배경)
-      const dateRowIndices: number[] = [];
-      rows.forEach((row, i) => {
-        if (i > 0 && row[1] === '' && row[2] === '') dateRowIndices.push(i);
-      });
-
-      // 컬럼 너비 설정
+      // 컬럼 너비
       ws['!cols'] = [
-        { wch: 22 }, // 신청번호
-        { wch: 10 }, // 신청자
-        { wch: 14 }, // 부서
-        { wch: 16 }, // 목적지
-        { wch: 14 }, // 사용목적
-        { wch: 12 }, // 차량군
-        { wch: 20 }, // 배차차량
-        { wch: 18 }, // 출발일시
-        { wch: 18 }, // 반납일시
-        { wch: 8  }, // 동승인원
-        { wch: 10 }, // 기사명
-        { wch: 14 }, // 기사연락처
-        { wch: 12 }, // 상태
+        { wch: 22 }, { wch: 10 }, { wch: 14 }, { wch: 16 }, { wch: 14 },
+        { wch: 12 }, { wch: 20 }, { wch: 18 }, { wch: 18 },
+        { wch: 8  }, { wch: 10 }, { wch: 14 }, { wch: 12 },
       ];
 
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, '신청현황');
 
+      // blob URL 방식으로 다운로드 (브라우저 호환성)
+      const wbOut = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob  = new Blob([wbOut], { type: 'application/octet-stream' });
+      const url   = URL.createObjectURL(blob);
+      const a     = document.createElement('a');
       const today = new Date();
-      const fname = `신청현황_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.xlsx`;
-      XLSX.writeFile(wb, fname);
+      a.href     = url;
+      a.download = `신청현황_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e.message ?? '다운로드 중 오류가 발생했습니다');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <button
-      onClick={handleExport}
-      disabled={loading}
-      className="flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm disabled:opacity-50"
-    >
-      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-      </svg>
-      {loading ? '다운로드 중...' : '엑셀 다운로드'}
-    </button>
+    <div className="flex flex-col items-end gap-1">
+      <button
+        onClick={handleExport}
+        disabled={loading}
+        className="flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm disabled:opacity-50"
+      >
+        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        {loading ? '다운로드 중...' : '엑셀 다운로드'}
+      </button>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
   );
 }
