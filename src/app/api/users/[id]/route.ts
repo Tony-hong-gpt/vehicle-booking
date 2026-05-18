@@ -1,4 +1,4 @@
-import { createClient, createAdminClient } from '@/lib/server/supabase';
+import { createAdminClient } from '@/lib/server/supabase';
 import { getCurrentUser, createUnauthorizedResponse, createErrorResponse } from '@/lib/server/auth';
 import { updateUserSchema } from '@/lib/validators';
 
@@ -7,10 +7,21 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     const user = await getCurrentUser();
     if (!user) return createUnauthorizedResponse();
     const { id } = await params;
-    const supabase = await createClient();
-    const { data, error } = await supabase.from('users').select('*, department:departments(id, name)').eq('id', id).single();
+    const adminSupabase = createAdminClient();
+    const { data, error } = await adminSupabase
+      .from('users')
+      .select('id, name, email, phone, role, is_active, department_id, employee_no')
+      .eq('id', id)
+      .single();
     if (error) return createErrorResponse('사용자를 찾을 수 없습니다', 404);
-    return Response.json({ data, error: null });
+    const { data: udRows } = await adminSupabase
+      .from('user_departments')
+      .select('department_id')
+      .eq('user_id', id);
+    return Response.json({
+      data: { ...data, department_ids: (udRows || []).map((r: any) => r.department_id) },
+      error: null,
+    });
   } catch {
     return createErrorResponse('서버 오류가 발생했습니다');
   }
@@ -27,24 +38,34 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const body = await request.json();
-    const parsed = updateUserSchema.safeParse(body);
+    const { department_ids, ...rest } = body;
+    const parsed = updateUserSchema.safeParse(rest);
     if (!parsed.success) {
       return Response.json({ data: null, error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const supabase = await createClient();
-    const { data, error } = await supabase.from('users').update(parsed.data).eq('id', id).select('*, department:departments(id, name)').single();
+    const adminSupabase = createAdminClient();
+
+    // users 테이블 업데이트 (department_id = 첫 번째 선택 부서)
+    const primaryDeptId = Array.isArray(department_ids) && department_ids.length > 0
+      ? department_ids[0]
+      : null;
+    const updatePayload = { ...parsed.data, ...(Array.isArray(department_ids) ? { department_id: primaryDeptId } : {}) };
+    const { data, error } = await adminSupabase
+      .from('users')
+      .update(updatePayload)
+      .eq('id', id)
+      .select('id, name, email, phone, role, is_active, department_id, employee_no')
+      .single();
     if (error) return createErrorResponse(error.message);
 
-    // department_id 변경 시 user_departments 도 동기화
-    if ('department_id' in parsed.data) {
-      const adminSupabase = createAdminClient();
+    // user_departments 동기화
+    if (Array.isArray(department_ids)) {
       await adminSupabase.from('user_departments').delete().eq('user_id', id);
-      if (parsed.data.department_id) {
-        await adminSupabase.from('user_departments').insert({
-          user_id: id,
-          department_id: parsed.data.department_id,
-        });
+      if (department_ids.length > 0) {
+        await adminSupabase.from('user_departments').insert(
+          department_ids.map((dept_id: string) => ({ user_id: id, department_id: dept_id }))
+        );
       }
     }
 
@@ -63,8 +84,8 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
     }
 
     const { id } = await params;
-    const supabase = await createClient();
-    const { error } = await supabase.from('users').update({ is_active: false }).eq('id', id);
+    const adminSupabase = createAdminClient();
+    const { error } = await adminSupabase.from('users').update({ is_active: false }).eq('id', id);
     if (error) return createErrorResponse(error.message);
     return Response.json({ data: null, error: null, message: '비활성화되었습니다' });
   } catch {

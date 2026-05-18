@@ -37,8 +37,21 @@ export async function GET(request: Request) {
     const { data, error, count } = await query;
     if (error) return createErrorResponse(error.message);
 
+    // 각 유저의 소속 부서 목록 (user_departments)
+    const userIds = (data || []).map((u: any) => u.id);
+    const { data: udRows } = userIds.length > 0
+      ? await adminSupabase.from('user_departments').select('user_id, department_id').in('user_id', userIds)
+      : { data: [] };
+
+    const enriched = (data || []).map((u: any) => ({
+      ...u,
+      department_ids: (udRows || [])
+        .filter((r: any) => r.user_id === u.id)
+        .map((r: any) => r.department_id),
+    }));
+
     return Response.json({
-      data,
+      data: enriched,
       total: count || 0,
       page: pagination.page,
       page_size: pagination.page_size,

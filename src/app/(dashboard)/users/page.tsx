@@ -13,6 +13,7 @@ interface UserItem {
   role: string;
   is_active: boolean;
   department_id: string | null;
+  department_ids: string[];
   department?: { id: string; name: string } | null;
 }
 
@@ -49,8 +50,9 @@ export default function UsersPage() {
     name: '', phone: '', password: '', department_id: '', role: 'manager' as 'manager' | 'employee',
   });
   const [editForm, setEditForm] = useState({
-    name: '', department_id: '', role: '', is_active: true,
+    name: '', department_ids: [] as string[], role: '', is_active: true,
   });
+  const [deptDropdownOpen, setDeptDropdownOpen] = useState(false);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -62,7 +64,8 @@ export default function UsersPage() {
     const rawUsers: UserItem[] = usersRes.data || [];
     const merged = rawUsers.map(u => ({
       ...u,
-      department: depts.find(d => d.id === u.department_id) ?? null,
+      department_ids: u.department_ids || [],
+      departments: (u.department_ids || []).map((did: string) => depts.find(d => d.id === did)).filter(Boolean),
     }));
     setUsers(merged);
     setDepartments(depts);
@@ -80,7 +83,8 @@ export default function UsersPage() {
 
   function openEditModal(u: UserItem) {
     setEditUser(u);
-    setEditForm({ name: u.name, department_id: u.department?.id || '', role: u.role, is_active: u.is_active });
+    setEditForm({ name: u.name, department_ids: u.department_ids || [], role: u.role, is_active: u.is_active });
+    setDeptDropdownOpen(false);
     setError('');
     setShowModal(true);
   }
@@ -129,7 +133,7 @@ export default function UsersPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: editForm.name.trim(),
-        department_id: editForm.department_id || null,
+        department_ids: editForm.department_ids,
         role: editForm.role,
         is_active: editForm.is_active,
       }),
@@ -370,7 +374,18 @@ export default function UsersPage() {
                     <div className="text-xs text-gray-400 font-mono mt-0.5">{u.employee_no}</div>
                   </td>
                   <td className="px-5 py-4 text-gray-500 text-sm">{u.phone || <span className="text-gray-300">-</span>}</td>
-                  <td className="px-5 py-4 text-gray-500 text-sm">{u.department?.name || <span className="text-gray-300">-</span>}</td>
+                  <td className="px-5 py-4">
+                    {u.department_ids?.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {u.department_ids.map((did: string) => {
+                          const d = departments.find(x => x.id === did);
+                          return d ? (
+                            <span key={did} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">{d.name}</span>
+                          ) : null;
+                        })}
+                      </div>
+                    ) : <span className="text-gray-300 text-sm">-</span>}
+                  </td>
                   <td className="px-5 py-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${ROLE_COLORS[u.role] || 'bg-gray-50 text-gray-700'}`}>
                       {ROLE_LABELS[u.role] || u.role}
@@ -457,16 +472,54 @@ export default function UsersPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">부서/위원회 *</label>
-                <select
-                  value={editUser ? editForm.department_id : form.department_id}
-                  onChange={e => editUser
-                    ? setEditForm(p => ({ ...p, department_id: e.target.value }))
-                    : setForm(p => ({ ...p, department_id: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">선택하세요</option>
-                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                </select>
+                {editUser ? (
+                  /* 편집: 멀티셀렉트 태그 UI */
+                  <div className="border border-gray-300 rounded-lg p-2 min-h-[42px] relative">
+                    <div className="flex flex-wrap gap-1.5 mb-1.5">
+                      {editForm.department_ids.map(did => {
+                        const d = departments.find(x => x.id === did);
+                        return d ? (
+                          <span key={did} className="flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                            {d.name}
+                            <button type="button" onClick={() => setEditForm(p => ({ ...p, department_ids: p.department_ids.filter(x => x !== did) }))}
+                              className="text-blue-500 hover:text-blue-700 ml-0.5 leading-none">×</button>
+                          </span>
+                        ) : null;
+                      })}
+                      <div className="relative">
+                        <button type="button"
+                          onClick={() => setDeptDropdownOpen(p => !p)}
+                          className="flex items-center gap-1 px-2.5 py-1 border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 rounded-full text-xs transition-colors">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                          추가
+                        </button>
+                        {deptDropdownOpen && (
+                          <div className="absolute left-0 top-full mt-1 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[160px] max-h-48 overflow-y-auto">
+                            {departments.filter(d => !editForm.department_ids.includes(d.id)).length === 0 ? (
+                              <p className="px-3 py-2 text-xs text-gray-400">모두 선택됨</p>
+                            ) : departments.filter(d => !editForm.department_ids.includes(d.id)).map(d => (
+                              <button key={d.id} type="button"
+                                onClick={() => { setEditForm(p => ({ ...p, department_ids: [...p.department_ids, d.id] })); setDeptDropdownOpen(false); }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 hover:text-blue-700 transition-colors">
+                                {d.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* 추가: 단일 선택 드롭다운 */
+                  <select
+                    value={form.department_id}
+                    onChange={e => setForm(p => ({ ...p, department_id: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">선택하세요</option>
+                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                )}
               </div>
 
               <div>
