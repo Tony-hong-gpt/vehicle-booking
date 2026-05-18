@@ -32,7 +32,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const isForce = user.role === 'admin' && req.status === 'pending';
     const step = isManagerReject ? 1 : 2;
 
-    const adminSupabase = await createAdminClient();
+    const adminSupabase = createAdminClient();
     const { data: existing } = await adminSupabase
       .from('approvals')
       .select('id')

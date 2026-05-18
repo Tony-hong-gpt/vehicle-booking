@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     }
 
     // adminClient로 RLS 우회 + 조인 없이 조회 (스키마 캐시 이슈 방지)
-    const adminSupabase = await createAdminClient();
+    const adminSupabase = createAdminClient();
     const { data: profile, error: profileError } = await adminSupabase
       .from('users')
       .select('id, name, email, phone, role, is_active, department_id, employee_no')

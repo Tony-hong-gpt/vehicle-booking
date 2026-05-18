@@ -15,7 +15,7 @@ export async function GET(request: Request) {
       search: searchParams.get('search') || undefined,
     });
 
-    const adminSupabase = await createAdminClient();
+    const adminSupabase = createAdminClient();
     let query = adminSupabase
       .from('users')
       .select('id, name, email, phone, role, is_active, department_id, employee_no, created_at', { count: 'exact' });
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       return Response.json({ data: null, error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const adminSupabase = await createAdminClient();
+    const adminSupabase = createAdminClient();
 
     const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
       email: parsed.data.email,

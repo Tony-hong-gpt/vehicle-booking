@@ -38,7 +38,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     // department_id 변경 시 user_departments 도 동기화
     if ('department_id' in parsed.data) {
-      const adminSupabase = await createAdminClient();
+      const adminSupabase = createAdminClient();
       await adminSupabase.from('user_departments').delete().eq('user_id', id);
       if (parsed.data.department_id) {
         await adminSupabase.from('user_departments').insert({

@@ -4,7 +4,7 @@ import { getCurrentUser, createUnauthorizedResponse, createErrorResponse } from 
 // GET: 공개 접근 허용 (회원가입 폼에서 부서 목록 필요 — RLS 우회를 위해 admin 클라이언트 사용)
 export async function GET() {
   try {
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     const { data, error } = await supabase.from('departments').select('*').order('name');
     if (error) return createErrorResponse(error.message);
     return Response.json({ data, error: null });

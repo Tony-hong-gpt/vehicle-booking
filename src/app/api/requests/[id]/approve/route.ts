@@ -26,7 +26,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return Response.json({ data: null, error: '승인할 수 없는 상태입니다' }, { status: 400 });
     }
 
-    const adminSupabase = await createAdminClient();
+    const adminSupabase = createAdminClient();
     const { data: existing } = await adminSupabase
       .from('approvals')
       .select('id')

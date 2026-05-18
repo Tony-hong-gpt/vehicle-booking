@@ -23,7 +23,7 @@ export async function GET() {
   let profileError: string | null = null;
   if (authUser?.id) {
     try {
-      const adminSupabase = await createAdminClient();
+      const adminSupabase = createAdminClient();
       const { data, error } = await adminSupabase
         .from('users')
         .select('id, name, role, is_active')

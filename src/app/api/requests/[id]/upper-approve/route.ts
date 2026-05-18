@@ -20,7 +20,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
       return Response.json({ data: null, error: '상위승인대기 상태인 신청만 상위 승인할 수 있습니다' }, { status: 400 });
     }
 
-    const adminSupabase = await createAdminClient();
+    const adminSupabase = createAdminClient();
 
     // 기존 상위 승인 레코드 확인 후 upsert
     const { data: existing } = await adminSupabase

@@ -7,7 +7,7 @@ export async function GET() {
     const user = await getCurrentUser();
     if (!user) return createUnauthorizedResponse();
 
-    const adminSupabase = await createAdminClient();
+    const adminSupabase = createAdminClient();
 
     // 1단계: user_departments에서 department_id 목록만 조회 (join 없이)
     const { data: udRows, error } = await adminSupabase
@@ -63,7 +63,7 @@ export async function PUT(request: Request) {
       return Response.json({ data: null, error: '잘못된 요청입니다' }, { status: 400 });
     }
 
-    const adminSupabase = await createAdminClient();
+    const adminSupabase = createAdminClient();
 
     // 기존 소속 전체 삭제 후 새로 삽입
     await adminSupabase.from('user_departments').delete().eq('user_id', user.id);

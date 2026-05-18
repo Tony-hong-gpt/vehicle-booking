@@ -13,7 +13,7 @@ export async function POST(request: Request) {
       return Response.json({ data: null, error: '비밀번호는 최소 6자 이상이어야 합니다' }, { status: 400 });
     }
 
-    const adminSupabase = await createAdminClient();
+    const adminSupabase = createAdminClient();
     const { error } = await adminSupabase.auth.admin.updateUserById(user.id, {
       password: new_password,
     });

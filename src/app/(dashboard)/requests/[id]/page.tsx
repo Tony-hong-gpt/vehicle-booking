@@ -28,7 +28,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
   if (error || !req) notFound();
 
   // approvals는 RLS에 막힐 수 있으므로 admin client로 별도 조회
-  const adminSupabase = await createAdminClient();
+  const adminSupabase = createAdminClient();
   const { data: approvalsRaw } = await adminSupabase
     .from('approvals')
     .select('*, approver:users!approver_id(name, role, department:departments(name))')

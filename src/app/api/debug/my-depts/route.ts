@@ -5,7 +5,7 @@ export async function GET() {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: 'not logged in' }, { status: 401 });
 
-  const adminSupabase = await createAdminClient();
+  const adminSupabase = createAdminClient();
 
   const [udResult, profileResult] = await Promise.all([
     adminSupabase.from('user_departments').select('*').eq('user_id', user.id),

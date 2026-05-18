@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
     const { name, phone, password, department_id } = parsed.data;
     const email = phoneToEmail(phone);
-    const adminSupabase = await createAdminClient();
+    const adminSupabase = createAdminClient();
 
     // 전화번호 중복 확인
     const { data: existing } = await adminSupabase
