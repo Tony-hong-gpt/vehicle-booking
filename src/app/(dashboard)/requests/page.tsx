@@ -93,7 +93,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
               <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">신청자</th>
               <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">목적지</th>
               <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">목적</th>
-              <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">출발일시</th>
+              <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">출발 / 반납</th>
               <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">상태</th>
               <th className="px-5 py-3.5" />
             </tr>
@@ -115,8 +115,9 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
                 </td>
                 <td className="px-5 py-4 font-semibold text-gray-900 text-sm">{req.destination}</td>
                 <td className="px-5 py-4 text-gray-500 text-sm">{req.purpose?.name}</td>
-                <td className="px-5 py-4 text-gray-500 text-sm whitespace-nowrap">
-                  {format(new Date(req.start_datetime), 'yy.MM.dd(EEE) HH:mm', { locale: ko })}
+                <td className="px-5 py-4 text-sm whitespace-nowrap">
+                  <div className="text-gray-900 font-medium">{format(new Date(req.start_datetime), 'yy.MM.dd(EEE) HH:mm', { locale: ko })}</div>
+                  <div className="text-gray-400 text-xs mt-0.5">~ {format(new Date(req.end_datetime), 'yy.MM.dd(EEE) HH:mm', { locale: ko })}</div>
                 </td>
                 <td className="px-5 py-4">
                   <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${REQUEST_STATUS_COLORS[req.status]}`}>
