@@ -18,6 +18,7 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
   const [req, setReq] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -48,6 +49,19 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
       }
     }
   }, [req, id]);
+
+  async function handleDelete() {
+    if (!confirm('신청을 완전히 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.')) return;
+    setDeleting(true);
+    const res = await fetch(`/api/requests/${id}`, { method: 'DELETE' });
+    const json = await res.json();
+    if (json.error) {
+      alert(json.error);
+      setDeleting(false);
+    } else {
+      router.push('/m/requests');
+    }
+  }
 
   async function handleCancel() {
     if (!confirm('신청을 취소하시겠습니까?')) return;
@@ -88,6 +102,7 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
 
   const canCancel = ['pending', 'upper_approved', 'on_hold', 'approved'].includes(req.status);
   const canEdit   = ['pending', 'on_hold', 'rejected'].includes(req.status);
+  const canDelete = req.status === 'cancelled';
 
   return (
     <div className="flex flex-col min-h-full bg-gray-50">
@@ -309,6 +324,12 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
             <button onClick={handleCancel} disabled={cancelling}
               className="w-full border border-gray-300 text-gray-600 py-3.5 rounded-2xl text-sm font-medium disabled:opacity-60">
               {cancelling ? '취소 중...' : '신청 취소'}
+            </button>
+          )}
+          {canDelete && (
+            <button onClick={handleDelete} disabled={deleting}
+              className="w-full border border-red-300 text-red-500 py-3.5 rounded-2xl text-sm font-medium disabled:opacity-60">
+              {deleting ? '삭제 중...' : '신청 삭제'}
             </button>
           )}
         </div>
