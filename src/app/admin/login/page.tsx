@@ -30,8 +30,7 @@ export default function AdminLoginPage() {
         await fetch('/api/auth/logout', { method: 'POST' });
         return;
       }
-      router.push('/');
-      router.refresh();
+      window.location.href = '/';
     } catch {
       setError('서버 오류가 발생했습니다');
     } finally {

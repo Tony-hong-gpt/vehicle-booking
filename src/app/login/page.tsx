@@ -32,11 +32,10 @@ export default function LoginPage() {
         setError('관리자는 관리자 전용 페이지에서 로그인해주세요.');
         return;
       } else if (role === 'manager') {
-        router.push('/m/manager');
+        window.location.href = '/m/manager';
       } else {
-        router.push('/m');
+        window.location.href = '/m';
       }
-      router.refresh();
     } catch {
       setError('서버 오류가 발생했습니다');
     } finally {
