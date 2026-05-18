@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+/*
+ * 전역 기본 폰트 크기 조정
+ * 기본 16px → 17px (106.25%) — 모든 rem 기반 텍스트가 비율 유지하며 확대됩니다.
+ * text-xs  : 12px → 12.75px
+ * text-sm  : 14px → 14.875px
+ * text-base: 16px → 17px
+ * text-lg  : 18px → 19.125px
+ * text-xl  : 20px → 21.25px
+ * text-2xl : 24px → 25.5px
+ * text-3xl : 30px → 31.875px
+ */
+html {
+  font-size: 106.25%;
+}
