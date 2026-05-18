@@ -13,14 +13,15 @@ export async function getCurrentUser(): Promise<User | null> {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return null;
 
-  // adminClient로 RLS 우회하여 프로필 조회
+  // adminClient로 RLS 우회하여 프로필 조회 (FK 조인 없이 — 스키마 캐시 오류 방지)
   const adminSupabase = await createAdminClient();
-  const { data: profile } = await adminSupabase
+  const { data: profile, error: profileError } = await adminSupabase
     .from('users')
-    .select('*, department:departments(*)')
+    .select('id, name, email, phone, role, is_active, department_id, employee_no, created_at, updated_at')
     .eq('id', user.id)
     .single();
 
+  if (profileError || !profile) return null;
   return profile;
 }
 
