@@ -680,25 +680,26 @@ export default function VehicleManagementPage() {
             </button>
           )}
         </div>
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[900px]">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/70">
-              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">제조사</th>
-              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">모델명</th>
-              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">차량번호</th>
-              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">차량군</th>
-              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">연식</th>
-              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">정원</th>
-              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">연료</th>
-              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">
+              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500 whitespace-nowrap">제조사</th>
+              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500 whitespace-nowrap">모델명</th>
+              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500 whitespace-nowrap">차량번호</th>
+              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500 whitespace-nowrap">차량군</th>
+              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500 whitespace-nowrap">연식</th>
+              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500 whitespace-nowrap">정원</th>
+              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500 whitespace-nowrap">연료</th>
+              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500 whitespace-nowrap">
                 주행거리
                 {isDateMode && <span className="ml-1 text-xs font-normal text-blue-400">날짜 기준</span>}
               </th>
-              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">
+              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500 whitespace-nowrap">
                 상태
                 {isDateMode && <span className="ml-1 text-xs font-normal text-blue-400">날짜 기준</span>}
               </th>
-              <th className="text-right px-5 py-3 text-sm font-semibold text-gray-500">관리</th>
+              <th className="text-right px-5 py-3 text-sm font-semibold text-gray-500 whitespace-nowrap">관리</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -718,14 +719,14 @@ export default function VehicleManagementPage() {
 
               return (
                 <tr key={v.id} className="hover:bg-gray-50/60 transition-colors group">
-                  <td className="px-5 py-3.5 font-semibold text-gray-900 text-sm">{v.name}</td>
-                  <td className="px-5 py-3.5 text-gray-500 text-sm">{v.model || <span className="text-gray-300">-</span>}</td>
-                  <td className="px-5 py-3.5 font-mono text-gray-400 text-sm">{v.license_plate}</td>
-                  <td className="px-5 py-3.5 text-gray-500 text-sm">{v.vehicle_group?.name ?? <span className="text-gray-300">-</span>}</td>
-                  <td className="px-5 py-3.5 text-gray-500 text-sm">{v.year ? `${v.year}년` : <span className="text-gray-300">-</span>}</td>
-                  <td className="px-5 py-3.5 text-gray-500 text-sm">{v.capacity ? `${v.capacity}명` : <span className="text-gray-300">-</span>}</td>
-                  <td className="px-5 py-3.5 text-gray-500 text-sm">{FUEL_TYPE_LABELS[v.fuel_type] ?? v.fuel_type}</td>
-                  <td className="px-5 py-3.5 text-sm">
+                  <td className="px-5 py-3.5 font-semibold text-gray-900 text-sm whitespace-nowrap">{v.name}</td>
+                  <td className="px-5 py-3.5 text-gray-500 text-sm whitespace-nowrap">{v.model || <span className="text-gray-300">-</span>}</td>
+                  <td className="px-5 py-3.5 font-mono text-gray-400 text-sm whitespace-nowrap">{v.license_plate}</td>
+                  <td className="px-5 py-3.5 text-gray-500 text-sm whitespace-nowrap">{v.vehicle_group?.name ?? <span className="text-gray-300">-</span>}</td>
+                  <td className="px-5 py-3.5 text-gray-500 text-sm whitespace-nowrap">{v.year ? `${v.year}년` : <span className="text-gray-300">-</span>}</td>
+                  <td className="px-5 py-3.5 text-gray-500 text-sm whitespace-nowrap">{v.capacity ? `${v.capacity}명` : <span className="text-gray-300">-</span>}</td>
+                  <td className="px-5 py-3.5 text-gray-500 text-sm whitespace-nowrap">{FUEL_TYPE_LABELS[v.fuel_type] ?? v.fuel_type}</td>
+                  <td className="px-5 py-3.5 text-sm whitespace-nowrap">
                     {isDateMode && mileageDateMap[v.id] !== undefined ? (
                       <span className="text-blue-600 font-semibold">
                         {mileageDateMap[v.id].toLocaleString()} km
@@ -734,7 +735,7 @@ export default function VehicleManagementPage() {
                       <span className="text-gray-600">{v.current_mileage.toLocaleString()} km</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-5 py-3.5 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
                       {isDateMode && (DATE_STATUS[ds] as any)?.dot && (
                         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${(DATE_STATUS[ds] as any).dot}`} />
@@ -744,7 +745,7 @@ export default function VehicleManagementPage() {
                       </span>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-5 py-3.5 whitespace-nowrap">
                     <div className="flex items-center justify-end gap-1">
                       {/* 수정 버튼 */}
                       <button
@@ -786,6 +787,7 @@ export default function VehicleManagementPage() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* ── 차량 등록 모달 ── */}
