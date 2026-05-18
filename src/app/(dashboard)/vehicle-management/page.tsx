@@ -220,12 +220,34 @@ export default function VehicleManagementPage() {
     XLSX.writeFile(wb, '차량_입력양식.xlsx');
   }
 
-  function downloadData() {
+  async function downloadData() {
     const t = new Date();
     const dateStr = `${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}`;
+
     const STATUS_LABELS: Record<string, string> = {
-      available: '사용가능', in_use: '운행중', maintenance: '정비중', inactive: '비활성',
+      available: '사용가능', in_use: '사용가능', maintenance: '정비중', inactive: '비활성',
     };
+
+    // 활성 배차 (scheduled + in_progress) 전체 조회
+    const dispatchRes = await fetch('/api/dispatches?page_size=1000').then(r => r.json());
+    const activeDispatches = ((dispatchRes.data || []) as any[]).filter(
+      d => ['scheduled', 'in_progress'].includes(d.status)
+    );
+
+    // vehicle_id별 배차 기간 목록
+    const dispatchMap: Record<string, string[]> = {};
+    for (const d of activeDispatches) {
+      if (!d.vehicle_id) continue;
+      const startStr = d.request?.start_datetime || d.scheduled_start;
+      const endStr   = d.request?.end_datetime   || d.scheduled_end;
+      if (!startStr) continue;
+      const start = format(new Date(startStr), 'yy.MM.dd(EEE)', { locale: ko });
+      const end   = endStr ? format(new Date(endStr), 'MM.dd(EEE)', { locale: ko }) : '';
+      const label = end ? `${start}~${end}` : start;
+      if (!dispatchMap[d.vehicle_id]) dispatchMap[d.vehicle_id] = [];
+      dispatchMap[d.vehicle_id].push(label);
+    }
+
     const rows = allVehicles.map(v => ({
       차량군: v.vehicle_group?.name || '',
       제조사: v.name,
@@ -236,11 +258,13 @@ export default function VehicleManagementPage() {
       연료: FUEL_TYPE_LABELS[v.fuel_type] || v.fuel_type,
       '현재주행거리(km)': v.current_mileage,
       상태: STATUS_LABELS[v.status] || v.status,
+      배차일: (dispatchMap[v.id] || []).join(' / '),
     }));
+
     const ws = XLSX.utils.json_to_sheet(rows);
     ws['!cols'] = [
-      { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
-      { wch: 8 },  { wch: 8 },  { wch: 10 }, { wch: 18 }, { wch: 10 },
+      { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 16 },
+      { wch: 8 },  { wch: 8 },  { wch: 10 }, { wch: 18 }, { wch: 10 }, { wch: 40 },
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '차량목록');
