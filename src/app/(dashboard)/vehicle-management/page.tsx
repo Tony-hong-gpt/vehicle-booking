@@ -229,9 +229,9 @@ export default function VehicleManagementPage() {
     };
 
     // 활성 배차 (scheduled + in_progress) 전체 조회
-    const dispatchRes = await fetch('/api/dispatches?page_size=1000').then(r => r.json());
+    const dispatchRes = await fetch('/api/dispatches?page_size=500').then(r => r.json());
     const activeDispatches = ((dispatchRes.data || []) as any[]).filter(
-      d => ['scheduled', 'in_progress'].includes(d.status)
+      d => d.status !== 'completed' && d.status !== 'cancelled' && d.vehicle_id
     );
 
     // vehicle_id별 배차 시작일 목록
