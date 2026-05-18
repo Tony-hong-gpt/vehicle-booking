@@ -234,37 +234,50 @@ export default function VehicleManagementPage() {
       d => ['scheduled', 'in_progress'].includes(d.status)
     );
 
-    // vehicle_id별 배차 기간 목록
+    // vehicle_id별 배차 시작일 목록
     const dispatchMap: Record<string, string[]> = {};
     for (const d of activeDispatches) {
       if (!d.vehicle_id) continue;
       const startStr = d.request?.start_datetime || d.scheduled_start;
-      const endStr   = d.request?.end_datetime   || d.scheduled_end;
       if (!startStr) continue;
-      const start = format(new Date(startStr), 'yy.MM.dd(EEE)', { locale: ko });
-      const end   = endStr ? format(new Date(endStr), 'MM.dd(EEE)', { locale: ko }) : '';
-      const label = end ? `${start}~${end}` : start;
+      const dateLabel = format(new Date(startStr), 'yyyy.MM.dd');
       if (!dispatchMap[d.vehicle_id]) dispatchMap[d.vehicle_id] = [];
-      dispatchMap[d.vehicle_id].push(label);
+      dispatchMap[d.vehicle_id].push(dateLabel);
     }
 
-    const rows = allVehicles.map(v => ({
-      차량군: v.vehicle_group?.name || '',
-      제조사: v.name,
-      차량번호: v.license_plate,
-      모델명: v.model || '',
-      연식: v.year || '',
-      정원: v.capacity || '',
-      연료: FUEL_TYPE_LABELS[v.fuel_type] || v.fuel_type,
-      '현재주행거리(km)': v.current_mileage,
-      상태: STATUS_LABELS[v.status] || v.status,
-      배차일: (dispatchMap[v.id] || []).join(' / '),
-    }));
+    // 최대 배차 수 계산 (동적 컬럼)
+    const maxDispatches = Math.max(0, ...Object.values(dispatchMap).map(arr => arr.length));
 
-    const ws = XLSX.utils.json_to_sheet(rows);
+    // aoa(array of arrays) 방식으로 헤더를 모두 '배차일'로 통일
+    const baseHeaders = ['차량군','제조사','차량번호','모델명','연식','정원','연료','현재주행거리(km)','상태'];
+    const dispatchHeaders = Array.from({ length: maxDispatches }, () => '배차일');
+    const headers = [...baseHeaders, ...dispatchHeaders];
+
+    const aoa = [
+      headers,
+      ...allVehicles.map(v => {
+        const dates = dispatchMap[v.id] || [];
+        const base = [
+          v.vehicle_group?.name || '',
+          v.name,
+          v.license_plate,
+          v.model || '',
+          v.year || '',
+          v.capacity || '',
+          FUEL_TYPE_LABELS[v.fuel_type] || v.fuel_type,
+          v.current_mileage,
+          STATUS_LABELS[v.status] || v.status,
+          ...Array.from({ length: maxDispatches }, (_, i) => dates[i] || ''),
+        ];
+        return base;
+      }),
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws['!cols'] = [
-      { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 16 },
-      { wch: 8 },  { wch: 8 },  { wch: 10 }, { wch: 18 }, { wch: 10 }, { wch: 40 },
+      { wch: 12 }, { wch: 10 }, { wch: 14 }, { wch: 16 },
+      { wch: 8 },  { wch: 6 },  { wch: 10 }, { wch: 18 }, { wch: 10 },
+      ...Array.from({ length: maxDispatches }, () => ({ wch: 14 })),
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '차량목록');
