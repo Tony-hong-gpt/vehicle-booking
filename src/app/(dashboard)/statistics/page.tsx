@@ -535,49 +535,62 @@ function MonthlyTab({ period }: { period: PeriodState }) {
   const { monthly, summary_req: sr, summary_disp: sd } = data;
 
   return (
-    <div className="space-y-5">
-      <div className="flex justify-end"><DownloadBtn onClick={handleDownload} /></div>
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard label="기간 내 총 신청" value={sr.total}     color="text-blue-600" />
-        <StatCard label="승인완료"         value={sr.approved}  color="text-green-600" />
-        <StatCard label="취소"             value={sr.cancelled} color="text-red-400" />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard label="총 배차"   value={sd.total}     color="text-blue-600" />
-        <StatCard label="반납완료"  value={sd.completed} color="text-green-600" />
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionTitle>월별 신청 건수 추이</SectionTitle>
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={monthly} barGap={4}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-            <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="requests"  name="총 신청"  fill="#3b82f6" radius={[4,4,0,0]} />
-            <Bar dataKey="approved"  name="승인완료" fill="#10b981" radius={[4,4,0,0]} />
-            <Bar dataKey="cancelled" name="취소"     fill="#f87171" radius={[4,4,0,0]} />
-          </BarChart>
-        </ResponsiveContainer>
+    <div className="space-y-4">
+      {/* 요약 + 다운로드 한 줄 */}
+      <div className="flex items-center gap-3">
+        {[
+          { label: '총 신청',  value: sr.total,       color: 'text-blue-600',  bg: 'bg-blue-50',   dot: 'bg-blue-500' },
+          { label: '승인완료', value: sr.approved,     color: 'text-green-600', bg: 'bg-green-50',  dot: 'bg-green-500' },
+          { label: '취소',     value: sr.cancelled,    color: 'text-red-500',   bg: 'bg-red-50',    dot: 'bg-red-400' },
+          { label: '총 배차',  value: sd.total,        color: 'text-blue-600',  bg: 'bg-blue-50',   dot: 'bg-blue-500' },
+          { label: '반납완료', value: sd.completed,    color: 'text-green-600', bg: 'bg-green-50',  dot: 'bg-green-500' },
+        ].map(c => (
+          <div key={c.label} className={`flex-1 flex items-center justify-between rounded-xl border border-gray-100 shadow-sm px-4 py-3 bg-white`}>
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${c.dot}`} />
+              <span className="text-xs text-gray-500">{c.label}</span>
+            </div>
+            <span className={`text-xl font-bold ${c.color}`}>{c.value}</span>
+          </div>
+        ))}
+        <DownloadBtn onClick={handleDownload} />
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionTitle>월별 배차 건수 추이</SectionTitle>
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={monthly}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-            <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-            <Tooltip />
-            <Line type="monotone" dataKey="dispatches" name="배차 건수" stroke="#8b5cf6" strokeWidth={2.5} dot={{ r: 4 }} />
-          </LineChart>
-        </ResponsiveContainer>
+      {/* 두 차트 좌우 배치 */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <SectionTitle>월별 신청 건수 추이</SectionTitle>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={monthly} barGap={4}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
+              <Tooltip />
+              <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+              <Bar dataKey="requests"  name="총 신청"  fill="#3b82f6" radius={[4,4,0,0]} />
+              <Bar dataKey="approved"  name="승인완료" fill="#10b981" radius={[4,4,0,0]} />
+              <Bar dataKey="cancelled" name="취소"     fill="#f87171" radius={[4,4,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <SectionTitle>월별 배차 건수 추이</SectionTitle>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={monthly}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
+              <Tooltip />
+              <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+              <Line type="monotone" dataKey="dispatches" name="배차 건수" stroke="#8b5cf6" strokeWidth={2.5} dot={{ r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
-      {/* 상세 테이블 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      {/* 상세 테이블 (스크롤) */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <SectionTitle>월별 상세 데이터</SectionTitle>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
