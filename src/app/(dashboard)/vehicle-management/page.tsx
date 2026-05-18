@@ -153,12 +153,18 @@ export default function VehicleManagementPage() {
    * - DB status(in_use)는 관리 버튼 표시 여부에만 사용
    * - 선택 날짜에 배차 일정이 없으면 in_use 차량도 '사용 가능'으로 표시 */
   function resolveStatus(v: Vehicle): string {
-    if (availableIds === null) return v.status;     // 날짜 미선택 → DB 상태
+    if (availableIds === null) {
+      // 날짜 미선택: 정비중·비활성만 그대로, 나머지는 모두 사용가능
+      if (v.status === 'maintenance') return 'maintenance';
+      if (v.status === 'inactive')    return 'inactive';
+      return 'available';
+    }
+    // 날짜 선택: 해당 날짜 배차 현황 기준
     if (v.status === 'maintenance') return 'maintenance';
     if (v.status === 'inactive')    return 'inactive';
-    if (inProgressIds.has(v.id))   return 'in_progress';
-    if (availableIds.has(v.id))    return 'available'; // 선택 날짜에 배차 없음
-    return 'booked';                                 // 선택 날짜에 배차 일정 겹침
+    if (inProgressIds.has(v.id))   return 'in_progress'; // 운행중
+    if (!availableIds.has(v.id))   return 'booked';      // 배차완료
+    return 'available';
   }
 
   const displayed = allVehicles
@@ -562,7 +568,6 @@ export default function VehicleManagementPage() {
             {[
               { key: '',            label: '전체',    count: counts.total,       color: 'text-gray-700',   bg: 'bg-gray-50',   border: 'border-gray-100' },
               { key: 'available',   label: '사용가능', count: counts.available,   color: 'text-green-600',  bg: 'bg-green-50',  border: 'border-green-100' },
-              { key: 'in_use',      label: '운행중',   count: counts.in_use,      color: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-100' },
               { key: 'maintenance', label: '정비중',   count: counts.maintenance, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-100' },
               { key: 'inactive',    label: '비활성',   count: counts.inactive,    color: 'text-gray-400',   bg: 'bg-gray-50',   border: 'border-gray-100' },
             ].map(s => (
