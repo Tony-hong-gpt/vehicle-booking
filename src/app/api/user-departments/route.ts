@@ -15,6 +15,31 @@ export async function GET() {
 
     if (error) return createErrorResponse(error.message);
     const depts = (data || []).map((row: any) => row.department).filter(Boolean);
+
+    // user_departments가 비어 있으면 users.department_id로 자동 복구
+    if (depts.length === 0) {
+      const supabase = await createClient();
+      const { data: profile } = await supabase
+        .from('users')
+        .select('department_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.department_id) {
+        await adminSupabase
+          .from('user_departments')
+          .insert({ user_id: user.id, department_id: profile.department_id });
+
+        const { data: recovered } = await adminSupabase
+          .from('user_departments')
+          .select('department:departments(id, name)')
+          .eq('user_id', user.id);
+
+        const recoveredDepts = (recovered || []).map((row: any) => row.department).filter(Boolean);
+        return Response.json({ data: recoveredDepts, error: null });
+      }
+    }
+
     return Response.json({ data: depts, error: null });
   } catch {
     return createErrorResponse('서버 오류가 발생했습니다');
