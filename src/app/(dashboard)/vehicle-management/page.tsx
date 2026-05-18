@@ -682,6 +682,7 @@ export default function VehicleManagementPage() {
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/70">
               <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">제조사</th>
+              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">모델명</th>
               <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">차량번호</th>
               <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">차량군</th>
               <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">연식</th>
@@ -700,10 +701,10 @@ export default function VehicleManagementPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={9} className="text-center py-14 text-gray-400 text-sm">불러오는 중...</td></tr>
+              <tr><td colSpan={10} className="text-center py-14 text-gray-400 text-sm">불러오는 중...</td></tr>
             ) : displayed.length === 0 ? (
               <tr>
-                <td colSpan={9} className="text-center py-14 text-gray-400 text-sm">
+                <td colSpan={10} className="text-center py-14 text-gray-400 text-sm">
                   {allVehicles.length === 0 ? '등록된 차량이 없습니다' : '조건에 맞는 차량이 없습니다'}
                 </td>
               </tr>
@@ -716,6 +717,7 @@ export default function VehicleManagementPage() {
               return (
                 <tr key={v.id} className="hover:bg-gray-50/60 transition-colors group">
                   <td className="px-5 py-3.5 font-semibold text-gray-900 text-sm">{v.name}</td>
+                  <td className="px-5 py-3.5 text-gray-500 text-sm">{v.model || <span className="text-gray-300">-</span>}</td>
                   <td className="px-5 py-3.5 font-mono text-gray-400 text-sm">{v.license_plate}</td>
                   <td className="px-5 py-3.5 text-gray-500 text-sm">{v.vehicle_group?.name ?? <span className="text-gray-300">-</span>}</td>
                   <td className="px-5 py-3.5 text-gray-500 text-sm">{v.year ? `${v.year}년` : <span className="text-gray-300">-</span>}</td>
