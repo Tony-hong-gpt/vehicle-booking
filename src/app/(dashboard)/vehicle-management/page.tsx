@@ -202,7 +202,7 @@ export default function VehicleManagementPage() {
   function downloadTemplate() {
     const ws = XLSX.utils.aoa_to_sheet([
       ['차량군명', '제조사', '차량번호', '모델명', '연식', '정원(명)', '연료', '현재주행거리(km)'],
-      ['승합차량', '현대 스타렉스', '서울12가1234', '스타렉스 어반', 2021, 12, '디젤', 78400],
+      ['승합차량', '현대 스타렉스', '서울12가1234', '스타렉스 어반', 2021, 12, '경유', 78400],
     ]);
     ws['!cols'] = [
       { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
@@ -245,7 +245,7 @@ export default function VehicleManagementPage() {
     if (!file) return;
     setImportError('');
     const FUEL_KO_MAP: Record<string, string> = {
-      가솔린: 'gasoline', 디젤: 'diesel', 전기: 'electric', 하이브리드: 'hybrid',
+      휘발유: 'gasoline', 가솔린: 'gasoline', 경유: 'diesel', 디젤: 'diesel', 전기: 'electric', 하이브리드: 'hybrid',
     };
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -434,8 +434,8 @@ export default function VehicleManagementPage() {
         <label className="block text-sm font-medium text-gray-600 mb-1.5">연료 <span className="text-red-500">*</span></label>
         <select value={form.fuel_type} onChange={e => setF(p => ({ ...p, fuel_type: e.target.value }))} required
           className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="gasoline">가솔린</option>
-          <option value="diesel">디젤</option>
+          <option value="gasoline">휘발유</option>
+          <option value="diesel">경유</option>
           <option value="electric">전기</option>
           <option value="hybrid">하이브리드</option>
         </select>
