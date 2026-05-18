@@ -55,7 +55,6 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">차량 사용 신청</h1>
-          <p className="text-gray-400 mt-1 text-sm">관리 시스템</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/60 p-8">
