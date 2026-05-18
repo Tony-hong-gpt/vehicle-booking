@@ -299,147 +299,159 @@ function OverviewTab({ period }: { period: PeriodState }) {
   const totalPurpose = top_purposes.reduce((s: number, d: any) => s + d.count, 0);
 
   return (
-    <div className="space-y-6">
-      {/* KPI */}
-      <div>
-        <SectionTitle>핵심 지표</SectionTitle>
-        <div className="grid grid-cols-4 gap-3">
-          <KpiCard label="총 신청 건수"   value={kpi.total_requests.value}   diff={kpi.total_requests.diff}   color="text-blue-600" />
-          <KpiCard label="신청 승인율"    value={kpi.approval_rate.value}    unit="%" sub="취소·반려 제외"
-            color={kpi.approval_rate.value >= 80 ? 'text-green-600' : 'text-orange-500'} />
-          <KpiCard label="운행 완료"      value={kpi.completed_trips.value}  diff={kpi.completed_trips.diff}  unit="건" color="text-purple-600" />
-          <KpiCard label="차량 가동률"    value={kpi.utilization_rate.value} unit="%" sub={`${vehicles.used}/${vehicles.total}대 운행`}
-            color={kpi.utilization_rate.value >= 60 ? 'text-green-600' : 'text-orange-500'} />
-        </div>
+    <div className="space-y-3">
+      {/* ── Row 1: KPI 4개 ── */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: '총 신청 건수', value: kpi.total_requests.value,   unit: '건', diff: kpi.total_requests.diff,  color: 'text-blue-600' },
+          { label: '신청 승인율',  value: kpi.approval_rate.value,    unit: '%',  diff: undefined,                color: kpi.approval_rate.value >= 80 ? 'text-green-600' : 'text-orange-500', sub: '취소·반려 제외' },
+          { label: '운행 완료',    value: kpi.completed_trips.value,  unit: '건', diff: kpi.completed_trips.diff, color: 'text-purple-600' },
+          { label: '차량 가동률',  value: kpi.utilization_rate.value, unit: '%',  diff: undefined,                color: kpi.utilization_rate.value >= 60 ? 'text-green-600' : 'text-orange-500', sub: `${vehicles.used}/${vehicles.total}대 운행` },
+        ].map(card => (
+          <div key={card.label} className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-400">{card.label}</p>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className={`text-2xl font-bold ${card.color}`}>{card.value}</span>
+                <span className="text-sm text-gray-400">{card.unit}</span>
+              </div>
+              {card.sub && <p className="text-xs text-gray-400 mt-0.5">{card.sub}</p>}
+            </div>
+            {card.diff != null && (
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${card.diff > 0 ? 'bg-blue-50 text-blue-500' : card.diff < 0 ? 'bg-red-50 text-red-400' : 'bg-gray-100 text-gray-400'}`}>
+                {card.diff > 0 ? '▲' : card.diff < 0 ? '▼' : '─'} {Math.abs(card.diff)}%
+              </span>
+            )}
+          </div>
+        ))}
       </div>
 
-      {/* 시계열 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionTitle>
-          {period.mode === 'week' ? '요일별' : period.mode === 'month' ? '주별' : '월별'} 신청·배차 추이
-        </SectionTitle>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={time_series} barGap={4}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-            <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="requests"   name="신청" fill="#3b82f6" radius={[4,4,0,0]} />
-            <Bar dataKey="dispatches" name="배차" fill="#8b5cf6" radius={[4,4,0,0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* 신청·배차·차량 현황 */}
-      <div className="grid grid-cols-3 gap-4">
-        {/* 신청 현황 */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <SectionTitle>신청 현황</SectionTitle>
-          <div className="space-y-3">
-            {[
-              { label: '총 신청',   value: requests.total,     color: 'bg-blue-500' },
-              { label: '승인완료',  value: requests.approved,  color: 'bg-green-500' },
-              { label: '처리 대기', value: requests.pending,   color: 'bg-orange-400' },
-              { label: '취소',      value: requests.cancelled, color: 'bg-red-400' },
-            ].map(row => (
-              <div key={row.label} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${row.color}`} />
-                  <span className="text-sm text-gray-600">{row.label}</span>
-                </div>
-                <span className="text-sm font-bold text-gray-800">{row.value}건</span>
-              </div>
-            ))}
-          </div>
-          {requests.total > 0 && (
-            <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden flex">
-              <div className="bg-green-400 h-full" style={{ width: `${(requests.approved / requests.total) * 100}%` }} />
-              <div className="bg-orange-300 h-full" style={{ width: `${(requests.pending / requests.total) * 100}%` }} />
-              <div className="bg-red-300 h-full" style={{ width: `${(requests.cancelled / requests.total) * 100}%` }} />
-            </div>
-          )}
+      {/* ── Row 2: 시계열(좌) + 신청·배차현황(우) ── */}
+      <div className="grid grid-cols-5 gap-3">
+        {/* 시계열 차트 */}
+        <div className="col-span-3 bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <p className="text-xs font-bold text-gray-500 mb-2">
+            {period.mode === 'week' ? '요일별' : period.mode === 'month' ? '주별' : '월별'} 신청·배차 추이
+          </p>
+          <ResponsiveContainer width="100%" height={170}>
+            <BarChart data={time_series} barGap={4}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} width={24} />
+              <Tooltip />
+              <Legend iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="requests"   name="신청" fill="#3b82f6" radius={[3,3,0,0]} />
+              <Bar dataKey="dispatches" name="배차" fill="#8b5cf6" radius={[3,3,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* 배차 현황 (운행중 제외) */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <SectionTitle>배차 현황</SectionTitle>
-          <div className="space-y-3">
-            {[
-              { label: '총 배차',   value: dispatches.total,     color: 'bg-blue-500' },
-              { label: '반납완료',  value: dispatches.completed, color: 'bg-green-500' },
-              { label: '배차완료',  value: dispatches.scheduled, color: 'bg-blue-400' },
-            ].map(row => (
-              <div key={row.label} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${row.color}`} />
-                  <span className="text-sm text-gray-600">{row.label}</span>
+        {/* 신청현황 + 배차현황 세로 배치 */}
+        <div className="col-span-2 flex flex-col gap-3">
+          {/* 신청 현황 */}
+          <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <p className="text-xs font-bold text-gray-500 mb-2">신청 현황</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+              {[
+                { label: '총 신청',   value: requests.total,     color: 'bg-blue-500' },
+                { label: '승인완료',  value: requests.approved,  color: 'bg-green-500' },
+                { label: '처리 대기', value: requests.pending,   color: 'bg-orange-400' },
+                { label: '취소',      value: requests.cancelled, color: 'bg-red-400' },
+              ].map(row => (
+                <div key={row.label} className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${row.color}`} />
+                    <span className="text-xs text-gray-500">{row.label}</span>
+                  </div>
+                  <span className="text-xs font-bold text-gray-700">{row.value}건</span>
                 </div>
-                <span className="text-sm font-bold text-gray-800">{row.value}건</span>
-              </div>
-            ))}
-          </div>
-          {dispatches.total > 0 && (
-            <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden flex">
-              <div className="bg-green-400 h-full" style={{ width: `${(dispatches.completed / dispatches.total) * 100}%` }} />
-              <div className="bg-blue-400 h-full" style={{ width: `${(dispatches.scheduled / dispatches.total) * 100}%` }} />
+              ))}
             </div>
-          )}
-        </div>
+            {requests.total > 0 && (
+              <div className="mt-2.5 h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
+                <div className="bg-green-400 h-full" style={{ width: `${(requests.approved / requests.total) * 100}%` }} />
+                <div className="bg-orange-300 h-full" style={{ width: `${(requests.pending / requests.total) * 100}%` }} />
+                <div className="bg-red-300 h-full" style={{ width: `${(requests.cancelled / requests.total) * 100}%` }} />
+              </div>
+            )}
+          </div>
 
-        {/* 차량 운용 현황 */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <SectionTitle>차량 운용 현황</SectionTitle>
-          <div className="flex items-center justify-center my-2">
-            <div className="relative w-28 h-28">
-              <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f3f4f6" strokeWidth="3.5" />
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3b82f6" strokeWidth="3.5"
-                  strokeDasharray={`${kpi.utilization_rate.value} ${100 - kpi.utilization_rate.value}`}
-                  strokeLinecap="round" />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-bold text-gray-900">{kpi.utilization_rate.value}%</span>
-                <span className="text-xs text-gray-400">가동률</span>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-2 mt-2">
-            {[
-              { label: '전체 차량',   value: `${vehicles.total}대`, color: 'bg-gray-300' },
-              { label: '운행한 차량', value: `${vehicles.used}대`,  color: 'bg-blue-500' },
-              { label: '미운행 차량', value: `${vehicles.unused}대`, color: 'bg-gray-200' },
-            ].map(row => (
-              <div key={row.label} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${row.color}`} />
-                  <span className="text-sm text-gray-600">{row.label}</span>
+          {/* 배차 현황 */}
+          <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <p className="text-xs font-bold text-gray-500 mb-2">배차 현황</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+              {[
+                { label: '총 배차',  value: dispatches.total,     color: 'bg-blue-500' },
+                { label: '반납완료', value: dispatches.completed, color: 'bg-green-500' },
+                { label: '배차완료', value: dispatches.scheduled, color: 'bg-blue-400' },
+              ].map(row => (
+                <div key={row.label} className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${row.color}`} />
+                    <span className="text-xs text-gray-500">{row.label}</span>
+                  </div>
+                  <span className="text-xs font-bold text-gray-700">{row.value}건</span>
                 </div>
-                <span className="text-sm font-bold text-gray-800">{row.value}</span>
+              ))}
+            </div>
+            {dispatches.total > 0 && (
+              <div className="mt-2.5 h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
+                <div className="bg-green-400 h-full" style={{ width: `${(dispatches.completed / dispatches.total) * 100}%` }} />
+                <div className="bg-blue-400 h-full" style={{ width: `${(dispatches.scheduled / dispatches.total) * 100}%` }} />
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
 
-      {/* 부서별 + 사용목적 요약 */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* ── Row 3: 차량운용(좌) + 부서 TOP5(중) + 사용목적 TOP5(우) ── */}
+      <div className="grid grid-cols-5 gap-3">
+        {/* 차량 운용 */}
+        <div className="col-span-1 bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col items-center justify-center">
+          <p className="text-xs font-bold text-gray-500 mb-2 self-start">차량 운용</p>
+          <div className="relative w-20 h-20">
+            <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f3f4f6" strokeWidth="4" />
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3b82f6" strokeWidth="4"
+                strokeDasharray={`${kpi.utilization_rate.value} ${100 - kpi.utilization_rate.value}`}
+                strokeLinecap="round" />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-lg font-bold text-gray-900">{kpi.utilization_rate.value}%</span>
+              <span className="text-[10px] text-gray-400">가동률</span>
+            </div>
+          </div>
+          <div className="mt-2 w-full space-y-1">
+            {[
+              { label: '전체',   value: `${vehicles.total}대`, color: 'bg-gray-300' },
+              { label: '운행',   value: `${vehicles.used}대`,  color: 'bg-blue-500' },
+              { label: '미운행', value: `${vehicles.unused}대`, color: 'bg-gray-100' },
+            ].map(row => (
+              <div key={row.label} className="flex justify-between items-center">
+                <div className="flex items-center gap-1">
+                  <span className={`w-1.5 h-1.5 rounded-full ${row.color}`} />
+                  <span className="text-xs text-gray-500">{row.label}</span>
+                </div>
+                <span className="text-xs font-semibold text-gray-700">{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* 부서 TOP 5 */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-3">
-            <SectionTitle>부서별 운행 현황 (상위 5개)</SectionTitle>
-          </div>
+        <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <p className="text-xs font-bold text-gray-500 mb-2">부서별 운행 현황 (TOP 5)</p>
           {top_depts.length === 0 ? (
-            <p className="text-sm text-gray-400 py-6 text-center">데이터가 없습니다</p>
+            <p className="text-xs text-gray-400 py-4 text-center">데이터가 없습니다</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {top_depts.map((d: any, i: number) => (
-                <div key={d.name} className="flex items-center gap-3">
-                  <span className={`text-xs font-bold w-4 ${i < 3 ? 'text-blue-600' : 'text-gray-400'}`}>{i + 1}</span>
-                  <div className="flex-1">
+                <div key={d.name} className="flex items-center gap-2">
+                  <span className={`text-xs font-bold w-4 text-center flex-shrink-0 ${i < 3 ? 'text-blue-500' : 'text-gray-300'}`}>{i + 1}</span>
+                  <div className="flex-1 min-w-0">
                     <div className="flex justify-between mb-0.5">
-                      <span className="text-sm font-medium text-gray-800">{d.name}</span>
-                      <span className="text-xs text-gray-500">{d.count}건 ({totalDept > 0 ? Math.round(d.count / totalDept * 100) : 0}%)</span>
+                      <span className="text-xs font-medium text-gray-700 truncate">{d.name}</span>
+                      <span className="text-xs text-gray-400 ml-1 flex-shrink-0">{d.count}건 ({totalDept > 0 ? Math.round(d.count / totalDept * 100) : 0}%)</span>
                     </div>
                     <div className="bg-gray-100 rounded-full h-1.5">
                       <div className="h-1.5 rounded-full" style={{ width: `${top_depts[0].count > 0 ? (d.count / top_depts[0].count) * 100 : 0}%`, backgroundColor: COLORS[i] }} />
@@ -452,20 +464,20 @@ function OverviewTab({ period }: { period: PeriodState }) {
         </div>
 
         {/* 사용목적 TOP 5 */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <SectionTitle>사용목적별 운행 현황 (상위 5개)</SectionTitle>
+        <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <p className="text-xs font-bold text-gray-500 mb-2">사용목적별 현황 (TOP 5)</p>
           {top_purposes.length === 0 ? (
-            <p className="text-sm text-gray-400 py-6 text-center">데이터가 없습니다</p>
+            <p className="text-xs text-gray-400 py-4 text-center">데이터가 없습니다</p>
           ) : (
-            <div className="flex gap-4">
-              <div className="flex-1 space-y-3">
+            <div className="flex gap-3">
+              <div className="flex-1 space-y-2">
                 {top_purposes.map((d: any, i: number) => (
-                  <div key={d.name} className="flex items-center gap-3">
-                    <span className={`text-xs font-bold w-4 ${i < 3 ? 'text-blue-600' : 'text-gray-400'}`}>{i + 1}</span>
-                    <div className="flex-1">
+                  <div key={d.name} className="flex items-center gap-2">
+                    <span className={`text-xs font-bold w-4 text-center flex-shrink-0 ${i < 3 ? 'text-blue-500' : 'text-gray-300'}`}>{i + 1}</span>
+                    <div className="flex-1 min-w-0">
                       <div className="flex justify-between mb-0.5">
-                        <span className="text-sm font-medium text-gray-800">{d.name}</span>
-                        <span className="text-xs text-gray-500">{d.count}건</span>
+                        <span className="text-xs font-medium text-gray-700 truncate">{d.name}</span>
+                        <span className="text-xs text-gray-400 ml-1 flex-shrink-0">{d.count}건</span>
                       </div>
                       <div className="bg-gray-100 rounded-full h-1.5">
                         <div className="h-1.5 rounded-full" style={{ width: `${top_purposes[0].count > 0 ? (d.count / top_purposes[0].count) * 100 : 0}%`, backgroundColor: COLORS[i] }} />
@@ -474,10 +486,10 @@ function OverviewTab({ period }: { period: PeriodState }) {
                   </div>
                 ))}
               </div>
-              <div className="w-28">
-                <ResponsiveContainer width="100%" height={120}>
+              <div className="w-20 flex-shrink-0">
+                <ResponsiveContainer width="100%" height={100}>
                   <PieChart>
-                    <Pie data={top_purposes} cx="50%" cy="50%" innerRadius={28} outerRadius={48}
+                    <Pie data={top_purposes} cx="50%" cy="50%" innerRadius={22} outerRadius={40}
                       dataKey="count" nameKey="name" labelLine={false}>
                       {top_purposes.map((_: any, i: number) => <Cell key={i} fill={COLORS[i]} />)}
                     </Pie>
@@ -1000,16 +1012,16 @@ export default function StatisticsPage() {
   const [period, setPeriod]       = useState<PeriodState>(getDefaultPeriod);
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">통계</h1>
-          <p className="text-gray-500 mt-1 text-sm">차량 운영 현황을 분석합니다</p>
+          <h1 className="text-xl font-bold text-gray-900">통계</h1>
+          <p className="text-gray-500 mt-0.5 text-xs">차량 운영 현황을 분석합니다</p>
         </div>
         <PeriodSelector period={period} onChange={setPeriod} />
       </div>
 
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-4 w-fit">
         {TABS.map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
