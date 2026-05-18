@@ -26,7 +26,14 @@ export default function LoginPage() {
         setError(data.error || '로그인에 실패했습니다');
         return;
       }
-      router.push('/');
+      const role = data.data?.role;
+      if (role === 'admin') {
+        router.push('/');
+      } else if (role === 'manager') {
+        router.push('/m/manager');
+      } else {
+        router.push('/m');
+      }
       router.refresh();
     } catch {
       setError('서버 오류가 발생했습니다');
