@@ -1,4 +1,4 @@
-import { createClient, createAdminClient } from '@/lib/server/supabase';
+import { createAdminClient } from '@/lib/server/supabase';
 import { getCurrentUser, createUnauthorizedResponse, createErrorResponse } from '@/lib/server/auth';
 
 // 내 소속 목록 조회
@@ -18,8 +18,7 @@ export async function GET() {
 
     // user_departments가 비어 있으면 users.department_id로 자동 복구
     if (depts.length === 0) {
-      const supabase = await createClient();
-      const { data: profile } = await supabase
+      const { data: profile } = await adminSupabase
         .from('users')
         .select('department_id')
         .eq('id', user.id)
