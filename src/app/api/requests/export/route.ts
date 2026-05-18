@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       .from('requests')
       .select(`
         id, request_no, destination, status, start_datetime, end_datetime,
-        passengers, driver_name, driver_phone, notes, created_at,
+        passengers, driver_name, driver_phone, created_at,
         requester:users!requester_id(name, employee_no),
         department:departments(name),
         purpose:purposes(name),
