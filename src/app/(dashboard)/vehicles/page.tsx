@@ -277,7 +277,7 @@ export default function VehiclesPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="space-y-2">
                     <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors leading-tight">{vehicleName(v)}</h3>
-                    <span className="inline-block text-xs font-mono font-semibold tracking-widest text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md">
+                    <span className="inline-block text-sm font-mono font-semibold tracking-widest text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md">
                       {v.license_plate}
                     </span>
                   </div>
