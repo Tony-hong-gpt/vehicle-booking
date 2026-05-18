@@ -40,7 +40,6 @@ export default function SignupPage() {
     if (!form.phone.trim()) { setError('전화번호를 입력해주세요'); return; }
     if (form.password.length < 6) { setError('비밀번호는 최소 6자 이상이어야 합니다'); return; }
     if (form.password !== form.passwordConfirm) { setError('비밀번호가 일치하지 않습니다'); return; }
-    if (!form.department_id) { setError('부서를 선택해주세요'); return; }
 
     setLoading(true);
     try {

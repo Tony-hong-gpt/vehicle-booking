@@ -62,7 +62,7 @@ export async function POST(request: Request) {
         name: name.trim(),
         email,
         phone: formattedPhone,
-        department_id,
+        ...(department_id ? { department_id } : {}),
         role: 'employee',
         is_active: true,
       })
