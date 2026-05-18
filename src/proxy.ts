@@ -33,7 +33,7 @@ export async function proxy(request: NextRequest) {
   const isPublicPath = publicPaths.some(p => pathname.startsWith(p));
 
   // API 경로 (인증 불필요한 공개 API)
-  if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/departments')) {
+  if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/departments') || pathname.startsWith('/api/admin/cleanup-seed')) {
     return supabaseResponse;
   }
 
