@@ -93,6 +93,21 @@ export default function DepartmentsPage() {
     setSaving(false);
   }
 
+  function downloadData() {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
+    const rows = departments.map(d => ({
+      부서명: d.name,
+      코드: d.code || '',
+      등록일: d.created_at ? new Date(d.created_at).toLocaleDateString('ko-KR') : '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '부서목록');
+    XLSX.writeFile(wb, `부서_위원회_목록_${dateStr}.xlsx`);
+  }
+
   function downloadTemplate() {
     const ws = XLSX.utils.aoa_to_sheet([
       ['부서명', '코드'],
@@ -165,9 +180,17 @@ export default function DepartmentsPage() {
 
   return (
     <div className="p-6 max-w-2xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">부서/위원회 관리</h1>
-        <p className="text-sm text-gray-400 mt-1">신청자와 상위승인자를 연결하는 부서(위원회)를 관리합니다</p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">부서/위원회 관리</h1>
+          <p className="text-sm text-gray-400 mt-1">신청자와 상위승인자를 연결하는 부서(위원회)를 관리합니다</p>
+        </div>
+        <button
+          onClick={downloadData}
+          className="text-xs text-green-600 hover:text-green-700 font-medium flex items-center gap-1 hover:bg-green-50 px-2.5 py-1.5 rounded-lg transition-colors"
+        >
+          ↓ 목록 다운로드
+        </button>
       </div>
 
       {/* 추가 폼 */}

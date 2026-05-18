@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { FUEL_TYPE_LABELS } from '@/lib/constants';
+import * as XLSX from 'xlsx';
 
 interface Vehicle {
   id: string;
@@ -141,6 +142,12 @@ export default function VehiclesPage() {
   const isAdmin = userRole === 'admin';
   const today = format(new Date(), 'yyyy-MM-dd');
 
+  /* Excel import 상태 */
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [importPreview, setImportPreview] = useState<any[]>([]);
+  const [importError, setImportError] = useState('');
+
   /* 상태 필터 옵션
      - 날짜 선택 시: 실제 배차 현황 기준 필터
      - 날짜 미선택 시: 정비중/비운행만 필터 가능 (DB 가용 상태는 신뢰 불가) */
@@ -185,6 +192,130 @@ export default function VehiclesPage() {
     setSubmitting(false);
   }
 
+  function downloadTemplate() {
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['차량군명', '차량명', '차량번호', '모델명', '연식', '정원(명)', '연료', '현재주행거리(km)'],
+      ['일반차량', '현대 소나타', '서울00가0000', '소나타 DN8', 2023, 5, '가솔린', 50000],
+    ]);
+    ws['A1'] = { v: '차량군명', t: 's' };
+    ws['G1'] = { v: '연료 (가솔린/디젤/전기/하이브리드 중 하나)', t: 's' };
+    ws['!cols'] = [
+      { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+      { wch: 8 }, { wch: 10 }, { wch: 30 }, { wch: 18 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '차량입력양식');
+    XLSX.writeFile(wb, '차량_입력양식.xlsx');
+  }
+
+  function downloadData() {
+    const t = new Date();
+    const dateStr = `${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}`;
+    const STATUS_LABELS: Record<string, string> = {
+      available: '사용가능', in_use: '사용중', maintenance: '정비중', inactive: '비운행',
+    };
+    const rows = vehicles.map(v => ({
+      차량군: v.vehicle_group?.name || '',
+      차량명: v.name,
+      차량번호: v.license_plate,
+      모델명: (v as any).model || '',
+      연식: v.year || '',
+      정원: v.capacity || '',
+      연료: FUEL_TYPE_LABELS[v.fuel_type] || v.fuel_type,
+      '현재주행거리(km)': v.current_mileage,
+      상태: STATUS_LABELS[v.status] || v.status,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [
+      { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+      { wch: 8 }, { wch: 8 }, { wch: 10 }, { wch: 18 }, { wch: 10 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '차량목록');
+    XLSX.writeFile(wb, `차량목록_${dateStr}.xlsx`);
+  }
+
+  function handleVehicleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportError('');
+    const FUEL_KO_MAP: Record<string, string> = {
+      가솔린: 'gasoline', 디젤: 'diesel', 전기: 'electric', 하이브리드: 'hybrid',
+    };
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const wb = XLSX.read(ev.target?.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<any>(ws);
+        const errors: string[] = [];
+        const parsed = rows
+          .filter(r => r['차량명']?.toString().trim())
+          .map((r, i) => {
+            const groupName = (r['차량군명'] || '').toString().trim();
+            const group = groups.find(g => g.name === groupName);
+            if (!group) errors.push(`${i+1}행: 차량군 "${groupName}"을 찾을 수 없습니다`);
+            const fuelKo = (r['연료'] || '').toString().trim();
+            return {
+              name: (r['차량명'] || '').toString().trim(),
+              license_plate: (r['차량번호'] || '').toString().trim(),
+              vehicle_group_id: group?.id || '',
+              group_name: groupName,
+              model: (r['모델명'] || '').toString().trim(),
+              year: r['연식'] ? Number(r['연식']) : undefined,
+              capacity: r['정원(명)'] ? Number(r['정원(명)']) : undefined,
+              fuel_type: FUEL_KO_MAP[fuelKo] || 'gasoline',
+              current_mileage: r['현재주행거리(km)'] ? Number(r['현재주행거리(km)']) : 0,
+            };
+          });
+        if (errors.length > 0) {
+          setImportError(errors.join(', '));
+          return;
+        }
+        if (parsed.length === 0) {
+          setImportError('데이터가 없습니다. 양식을 확인해주세요.');
+          return;
+        }
+        setImportPreview(parsed);
+      } catch {
+        setImportError('파일을 읽을 수 없습니다. Excel 파일(.xlsx)인지 확인해주세요.');
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = '';
+  }
+
+  async function handleVehicleImport() {
+    if (importPreview.length === 0) return;
+    setImporting(true);
+    setImportError('');
+    let successCount = 0;
+    let failCount = 0;
+    for (const v of importPreview) {
+      const body: Record<string, unknown> = {
+        vehicle_group_id: v.vehicle_group_id,
+        name: v.name,
+        license_plate: v.license_plate,
+        fuel_type: v.fuel_type,
+        current_mileage: v.current_mileage,
+      };
+      if (v.model) body.model = v.model;
+      if (v.year) body.year = v.year;
+      if (v.capacity) body.capacity = v.capacity;
+      const res = await fetch('/api/vehicles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) successCount++;
+      else failCount++;
+    }
+    setImportPreview([]);
+    setImporting(false);
+    fetchData();
+    if (failCount > 0) setImportError(`${successCount}개 등록 완료, ${failCount}개 실패 (차량번호 중복 등)`);
+  }
+
   return (
     <div className="p-8">
       {/* 헤더 */}
@@ -194,10 +325,20 @@ export default function VehiclesPage() {
           <p className="text-gray-500 mt-1 text-sm">총 {vehicles.length}대</p>
         </div>
         {isAdmin && (
-          <button onClick={() => { setShowModal(true); setFormError(''); setForm(EMPTY_FORM); }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-            <span className="text-lg leading-none">+</span> 차량 등록
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={downloadTemplate}
+              className="text-xs text-green-600 hover:text-green-700 font-medium flex items-center gap-1 hover:bg-green-50 px-2.5 py-1.5 rounded-lg transition-colors">
+              ↓ 양식
+            </button>
+            <button onClick={downloadData}
+              className="text-xs text-green-600 hover:text-green-700 font-medium flex items-center gap-1 hover:bg-green-50 px-2.5 py-1.5 rounded-lg transition-colors">
+              ↓ 목록
+            </button>
+            <button onClick={() => { setShowModal(true); setFormError(''); setForm(EMPTY_FORM); }}
+              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+              <span className="text-lg leading-none">+</span> 차량 등록
+            </button>
+          </div>
         )}
       </div>
 
@@ -296,6 +437,61 @@ export default function VehiclesPage() {
           </div>
         )}
       </div>
+
+      {/* Excel 일괄 등록 (관리자만) */}
+      {isAdmin && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-gray-700">Excel 일괄 등록</h2>
+            <button
+              onClick={downloadTemplate}
+              className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition-colors"
+            >
+              ↓ 양식 다운로드
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleVehicleFileChange} className="hidden" />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors text-center"
+            >
+              📂 Excel 파일 선택 (.xlsx)
+            </button>
+          </div>
+          {importError && <p className="text-red-500 text-xs mt-2">{importError}</p>}
+
+          {importPreview.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs text-gray-500 mb-2">아래 {importPreview.length}개 항목을 등록합니다:</p>
+              <div className="max-h-40 overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50">
+                {importPreview.map((v, i) => (
+                  <div key={i} className="flex items-center gap-2 px-3 py-2 text-sm">
+                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-mono">{v.group_name}</span>
+                    <span className="font-medium text-gray-800">{v.name}</span>
+                    <span className="text-xs text-gray-400 font-mono">{v.license_plate}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={handleVehicleImport}
+                  disabled={importing}
+                  className="flex-1 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {importing ? '등록 중...' : `${importPreview.length}개 등록하기`}
+                </button>
+                <button
+                  onClick={() => setImportPreview([])}
+                  className="px-4 py-2 border border-gray-200 text-sm text-gray-500 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 차량 카드 그리드 */}
       {loading ? (
