@@ -35,7 +35,7 @@ export default async function DashboardPage() {
 
   const { data: vehicles } = await supabase
     .from('vehicles')
-    .select('id, name, license_plate, status, vehicle_group:vehicle_groups(name)')
+    .select('id, name, license_plate, capacity, status, vehicle_group:vehicle_groups(name)')
     .order('name')
     .limit(8);
 
@@ -175,7 +175,11 @@ export default async function DashboardPage() {
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${VEHICLE_DOT[v.status] ?? 'bg-gray-300'}`} />
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-gray-800 truncate">{v.name}</div>
-                    <div className="text-xs text-gray-400">{v.vehicle_group?.name ?? '-'}</div>
+                    <div className="text-xs text-gray-400 flex items-center gap-1.5">
+                      <span>{v.vehicle_group?.name ?? '-'}</span>
+                      {v.license_plate && <><span className="text-gray-300">·</span><span>{v.license_plate}</span></>}
+                      {v.capacity && <><span className="text-gray-300">·</span><span>{v.capacity}명</span></>}
+                    </div>
                   </div>
                 </div>
                 <span className={`text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ml-2 flex-shrink-0 ${VEHICLE_STATUS_COLORS[v.status]}`}>
