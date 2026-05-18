@@ -658,58 +658,75 @@ function UtilizationTab({ period }: { period: PeriodState }) {
   const avgRate = monthly.length > 0 ? Math.round(monthly.reduce((s: number, m: any) => s + m.rate, 0) / monthly.length) : 0;
   const maxUsed = Math.max(...vehicles.map((v: any) => v.count), 1);
 
+  const usedCount   = vehicles.filter((v: any) => v.count > 0).length;
+  const unusedCount = vehicles.filter((v: any) => v.count === 0).length;
+
   return (
-    <div className="space-y-5">
-      <div className="flex justify-end"><DownloadBtn onClick={handleDownload} /></div>
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard label="평균 가동률"  value={`${avgRate}%`}
-          color={avgRate >= 60 ? 'text-green-600' : 'text-orange-500'} />
-        <StatCard label="운행 차량 수" value={vehicles.filter((v: any) => v.count > 0).length}
-          sub={`전체 ${vehicles.length}대`} />
-        <StatCard label="미사용 차량"  value={vehicles.filter((v: any) => v.count === 0).length}
-          color="text-gray-400" sub="기간 내 운행 없음" />
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionTitle>월별 가동률 추이</SectionTitle>
-        <ResponsiveContainer width="100%" height={260}>
-          <LineChart data={monthly}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-            <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-            <YAxis unit="%" domain={[0, 100]} tick={{ fontSize: 12 }} />
-            <Tooltip formatter={(v: any) => `${v}%`} />
-            <Legend />
-            <Line type="monotone" dataKey="rate" name="가동률" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionTitle>차량별 운행 건수 (기간 합계)</SectionTitle>
-        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-          {vehicles.map((v: any, i: number) => (
-            <div key={v.id} className="flex items-center gap-3">
-              <span className="text-xs text-gray-400 w-5 text-right">{i + 1}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-sm font-medium text-gray-800 truncate">{v.name}</span>
-                  <span className="text-xs text-gray-400 font-mono ml-2 flex-shrink-0">{v.license_plate}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-gray-100 rounded-full h-2">
-                    <div className="h-2 rounded-full transition-all"
-                      style={{ width: `${(v.count / maxUsed) * 100}%`, backgroundColor: v.count === 0 ? '#e5e7eb' : COLORS[i % COLORS.length] }} />
-                  </div>
-                  <span className="text-xs font-semibold text-gray-600 w-8 text-right">{v.count}건</span>
-                </div>
+    <div className="space-y-4">
+      {/* 요약 + 다운로드 한 줄 */}
+      <div className="flex items-center gap-3">
+        {[
+          { label: '평균 가동률',  value: `${avgRate}%`, color: avgRate >= 60 ? 'text-green-600' : 'text-orange-500', dot: avgRate >= 60 ? 'bg-green-500' : 'bg-orange-400' },
+          { label: '운행 차량',    value: `${usedCount}대`,   color: 'text-blue-600',  dot: 'bg-blue-500',  sub: `전체 ${vehicles.length}대` },
+          { label: '미사용 차량',  value: `${unusedCount}대`, color: 'text-gray-400',  dot: 'bg-gray-300',  sub: '기간 내 운행 없음' },
+        ].map(c => (
+          <div key={c.label} className="flex-1 flex items-center justify-between bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${c.dot}`} />
+              <div>
+                <p className="text-xs text-gray-500">{c.label}</p>
+                {c.sub && <p className="text-[11px] text-gray-400">{c.sub}</p>}
               </div>
             </div>
-          ))}
+            <span className={`text-xl font-bold ${c.color}`}>{c.value}</span>
+          </div>
+        ))}
+        <DownloadBtn onClick={handleDownload} />
+      </div>
+
+      {/* 차트(좌) + 차량별 바 리스트(우) */}
+      <div className="grid grid-cols-5 gap-4">
+        <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <SectionTitle>월별 가동률 추이</SectionTitle>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={monthly}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+              <YAxis unit="%" domain={[0, 100]} tick={{ fontSize: 12 }} width={36} />
+              <Tooltip formatter={(v: any) => `${v}%`} />
+              <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+              <Line type="monotone" dataKey="rate" name="가동률" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="col-span-3 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <SectionTitle>차량별 운행 건수 (기간 합계)</SectionTitle>
+          <div className="space-y-1.5 overflow-y-auto pr-1" style={{ maxHeight: 300 }}>
+            {vehicles.map((v: any, i: number) => (
+              <div key={v.id} className="flex items-center gap-2">
+                <span className="text-xs text-gray-400 w-4 text-right flex-shrink-0">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-xs font-medium text-gray-700 truncate">{v.name}</span>
+                    <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                      <span className="text-[11px] text-gray-400 font-mono">{v.license_plate}</span>
+                      <span className="text-xs font-semibold text-blue-600 w-8 text-right">{v.count}건</span>
+                    </div>
+                  </div>
+                  <div className="bg-gray-100 rounded-full h-1.5">
+                    <div className="h-1.5 rounded-full"
+                      style={{ width: `${(v.count / maxUsed) * 100}%`, backgroundColor: v.count === 0 ? '#e5e7eb' : COLORS[i % COLORS.length] }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* 상세 테이블 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      {/* 상세 테이블 (스크롤) */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <SectionTitle>차량별 상세 운행 현황</SectionTitle>
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[500px]">
