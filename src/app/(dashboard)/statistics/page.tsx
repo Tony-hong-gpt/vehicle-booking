@@ -61,10 +61,35 @@ function formatDate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+const DAY_KO = ['일','월','화','수','목','금','토'];
+
+function getWeekDates(weekValue: string): { from: Date; to: Date } {
+  const [yearStr, weekStr] = weekValue.split('-W');
+  const year = parseInt(yearStr);
+  const week = parseInt(weekStr);
+  const jan4 = new Date(year, 0, 4);
+  const dow  = jan4.getDay() || 7;
+  const weekOne = new Date(jan4.getTime() - (dow - 1) * 86400000);
+  const from = new Date(weekOne.getTime() + (week - 1) * 7 * 86400000);
+  const to   = new Date(from.getTime() + 6 * 86400000);
+  return { from, to };
+}
+
+function getISOWeekString(date: Date): string {
+  const tmp = new Date(date.valueOf());
+  tmp.setHours(0, 0, 0, 0);
+  tmp.setDate(tmp.getDate() + 3 - ((tmp.getDay() + 6) % 7));
+  const week1 = new Date(tmp.getFullYear(), 0, 4);
+  const weekNum = 1 + Math.round(((tmp.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+  return `${tmp.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+}
+
 function periodLabel(p: PeriodState): string {
   if (p.mode === 'week') {
     const [y, w] = p.value.split('-W');
-    return `${y}년 ${w}주차`;
+    const { from, to } = getWeekDates(p.value);
+    const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}(${DAY_KO[d.getDay()]})`;
+    return `${y}년 ${parseInt(w)}주차 · ${fmt(from)}~${fmt(to)}`;
   }
   if (p.mode === 'month') {
     const [y, m] = p.value.split('-');
@@ -180,15 +205,6 @@ function PeriodSelector({ period, onChange }: { period: PeriodState; onChange: (
     onChange({ mode, value: defaultValues[mode] });
   }
 
-  function getISOWeekString(date: Date): string {
-    const tmp = new Date(date.valueOf());
-    tmp.setHours(0, 0, 0, 0);
-    tmp.setDate(tmp.getDate() + 3 - ((tmp.getDay() + 6) % 7));
-    const week1 = new Date(tmp.getFullYear(), 0, 4);
-    const weekNum = 1 + Math.round(((tmp.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
-    return `${tmp.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-  }
-
   const yearOptions = Array.from({ length: 5 }, (_, i) => String(new Date().getFullYear() - 2 + i));
 
   return (
@@ -214,11 +230,27 @@ function PeriodSelector({ period, onChange }: { period: PeriodState; onChange: (
       </button>
 
       {/* 날짜 입력 */}
-      {period.mode === 'week' && (
-        <input type="week" value={period.value}
-          onChange={e => e.target.value && onChange({ mode: 'week', value: e.target.value })}
-          className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
-      )}
+      {period.mode === 'week' && (() => {
+        const { from, to } = getWeekDates(period.value);
+        const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}(${DAY_KO[d.getDay()]})`;
+        const [y, w] = period.value.split('-W');
+        return (
+          <label className="relative flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5 bg-white cursor-pointer hover:bg-gray-50 transition-colors">
+            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span className="text-sm text-gray-700 whitespace-nowrap">
+              {y}년 {parseInt(w)}주차&nbsp;&nbsp;
+              <span className="text-gray-500">{fmt(from)} ~ {fmt(to)}</span>
+            </span>
+            <input type="date"
+              className="absolute inset-0 opacity-0 w-full cursor-pointer"
+              onChange={e => {
+                if (e.target.value) onChange({ mode: 'week', value: getISOWeekString(new Date(e.target.value + 'T12:00:00')) });
+              }} />
+          </label>
+        );
+      })()}
       {period.mode === 'month' && (
         <input type="month" value={period.value}
           onChange={e => e.target.value && onChange({ mode: 'month', value: e.target.value })}
@@ -239,7 +271,10 @@ function PeriodSelector({ period, onChange }: { period: PeriodState; onChange: (
         </svg>
       </button>
 
-      <span className="text-sm font-semibold text-gray-700 min-w-[100px]">{periodLabel(period)}</span>
+      {/* 월간/연간은 별도 라벨 */}
+      {period.mode !== 'week' && (
+        <span className="text-sm font-semibold text-gray-700">{periodLabel(period)}</span>
+      )}
     </div>
   );
 }
