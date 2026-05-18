@@ -1,33 +1,32 @@
 import { createAdminClient } from '@/lib/server/supabase';
 import { getCurrentUser, createUnauthorizedResponse, createErrorResponse } from '@/lib/server/auth';
 import {
-  format, subDays, subMonths, subYears,
-  startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear,
+  format, subDays,
+  startOfWeek, endOfWeek, startOfMonth, endOfMonth,
   eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval,
+  parseISO,
 } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
-// period: 'week' | 'month' | 'year'
-function getPeriodRange(period: string, now: Date) {
-  switch (period) {
-    case 'week':
-      return { from: startOfWeek(now, { weekStartsOn: 1 }), to: endOfWeek(now, { weekStartsOn: 1 }) };
-    case 'year':
-      return { from: startOfYear(now), to: endOfYear(now) };
-    case 'month':
-    default:
-      return { from: startOfMonth(now), to: endOfMonth(now) };
+function parseDateRange(searchParams: URLSearchParams, now: Date) {
+  const fromParam = searchParams.get('from');
+  const toParam   = searchParams.get('to');
+
+  if (fromParam && toParam) {
+    const from = parseISO(fromParam);
+    const to   = new Date(parseISO(toParam).getTime() + 86399999); // end of day
+    return { from, to };
   }
+
+  // Default: current month
+  return { from: startOfMonth(now), to: endOfMonth(now) };
 }
 
-// 이전 동일 기간 범위
-function getPrevPeriodRange(period: string, now: Date) {
-  switch (period) {
-    case 'week':  return getPeriodRange('week', subDays(now, 7));
-    case 'year':  return getPeriodRange('year', subYears(now, 1));
-    case 'month':
-    default:      return getPeriodRange('month', subMonths(now, 1));
-  }
+function getPrevRange(from: Date, to: Date) {
+  const duration = to.getTime() - from.getTime();
+  const prevTo   = new Date(from.getTime() - 1);
+  const prevFrom = new Date(prevTo.getTime() - duration);
+  return { prevFrom, prevTo };
 }
 
 export async function GET(request: Request) {
@@ -36,30 +35,37 @@ export async function GET(request: Request) {
     if (!user || user.role !== 'admin') return createUnauthorizedResponse();
 
     const { searchParams } = new URL(request.url);
-    const type   = searchParams.get('type')   || 'overview';
-    const period = searchParams.get('period') || 'month'; // week | month | year
-    // 다른 탭용 months 파라미터 (하위 호환)
-    const months = parseInt(searchParams.get('months') || '6');
+    const type        = searchParams.get('type') || 'overview';
+    const granularity = searchParams.get('granularity') || 'week'; // day | week | month
+    const now         = new Date();
 
     const supabase = createAdminClient();
-    const now = new Date();
+    const { from, to } = parseDateRange(searchParams, now);
+    const { prevFrom, prevTo } = getPrevRange(from, to);
 
-    // ── 1. 개요 (통계 대시보드) ───────────────────────────────────────
+    const fromISO    = from.toISOString();
+    const toISO      = to.toISOString();
+    const prevFromISO = prevFrom.toISOString();
+    const prevToISO   = prevTo.toISOString();
+
+    // ── 1. 개요 ────────────────────────────────────────────────────────
     if (type === 'overview') {
-      const { from, to } = getPeriodRange(period, now);
-      const { from: prevFrom, to: prevTo } = getPrevPeriodRange(period, now);
-
-      const fromISO    = from.toISOString();
-      const toISO      = to.toISOString();
-      const prevFromISO = prevFrom.toISOString();
-      const prevToISO   = prevTo.toISOString();
-
-      const [vehiclesRes, reqCurrRes, reqPrevRes, dispCurrRes, dispPrevRes] = await Promise.all([
+      const [vehiclesRes, reqCurrRes, reqPrevRes, dispCurrRes, dispPrevRes, deptReqRes, purposeReqRes] = await Promise.all([
         supabase.from('vehicles').select('id, status'),
         supabase.from('requests').select('id, status, created_at').gte('created_at', fromISO).lte('created_at', toISO),
-        supabase.from('requests').select('id, status, created_at').gte('created_at', prevFromISO).lte('created_at', prevToISO),
+        supabase.from('requests').select('id, status').gte('created_at', prevFromISO).lte('created_at', prevToISO),
         supabase.from('dispatches').select('id, status, vehicle_id, scheduled_start').gte('scheduled_start', fromISO).lte('scheduled_start', toISO),
         supabase.from('dispatches').select('id, status').gte('scheduled_start', prevFromISO).lte('scheduled_start', prevToISO),
+        // 부서 요약용
+        supabase.from('requests')
+          .select('department:departments(name)')
+          .gte('created_at', fromISO).lte('created_at', toISO)
+          .in('status', ['dispatched','in_use','returned']),
+        // 사용목적 요약용
+        supabase.from('requests')
+          .select('purpose:purposes(name)')
+          .gte('created_at', fromISO).lte('created_at', toISO)
+          .in('status', ['dispatched','in_use','returned']),
       ]);
 
       const vehicles  = vehiclesRes.data  || [];
@@ -67,40 +73,40 @@ export async function GET(request: Request) {
       const reqPrev   = reqPrevRes.data   || [];
       const dispCurr  = dispCurrRes.data  || [];
       const dispPrev  = dispPrevRes.data  || [];
+      const deptReqs  = deptReqRes.data   || [];
+      const purposeReqs = purposeReqRes.data || [];
 
-      // 현재 기간 집계
-      const totalReqs      = reqCurr.length;
-      const approvedReqs   = reqCurr.filter(r => ['dispatched','in_use','returned'].includes(r.status)).length;
-      const cancelledReqs  = reqCurr.filter(r => r.status === 'cancelled').length;
-      const pendingReqs    = reqCurr.filter(r => ['pending','upper_approved','approved'].includes(r.status)).length;
-      const approvalRate   = totalReqs > 0 ? Math.round((approvedReqs / (totalReqs - pendingReqs || 1)) * 100) : 0;
+      // KPI
+      const totalReqs     = reqCurr.length;
+      const approvedReqs  = reqCurr.filter(r => ['dispatched','in_use','returned'].includes(r.status)).length;
+      const cancelledReqs = reqCurr.filter(r => r.status === 'cancelled').length;
+      const pendingReqs   = reqCurr.filter(r => ['pending','upper_approved','approved'].includes(r.status)).length;
+      const decidedReqs   = totalReqs - pendingReqs;
+      const approvalRate  = decidedReqs > 0 ? Math.round((approvedReqs / decidedReqs) * 100) : 0;
 
-      const completedDisp  = dispCurr.filter(d => d.status === 'completed').length;
+      const completedDisp  = dispCurr.filter((d: any) => d.status === 'completed').length;
+      const scheduledDisp  = dispCurr.filter((d: any) => d.status === 'scheduled').length;
       const totalDisp      = dispCurr.length;
       const usedVehicleIds = new Set(dispCurr.map((d: any) => d.vehicle_id).filter(Boolean));
-      const activeVehicles = vehicles.filter(v => v.status !== 'inactive').length;
+      const activeVehicles = vehicles.filter((v: any) => v.status !== 'inactive').length;
       const utilizationRate = activeVehicles > 0 ? Math.round((usedVehicleIds.size / activeVehicles) * 100) : 0;
 
-      // 전기간 대비 증감
-      const prevTotalReqs = reqPrev.length;
+      const prevTotalReqs     = reqPrev.length;
       const prevCompletedDisp = dispPrev.filter((d: any) => d.status === 'completed').length;
+      const diff = (curr: number, prev: number) => prev === 0 ? null : Math.round(((curr - prev) / prev) * 100);
 
-      const diff = (curr: number, prev: number) =>
-        prev === 0 ? null : Math.round(((curr - prev) / prev) * 100);
-
-      // 기간 내 일별/주별/월별 시계열 데이터
+      // 시계열
       let timeSeries: any[] = [];
-      if (period === 'week') {
+      if (granularity === 'day') {
         timeSeries = eachDayOfInterval({ start: from, end: to }).map(day => {
           const dayStr = format(day, 'yyyy-MM-dd');
           return {
             label: format(day, 'EEE', { locale: ko }),
             requests:   reqCurr.filter(r => r.created_at?.startsWith(dayStr)).length,
-            dispatches: dispCurr.filter(d => d.scheduled_start?.startsWith(dayStr)).length,
+            dispatches: dispCurr.filter((d: any) => d.scheduled_start?.startsWith(dayStr)).length,
           };
         });
-      } else if (period === 'month') {
-        // 주별 집계
+      } else if (granularity === 'week') {
         const weeks = eachWeekOfInterval({ start: from, end: to }, { weekStartsOn: 1 });
         timeSeries = weeks.map((weekStart, i) => {
           const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
@@ -109,70 +115,72 @@ export async function GET(request: Request) {
           return {
             label: `${i + 1}주`,
             requests:   reqCurr.filter(r => r.created_at >= wFrom && r.created_at <= wTo).length,
-            dispatches: dispCurr.filter(d => d.scheduled_start >= wFrom && d.scheduled_start <= wTo).length,
+            dispatches: dispCurr.filter((d: any) => d.scheduled_start >= wFrom && d.scheduled_start <= wTo).length,
           };
         });
       } else {
-        // 연간: 월별
         timeSeries = eachMonthOfInterval({ start: from, end: to }).map(monthStart => {
-          const mEnd = endOfMonth(monthStart).toISOString();
           const mFrom = monthStart.toISOString();
+          const mEnd  = endOfMonth(monthStart).toISOString();
           return {
             label: format(monthStart, 'M월'),
             requests:   reqCurr.filter(r => r.created_at >= mFrom && r.created_at <= mEnd).length,
-            dispatches: dispCurr.filter(d => d.scheduled_start >= mFrom && d.scheduled_start <= mEnd).length,
+            dispatches: dispCurr.filter((d: any) => d.scheduled_start >= mFrom && d.scheduled_start <= mEnd).length,
           };
         });
       }
 
+      // 부서 요약 (상위 5)
+      const deptMap: Record<string, number> = {};
+      deptReqs.forEach((r: any) => {
+        const name = r.department?.name || '미지정';
+        deptMap[name] = (deptMap[name] || 0) + 1;
+      });
+      const topDepts = Object.entries(deptMap).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({ name, count }));
+
+      // 사용목적 요약 (상위 5)
+      const purposeMap: Record<string, number> = {};
+      purposeReqs.forEach((r: any) => {
+        const name = r.purpose?.name || '미지정';
+        purposeMap[name] = (purposeMap[name] || 0) + 1;
+      });
+      const topPurposes = Object.entries(purposeMap).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({ name, count }));
+
       return Response.json({
         data: {
-          period_label: period === 'week' ? '이번 주' : period === 'month' ? '이번 달' : '올해',
           kpi: {
             total_requests:   { value: totalReqs,       diff: diff(totalReqs, prevTotalReqs) },
             approval_rate:    { value: approvalRate,     unit: '%' },
             completed_trips:  { value: completedDisp,   diff: diff(completedDisp, prevCompletedDisp) },
             utilization_rate: { value: utilizationRate,  unit: '%' },
           },
-          requests: { total: totalReqs, approved: approvedReqs, cancelled: cancelledReqs, pending: pendingReqs },
-          dispatches: {
-            total:       totalDisp,
-            completed:   completedDisp,
-            scheduled:   dispCurr.filter(d => d.status === 'scheduled').length,
-            in_progress: dispCurr.filter(d => d.status === 'in_progress').length,
-          },
-          vehicles: {
-            total:    activeVehicles,
-            used:     usedVehicleIds.size,
-            unused:   activeVehicles - usedVehicleIds.size,
-          },
+          requests:   { total: totalReqs, approved: approvedReqs, cancelled: cancelledReqs, pending: pendingReqs },
+          dispatches: { total: totalDisp, completed: completedDisp, scheduled: scheduledDisp },
+          vehicles:   { total: activeVehicles, used: usedVehicleIds.size, unused: activeVehicles - usedVehicleIds.size },
           time_series: timeSeries,
+          top_depts:    topDepts,
+          top_purposes: topPurposes,
         },
         error: null,
       });
     }
 
-    // ── 2. 월별 신청/배차 현황 ────────────────────────────────────────
+    // ── 2. 신청/배차 현황 ─────────────────────────────────────────────
     if (type === 'monthly') {
-      // period 기반으로 그룹 단위 결정
-      const periodMonths = period === 'week' ? 1 : period === 'year' ? 12 : 6;
-      const useMonths    = months || periodMonths;
-      const fromDate = startOfMonth(subMonths(now, useMonths - 1)).toISOString();
-
       const [requestsRes, dispatchesRes] = await Promise.all([
-        supabase.from('requests').select('status, created_at').gte('created_at', fromDate),
-        supabase.from('dispatches').select('status, scheduled_start').gte('scheduled_start', fromDate),
+        supabase.from('requests').select('status, created_at').gte('created_at', fromISO).lte('created_at', toISO),
+        supabase.from('dispatches').select('status, scheduled_start').gte('scheduled_start', fromISO).lte('scheduled_start', toISO),
       ]);
 
       const requests   = requestsRes.data   || [];
       const dispatches = dispatchesRes.data || [];
 
+      // 월별 버킷
       const monthly: Record<string, any> = {};
-      for (let i = useMonths - 1; i >= 0; i--) {
-        const d   = subMonths(now, i);
-        const key = format(d, 'yyyy-MM');
-        monthly[key] = { month: format(d, 'M월'), requests: 0, approved: 0, cancelled: 0, dispatches: 0 };
-      }
+      eachMonthOfInterval({ start: from, end: to }).forEach(monthStart => {
+        const key = format(monthStart, 'yyyy-MM');
+        monthly[key] = { month: format(monthStart, 'M월'), requests: 0, approved: 0, cancelled: 0, dispatches: 0 };
+      });
 
       requests.forEach((r: any) => {
         const key = r.created_at?.slice(0, 7);
@@ -181,30 +189,38 @@ export async function GET(request: Request) {
         if (['dispatched','in_use','returned'].includes(r.status)) monthly[key].approved++;
         if (r.status === 'cancelled') monthly[key].cancelled++;
       });
-
       dispatches.forEach((d: any) => {
         const key = d.scheduled_start?.slice(0, 7);
         if (monthly[key]) monthly[key].dispatches++;
       });
 
-      return Response.json({ data: Object.values(monthly), error: null });
+      // 전체 집계
+      const allReqs = {
+        total:     requests.length,
+        approved:  requests.filter((r: any) => ['dispatched','in_use','returned'].includes(r.status)).length,
+        cancelled: requests.filter((r: any) => r.status === 'cancelled').length,
+        pending:   requests.filter((r: any) => ['pending','upper_approved','approved'].includes(r.status)).length,
+      };
+      const allDisp = {
+        total:     dispatches.length,
+        completed: dispatches.filter((d: any) => d.status === 'completed').length,
+        scheduled: dispatches.filter((d: any) => d.status === 'scheduled').length,
+        in_progress: dispatches.filter((d: any) => d.status === 'in_progress').length,
+      };
+
+      return Response.json({ data: { monthly: Object.values(monthly), summary_req: allReqs, summary_disp: allDisp }, error: null });
     }
 
     // ── 3. 차량 가동률 ────────────────────────────────────────────────
     if (type === 'utilization') {
-      const periodMonths = period === 'year' ? 12 : period === 'week' ? 1 : 6;
-      const useMonths    = months || periodMonths;
-      const fromDate     = startOfMonth(subMonths(now, useMonths - 1)).toISOString();
-      const toDate       = endOfMonth(now).toISOString();
-
       const [vehiclesRes, dispatchesRes] = await Promise.all([
         supabase.from('vehicles')
           .select('id, name, model, license_plate, vehicle_group:vehicle_groups(name)')
           .neq('status', 'inactive'),
         supabase.from('dispatches')
           .select('vehicle_id, scheduled_start, status')
-          .gte('scheduled_start', fromDate)
-          .lte('scheduled_start', toDate)
+          .gte('scheduled_start', fromISO)
+          .lte('scheduled_start', toISO)
           .neq('status', 'cancelled'),
       ]);
 
@@ -217,47 +233,40 @@ export async function GET(request: Request) {
       });
 
       const monthlyUtil: Record<string, any> = {};
-      for (let i = useMonths - 1; i >= 0; i--) {
-        const d      = subMonths(now, i);
-        const key    = format(d, 'yyyy-MM');
-        const mStart = startOfMonth(d).toISOString();
-        const mEnd   = endOfMonth(d).toISOString();
-        const mDisp  = dispatches.filter((d: any) => d.scheduled_start >= mStart && d.scheduled_start <= mEnd);
-        const usedVehicles = new Set(mDisp.map((d: any) => d.vehicle_id).filter(Boolean)).size;
+      eachMonthOfInterval({ start: from, end: to }).forEach(monthStart => {
+        const key   = format(monthStart, 'yyyy-MM');
+        const mFrom = monthStart.toISOString();
+        const mEnd  = endOfMonth(monthStart).toISOString();
+        const mDisp = dispatches.filter((d: any) => d.scheduled_start >= mFrom && d.scheduled_start <= mEnd);
+        const used  = new Set(mDisp.map((d: any) => d.vehicle_id).filter(Boolean)).size;
         monthlyUtil[key] = {
-          month: format(d, 'M월'),
-          used:  usedVehicles,
+          month: format(monthStart, 'M월'),
+          used,
           total: vehicles.length,
-          rate:  vehicles.length > 0 ? Math.round((usedVehicles / vehicles.length) * 100) : 0,
+          rate:  vehicles.length > 0 ? Math.round((used / vehicles.length) * 100) : 0,
         };
-      }
+      });
 
       const vehicleUsage = vehicles
         .map((v: any) => ({
           id: v.id,
           name: [v.name, v.model].filter(Boolean).join(' '),
           license_plate: v.license_plate,
-          group: v.vehicle_group?.name || '-',
+          group: (v.vehicle_group as any)?.name || '-',
           count: usageMap[v.id] || 0,
         }))
         .sort((a: any, b: any) => b.count - a.count);
 
-      return Response.json({
-        data: { monthly: Object.values(monthlyUtil), vehicles: vehicleUsage },
-        error: null,
-      });
+      return Response.json({ data: { monthly: Object.values(monthlyUtil), vehicles: vehicleUsage }, error: null });
     }
 
     // ── 4. 부서별 사용 현황 ───────────────────────────────────────────
     if (type === 'departments') {
-      const periodMonths = period === 'year' ? 12 : period === 'week' ? 1 : 6;
-      const useMonths    = months || periodMonths;
-      const fromDate     = startOfMonth(subMonths(now, useMonths - 1)).toISOString();
-
       const requestsRes = await supabase
         .from('requests')
-        .select('department:departments(name), start_datetime')
-        .gte('created_at', fromDate)
+        .select('department:departments(name), start_datetime, status')
+        .gte('created_at', fromISO)
+        .lte('created_at', toISO)
         .in('status', ['dispatched','in_use','returned']);
 
       const requests = requestsRes.data || [];
@@ -271,13 +280,12 @@ export async function GET(request: Request) {
       const topDepts = Object.entries(deptMap).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([n]) => n);
 
       const monthlyDept: Record<string, any> = {};
-      for (let i = useMonths - 1; i >= 0; i--) {
-        const d   = subMonths(now, i);
-        const key = format(d, 'yyyy-MM');
-        const row: Record<string, any> = { month: format(d, 'M월') };
+      eachMonthOfInterval({ start: from, end: to }).forEach(monthStart => {
+        const key: string = format(monthStart, 'yyyy-MM');
+        const row: Record<string, any> = { month: format(monthStart, 'M월') };
         topDepts.forEach(dept => { row[dept] = 0; });
         monthlyDept[key] = row;
-      }
+      });
 
       requests.forEach((r: any) => {
         if (!r.start_datetime) return;
@@ -298,14 +306,11 @@ export async function GET(request: Request) {
 
     // ── 5. 목적지/사용목적 분석 ───────────────────────────────────────
     if (type === 'purposes') {
-      const periodMonths = period === 'year' ? 12 : period === 'week' ? 1 : 6;
-      const useMonths    = months || periodMonths;
-      const fromDate     = startOfMonth(subMonths(now, useMonths - 1)).toISOString();
-
       const requestsRes = await supabase
         .from('requests')
         .select('purpose:purposes(name), destination, start_datetime')
-        .gte('created_at', fromDate)
+        .gte('created_at', fromISO)
+        .lte('created_at', toISO)
         .in('status', ['dispatched','in_use','returned']);
 
       const requests = requestsRes.data || [];
@@ -329,10 +334,9 @@ export async function GET(request: Request) {
       });
 
       const monthlyCount: Record<string, any> = {};
-      for (let i = useMonths - 1; i >= 0; i--) {
-        const d = subMonths(now, i);
-        monthlyCount[format(d, 'yyyy-MM')] = { month: format(d, 'M월'), count: 0 };
-      }
+      eachMonthOfInterval({ start: from, end: to }).forEach(monthStart => {
+        monthlyCount[format(monthStart, 'yyyy-MM')] = { month: format(monthStart, 'M월'), count: 0 };
+      });
       requests.forEach((r: any) => {
         const key = r.start_datetime?.slice(0, 7);
         if (monthlyCount[key]) monthlyCount[key].count++;
