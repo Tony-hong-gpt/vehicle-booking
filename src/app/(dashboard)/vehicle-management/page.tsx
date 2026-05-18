@@ -201,7 +201,7 @@ export default function VehicleManagementPage() {
 
   function downloadTemplate() {
     const ws = XLSX.utils.aoa_to_sheet([
-      ['차량군명', '차량명', '차량번호', '모델명', '연식', '정원(명)', '연료', '현재주행거리(km)'],
+      ['차량군명', '제조사', '차량번호', '모델명', '연식', '정원(명)', '연료', '현재주행거리(km)'],
       ['승합차량', '현대 스타렉스', '서울12가1234', '스타렉스 어반', 2021, 12, '디젤', 78400],
     ]);
     ws['G1'] = { v: '연료 (가솔린/디젤/전기/하이브리드 중 하나)', t: 's' };
@@ -222,7 +222,7 @@ export default function VehicleManagementPage() {
     };
     const rows = allVehicles.map(v => ({
       차량군: v.vehicle_group?.name || '',
-      차량명: v.name,
+      제조사: v.name,
       차량번호: v.license_plate,
       모델명: v.model || '',
       연식: v.year || '',
@@ -256,14 +256,14 @@ export default function VehicleManagementPage() {
         const rows = XLSX.utils.sheet_to_json<any>(ws);
         const errors: string[] = [];
         const parsed = rows
-          .filter(r => r['차량명']?.toString().trim())
+          .filter(r => r['제조사']?.toString().trim())
           .map((r, i) => {
             const groupName = (r['차량군명'] || '').toString().trim();
             const group = groups.find(g => g.name === groupName);
             if (!group) errors.push(`${i + 1}행: 차량군 "${groupName}"을 찾을 수 없습니다`);
             const fuelKo = (r['연료'] || '').toString().trim();
             return {
-              name: (r['차량명'] || '').toString().trim(),
+              name: (r['제조사'] || '').toString().trim(),
               license_plate: (r['차량번호'] || '').toString().trim(),
               vehicle_group_id: group?.id || '',
               group_name: groupName,
@@ -415,7 +415,7 @@ export default function VehicleManagementPage() {
         </select>
       </div>
       {([
-        { label: '차량명',    key: 'name',          required: true,  placeholder: '예: 기아 K5' },
+        { label: '제조사',    key: 'name',          required: true,  placeholder: '예: 기아 K5' },
         { label: '차량번호',  key: 'license_plate', required: true,  placeholder: '예: 서울12가3456' },
         { label: '모델명',    key: 'model',          placeholder: '예: K5 2.0 LPi' },
         { label: '연식',      key: 'year',           type: 'number',  placeholder: '예: 2022' },
@@ -677,7 +677,7 @@ export default function VehicleManagementPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/70">
-              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">차량명</th>
+              <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">제조사</th>
               <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">차량번호</th>
               <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">차량군</th>
               <th className="text-left px-5 py-3 text-sm font-semibold text-gray-500">연식</th>
