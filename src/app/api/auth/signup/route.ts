@@ -74,6 +74,13 @@ export async function POST(request: Request) {
       return Response.json({ data: null, error: profileError.message }, { status: 500 });
     }
 
+    // 가입 시 선택한 부서를 user_departments 에도 저장
+    if (department_id) {
+      await adminSupabase
+        .from('user_departments')
+        .insert({ user_id: authData.user.id, department_id });
+    }
+
     return Response.json({ data: profile, error: null, message: '가입이 완료되었습니다' }, { status: 201 });
   } catch {
     return Response.json({ data: null, error: '서버 오류가 발생했습니다' }, { status: 500 });
