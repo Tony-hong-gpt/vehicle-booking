@@ -11,7 +11,7 @@ export const signupSchema = z.object({
   name: z.string().min(1, '이름을 입력해주세요'),
   phone: z.string().min(9, '전화번호를 입력해주세요').max(20),
   password: z.string().min(6, '비밀번호는 최소 6자 이상이어야 합니다'),
-  department_id: z.string().min(1).optional(),
+  department_id: z.string().optional().transform(v => v || undefined),
 });
 
 // 사용자

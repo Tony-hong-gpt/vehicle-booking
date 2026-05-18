@@ -158,6 +158,7 @@ export default function SignupPage() {
                 placeholder="최소 6자 이상"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              <p className="text-xs text-gray-400 mt-1">영문, 숫자, 특수문자 조합 6자 이상</p>
             </div>
 
             <div>
