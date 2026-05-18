@@ -795,20 +795,22 @@ function DepartmentsTab({ period }: { period: PeriodState }) {
   const total = ranking.reduce((s: number, d: any) => s + d.count, 0);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex justify-end"><DownloadBtn onClick={handleDownload} /></div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      {/* 순위(좌) + 파이(중) + 월별추이(우) — 한 행 */}
+      <div className="grid grid-cols-9 gap-4">
+        {/* 순위 리스트 */}
+        <div className="col-span-3 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <SectionTitle>부서별 운행 건수 순위</SectionTitle>
-          <div className="space-y-2.5 max-h-96 overflow-y-auto">
+          <div className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 340 }}>
             {ranking.map((d: any, i: number) => (
-              <div key={d.name} className="flex items-center gap-3">
-                <span className={`text-xs font-bold w-5 text-center ${i < 3 ? 'text-blue-600' : 'text-gray-400'}`}>{i + 1}</span>
-                <div className="flex-1">
+              <div key={d.name} className="flex items-center gap-2">
+                <span className={`text-xs font-bold w-4 text-center flex-shrink-0 ${i < 3 ? 'text-blue-600' : 'text-gray-400'}`}>{i + 1}</span>
+                <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center mb-0.5">
-                    <span className="text-sm font-medium text-gray-800">{d.name}</span>
-                    <span className="text-xs text-gray-500">{d.count}건 ({total > 0 ? Math.round(d.count / total * 100) : 0}%)</span>
+                    <span className="text-sm font-medium text-gray-800 truncate">{d.name}</span>
+                    <span className="text-xs text-gray-500 ml-2 flex-shrink-0">{d.count}건 ({total > 0 ? Math.round(d.count / total * 100) : 0}%)</span>
                   </div>
                   <div className="bg-gray-100 rounded-full h-1.5">
                     <div className="h-1.5 rounded-full" style={{ width: `${ranking[0].count > 0 ? (d.count / ranking[0].count) * 100 : 0}%`, backgroundColor: COLORS[i % COLORS.length] }} />
@@ -819,49 +821,50 @@ function DepartmentsTab({ period }: { period: PeriodState }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        {/* 파이차트 */}
+        <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <SectionTitle>부서별 비중</SectionTitle>
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={340}>
             <PieChart>
-              <Pie data={ranking.slice(0, 8)} cx="50%" cy="45%" innerRadius={50} outerRadius={85}
+              <Pie data={ranking.slice(0, 8)} cx="50%" cy="38%" innerRadius={45} outerRadius={80}
                 dataKey="count" nameKey="name" labelLine={false}>
                 {ranking.slice(0, 8).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
               <Tooltip formatter={(v: any, name: any) => [`${v}건`, name]} />
-              <Legend iconType="circle" iconSize={10}
+              <Legend iconType="circle" iconSize={9}
                 formatter={(value) => <span className="text-xs text-gray-600">{value}</span>} />
             </PieChart>
           </ResponsiveContainer>
         </div>
+
+        {/* 월별 추이 */}
+        <div className="col-span-4 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <SectionTitle>월별 부서 운행 추이 (상위 5개)</SectionTitle>
+          <ResponsiveContainer width="100%" height={340}>
+            <BarChart data={monthly} barGap={2}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
+              <Tooltip />
+              <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+              {top_depts.slice(0, 5).map((dept: string, i: number) => (
+                <Bar key={dept} dataKey={dept} name={dept} fill={COLORS[i % COLORS.length]} radius={[3,3,0,0]} stackId="a" />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionTitle>월별 부서 운행 추이 (상위 5개)</SectionTitle>
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={monthly} barGap={2}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-            <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-            <Tooltip />
-            <Legend />
-            {top_depts.slice(0, 5).map((dept: string, i: number) => (
-              <Bar key={dept} dataKey={dept} name={dept} fill={COLORS[i % COLORS.length]} radius={[3,3,0,0]} stackId="a" />
-            ))}
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* 상세 테이블 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      {/* 상세 테이블 (스크롤) */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <SectionTitle>부서별 상세 현황</SectionTitle>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 whitespace-nowrap">순위</th>
-                <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 whitespace-nowrap">부서명</th>
-                <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 whitespace-nowrap">운행건수</th>
-                <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 whitespace-nowrap">비율</th>
+                {['순위','부서명','운행건수','비율'].map(h => (
+                  <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -924,32 +927,61 @@ function PurposesTab({ period }: { period: PeriodState }) {
   const totalPurpose = purposes.reduce((s: number, d: any) => s + d.count, 0);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex justify-end"><DownloadBtn onClick={handleDownload} /></div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      {/* Row 1: 파이(좌) + 목적지 TOP10(중) + 요일별(우) */}
+      <div className="grid grid-cols-9 gap-4">
+        {/* 사용목적 파이 */}
+        <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <SectionTitle>사용목적별 비중</SectionTitle>
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-              <Pie data={purposes} cx="50%" cy="42%" innerRadius={55} outerRadius={85}
+              <Pie data={purposes} cx="50%" cy="38%" innerRadius={45} outerRadius={75}
                 dataKey="count" nameKey="name" labelLine={false}>
                 {purposes.map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
               <Tooltip formatter={(v: any, n: any) => [`${v}건`, n]} />
-              <Legend iconType="circle" iconSize={10}
+              <Legend iconType="circle" iconSize={9}
                 formatter={(value) => <span className="text-xs text-gray-600">{value}</span>} />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        {/* 목적지 TOP 10 */}
+        <div className="col-span-3 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <SectionTitle>주요 목적지 TOP 10</SectionTitle>
+          {destinations.length === 0 ? (
+            <p className="text-sm text-gray-400 py-6 text-center">데이터가 없습니다</p>
+          ) : (
+            <div className="space-y-1.5 overflow-y-auto pr-1" style={{ maxHeight: 300 }}>
+              {destinations.map((d: any, i: number) => (
+                <div key={d.name} className="flex items-center gap-2">
+                  <span className={`text-xs font-bold w-4 text-center flex-shrink-0 ${i < 3 ? 'text-blue-600' : 'text-gray-400'}`}>{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-0.5">
+                      <span className="text-xs font-medium text-gray-700 truncate">{d.name}</span>
+                      <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{d.count}건</span>
+                    </div>
+                    <div className="bg-gray-100 rounded-full h-1.5">
+                      <div className="h-1.5 rounded-full bg-blue-400"
+                        style={{ width: `${(d.count / destinations[0].count) * 100}%` }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 요일별 출발 */}
+        <div className="col-span-4 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <SectionTitle>요일별 출발 건수</SectionTitle>
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart data={by_day}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
               <XAxis dataKey="label" tick={{ fontSize: 13 }} />
-              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
               <Tooltip />
               <Bar dataKey="count" name="출발 건수" radius={[5,5,0,0]}>
                 {by_day.map((_: any, i: number) => <Cell key={i} fill={i === 0 || i === 6 ? '#ef4444' : '#3b82f6'} />)}
@@ -959,70 +991,48 @@ function PurposesTab({ period }: { period: PeriodState }) {
         </div>
       </div>
 
-      {/* 사용목적 상세 테이블 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionTitle>사용목적 상세</SectionTitle>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100">
-                {['순위','사용목적','건수','비율'].map(h => (
-                  <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {purposes.map((d: any, i: number) => (
-                <tr key={d.name} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-2 px-3 text-gray-400 whitespace-nowrap">{i + 1}</td>
-                  <td className="py-2 px-3 font-medium whitespace-nowrap">{d.name}</td>
-                  <td className="py-2 px-3 text-blue-600 font-semibold whitespace-nowrap">{d.count}건</td>
-                  <td className="py-2 px-3 text-gray-500 whitespace-nowrap">
-                    {totalPurpose > 0 ? Math.round(d.count / totalPurpose * 100) : 0}%
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Row 2: 월별 추이(좌) + 사용목적 상세 테이블(우) */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <SectionTitle>월별 운행 건수 추이</SectionTitle>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={monthly}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
+              <Tooltip />
+              <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+              <Line type="monotone" dataKey="count" name="운행 건수" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
-      </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionTitle>주요 목적지 TOP 10</SectionTitle>
-        {destinations.length === 0 ? (
-          <p className="text-sm text-gray-400 py-8 text-center">데이터가 없습니다</p>
-        ) : (
-          <div className="space-y-2">
-            {destinations.map((d: any, i: number) => (
-              <div key={d.name} className="flex items-center gap-3">
-                <span className={`text-xs font-bold w-5 text-center ${i < 3 ? 'text-blue-600' : 'text-gray-400'}`}>{i + 1}</span>
-                <div className="flex-1">
-                  <div className="flex justify-between items-center mb-0.5">
-                    <span className="text-sm text-gray-800 truncate">{d.name}</span>
-                    <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{d.count}건</span>
-                  </div>
-                  <div className="bg-gray-100 rounded-full h-1.5">
-                    <div className="h-1.5 rounded-full bg-blue-400"
-                      style={{ width: `${(d.count / destinations[0].count) * 100}%` }} />
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="col-span-1 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <SectionTitle>사용목적 상세</SectionTitle>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  {['순위','사용목적','건수','비율'].map(h => (
+                    <th key={h} className="text-left py-1.5 px-2 text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {purposes.map((d: any, i: number) => (
+                  <tr key={d.name} className="border-b border-gray-50 hover:bg-gray-50">
+                    <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap text-xs">{i + 1}</td>
+                    <td className="py-1.5 px-2 font-medium whitespace-nowrap text-xs">{d.name}</td>
+                    <td className="py-1.5 px-2 text-blue-600 font-semibold whitespace-nowrap text-xs">{d.count}건</td>
+                    <td className="py-1.5 px-2 text-gray-500 whitespace-nowrap text-xs">
+                      {totalPurpose > 0 ? Math.round(d.count / totalPurpose * 100) : 0}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionTitle>월별 운행 건수 추이</SectionTitle>
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={monthly}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-            <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-            <Tooltip />
-            <Line type="monotone" dataKey="count" name="운행 건수" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4 }} />
-          </LineChart>
-        </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
