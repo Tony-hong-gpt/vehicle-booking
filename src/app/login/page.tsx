@@ -28,7 +28,9 @@ export default function LoginPage() {
       }
       const role = data.data?.role;
       if (role === 'admin') {
-        router.push('/');
+        await fetch('/api/auth/logout', { method: 'POST' });
+        setError('관리자는 관리자 전용 페이지에서 로그인해주세요.');
+        return;
       } else if (role === 'manager') {
         router.push('/m/manager');
       } else {
