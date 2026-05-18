@@ -66,7 +66,7 @@ export async function POST(request: Request) {
         role: 'employee',
         is_active: true,
       })
-      .select('*, department:departments(name)')
+      .select('id, name, email, phone, role, is_active, department_id, employee_no')
       .single();
 
     if (profileError) {
