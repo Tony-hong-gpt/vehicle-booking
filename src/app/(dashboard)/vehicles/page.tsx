@@ -275,9 +275,16 @@ export default function VehiclesPage() {
                 onClick={() => router.push(`/vehicles/${v.id}`)}
                 className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all group">
                 <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-xs text-gray-400 font-medium mb-0.5">{vehicleName(v)}</p>
-                    <h3 className="text-lg font-bold text-gray-900 font-mono tracking-wider group-hover:text-blue-600 transition-colors">{v.license_plate}</h3>
+                  <div className="space-y-1.5">
+                    <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors leading-tight">{vehicleName(v)}</h3>
+                    <span className="inline-flex items-center gap-1.5 bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded-md font-mono tracking-widest shadow-sm">
+                      <svg className="w-3 h-3 opacity-70" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM19 17H5v-5h14v5z"/>
+                        <circle cx="7.5" cy="14.5" r="1.5"/>
+                        <circle cx="16.5" cy="14.5" r="1.5"/>
+                      </svg>
+                      {v.license_plate}
+                    </span>
                   </div>
                   {dateBadge && (
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${dateBadge.badgeColor}`}>
