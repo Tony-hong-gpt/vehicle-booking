@@ -4,6 +4,7 @@ import { REQUEST_STATUS_LABELS, REQUEST_STATUS_COLORS } from '@/lib/constants';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import RequestsExportBtn from '@/components/dashboard/RequestsExportBtn';
 
 export default async function RequestsPage({ searchParams }: { searchParams: Promise<{ status?: string; page?: string }> }) {
   const user = await getCurrentUser();
@@ -53,15 +54,18 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">신청 관리</h1>
           <p className="text-gray-400 mt-1 text-sm">총 <span className="font-semibold text-gray-600">{count ?? 0}건</span></p>
         </div>
-        <Link
-          href="/requests/new"
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-          </svg>
-          신규 신청
-        </Link>
+        <div className="flex items-center gap-2">
+          <RequestsExportBtn />
+          <Link
+            href="/requests/new"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+            </svg>
+            신규 신청
+          </Link>
+        </div>
       </div>
 
       {/* 상태 필터 */}
