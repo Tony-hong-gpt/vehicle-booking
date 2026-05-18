@@ -156,6 +156,14 @@ export default function UsersPage() {
     else fetchAll();
   }
 
+  async function handleDelete(u: UserItem) {
+    if (!confirm(`"${u.name}" 계정을 완전히 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+    const res = await fetch(`/api/users/${u.id}`, { method: 'DELETE' });
+    const json = await res.json();
+    if (json.error) alert(json.error);
+    else fetchAll();
+  }
+
   function downloadTemplate() {
     const ws = XLSX.utils.aoa_to_sheet([
       ['이름', '전화번호', '부서/위원회명', '역할', '초기비밀번호'],
@@ -405,6 +413,14 @@ export default function UsersPage() {
                       >
                         {u.is_active ? '비활성화' : '활성화'}
                       </button>
+                      {!u.is_active && (
+                        <button
+                          onClick={() => handleDelete(u)}
+                          className="text-sm font-medium text-red-500 hover:text-red-700"
+                        >
+                          삭제
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

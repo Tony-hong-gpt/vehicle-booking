@@ -85,9 +85,23 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
 
     const { id } = await params;
     const adminSupabase = createAdminClient();
-    const { error } = await adminSupabase.from('users').update({ is_active: false }).eq('id', id);
-    if (error) return createErrorResponse(error.message);
-    return Response.json({ data: null, error: null, message: '비활성화되었습니다' });
+
+    // 비활성 상태인지 확인
+    const { data: target } = await adminSupabase.from('users').select('is_active').eq('id', id).single();
+    if (!target) return createErrorResponse('사용자를 찾을 수 없습니다', 404);
+    if (target.is_active) {
+      return Response.json({ data: null, error: '활성 사용자는 삭제할 수 없습니다. 먼저 비활성화하세요.' }, { status: 400 });
+    }
+
+    // public.users 삭제 (CASCADE로 user_departments도 삭제됨)
+    const { error: dbError } = await adminSupabase.from('users').delete().eq('id', id);
+    if (dbError) return createErrorResponse(dbError.message);
+
+    // auth.users 삭제
+    const { error: authError } = await adminSupabase.auth.admin.deleteUser(id);
+    if (authError) return createErrorResponse(authError.message);
+
+    return Response.json({ data: null, error: null, message: '삭제되었습니다' });
   } catch {
     return createErrorResponse('서버 오류가 발생했습니다');
   }
