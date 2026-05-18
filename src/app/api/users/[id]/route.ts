@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/server/supabase';
+import { createClient, createAdminClient } from '@/lib/server/supabase';
 import { getCurrentUser, createUnauthorizedResponse, createErrorResponse } from '@/lib/server/auth';
 import { updateUserSchema } from '@/lib/validators';
 
@@ -35,6 +35,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const supabase = await createClient();
     const { data, error } = await supabase.from('users').update(parsed.data).eq('id', id).select('*, department:departments(id, name)').single();
     if (error) return createErrorResponse(error.message);
+
+    // department_id 변경 시 user_departments 도 동기화
+    if ('department_id' in parsed.data) {
+      const adminSupabase = await createAdminClient();
+      await adminSupabase.from('user_departments').delete().eq('user_id', id);
+      if (parsed.data.department_id) {
+        await adminSupabase.from('user_departments').insert({
+          user_id: id,
+          department_id: parsed.data.department_id,
+        });
+      }
+    }
+
     return Response.json({ data, error: null, message: '수정되었습니다' });
   } catch {
     return createErrorResponse('서버 오류가 발생했습니다');
