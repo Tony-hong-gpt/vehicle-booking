@@ -29,7 +29,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 공개 경로
-  const publicPaths = ['/login'];
+  const publicPaths = ['/login', '/signup'];
   const isPublicPath = publicPaths.some(p => pathname.startsWith(p));
 
   // API 경로
