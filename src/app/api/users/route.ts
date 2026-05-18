@@ -1,4 +1,4 @@
-import { createClient, createAdminClient } from '@/lib/server/supabase';
+import { createAdminClient } from '@/lib/server/supabase';
 import { getCurrentUser, createUnauthorizedResponse, createErrorResponse } from '@/lib/server/auth';
 import { createUserSchema, paginationSchema } from '@/lib/validators';
 import { PAGE_SIZE } from '@/lib/constants';
@@ -15,10 +15,10 @@ export async function GET(request: Request) {
       search: searchParams.get('search') || undefined,
     });
 
-    const supabase = await createClient();
-    let query = supabase
+    const adminSupabase = await createAdminClient();
+    let query = adminSupabase
       .from('users')
-      .select('*, department:departments(id, name)', { count: 'exact' });
+      .select('id, name, email, phone, role, is_active, department_id, employee_no, created_at, department:departments(id, name)', { count: 'exact' });
 
     const role = searchParams.get('role');
     if (role) query = query.eq('role', role);
@@ -73,8 +73,7 @@ export async function POST(request: Request) {
     });
     if (authError) return createErrorResponse(authError.message);
 
-    const supabase = await createClient();
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await adminSupabase
       .from('users')
       .insert({
         id: authData.user.id,
@@ -85,7 +84,7 @@ export async function POST(request: Request) {
         department_id: parsed.data.department_id || null,
         role: parsed.data.role,
       })
-      .select('*, department:departments(id, name)')
+      .select('id, name, email, phone, role, is_active, department_id, employee_no')
       .single();
 
     if (profileError) {
