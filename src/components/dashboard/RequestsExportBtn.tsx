@@ -77,7 +77,7 @@ export default function RequestsExportBtn() {
         rows.push([dateLabel, '', '', '', '', '', '', '', '', '', '', '', '']);
 
         for (const req of reqs) {
-          const vehicle = req.dispatches?.[0]?.vehicle;
+          const vehicle = req.dispatch?.vehicle;
           const vehicleLabel = vehicle
             ? [vehicle.name, vehicle.model, vehicle.license_plate ? `(${vehicle.license_plate})` : '']
                 .filter(Boolean).join(' ')

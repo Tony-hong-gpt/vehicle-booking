@@ -23,7 +23,7 @@ export async function GET(request: Request) {
         department:departments(name),
         purpose:purposes(name),
         vehicle_group:vehicle_groups(name),
-        dispatches(vehicle:vehicles(name, model, license_plate))
+        dispatch:dispatches(vehicle:vehicles(name, model, license_plate))
       `)
       .in('status', EXPORT_STATUSES)
       .order('start_datetime', { ascending: true });
