@@ -32,8 +32,8 @@ export async function proxy(request: NextRequest) {
   const publicPaths = ['/login', '/signup', '/admin/login'];
   const isPublicPath = publicPaths.some(p => pathname.startsWith(p));
 
-  // API 경로
-  if (pathname.startsWith('/api/auth')) {
+  // API 경로 (인증 불필요한 공개 API)
+  if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/departments')) {
     return supabaseResponse;
   }
 
