@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/server/supabase';
+import { createClient, createAdminClient } from '@/lib/server/supabase';
 import { loginSchema } from '@/lib/validators';
 
 // 전화번호 입력 감지 후 내부 이메일로 변환
@@ -26,7 +26,9 @@ export async function POST(request: Request) {
       return Response.json({ data: null, error: '이메일 또는 비밀번호가 올바르지 않습니다' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
+    // adminClient로 RLS 우회하여 프로필 조회
+    const adminSupabase = await createAdminClient();
+    const { data: profile } = await adminSupabase
       .from('users')
       .select('*, department:departments(*)')
       .eq('id', data.user.id)
