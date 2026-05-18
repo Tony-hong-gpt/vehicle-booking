@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const adminSupabase = await createAdminClient();
     let query = adminSupabase
       .from('users')
-      .select('id, name, email, phone, role, is_active, department_id, employee_no, created_at, department:departments(id, name)', { count: 'exact' });
+      .select('id, name, email, phone, role, is_active, department_id, employee_no, created_at', { count: 'exact' });
 
     const role = searchParams.get('role');
     if (role) query = query.eq('role', role);

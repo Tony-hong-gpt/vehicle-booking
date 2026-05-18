@@ -12,7 +12,8 @@ interface UserItem {
   phone: string | null;
   role: string;
   is_active: boolean;
-  department: { id: string; name: string } | null;
+  department_id: string | null;
+  department?: { id: string; name: string } | null;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -57,8 +58,14 @@ export default function UsersPage() {
       fetch('/api/users').then(r => r.json()),
       fetch('/api/departments').then(r => r.json()),
     ]);
-    setUsers(usersRes.data || []);
-    setDepartments(deptsRes.data || []);
+    const depts: Department[] = deptsRes.data || [];
+    const rawUsers: UserItem[] = usersRes.data || [];
+    const merged = rawUsers.map(u => ({
+      ...u,
+      department: depts.find(d => d.id === u.department_id) ?? null,
+    }));
+    setUsers(merged);
+    setDepartments(depts);
     setLoading(false);
   }, []);
 
