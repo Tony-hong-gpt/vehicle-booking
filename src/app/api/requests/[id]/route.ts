@@ -8,17 +8,16 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     if (!user) return createUnauthorizedResponse();
 
     const { id } = await params;
-    const supabase = await createClient();
-    const { data, error } = await supabase
+    const adminSupabase = createAdminClient();
+    const { data, error } = await adminSupabase
       .from('requests')
       .select(`
         *,
-        requester:users!requester_id(id, name, employee_no, email, phone, department:departments(name)),
+        requester:users!requester_id(id, name, employee_no, email, phone),
         department:departments(id, name),
         purpose:purposes(id, name),
         vehicle_group:vehicle_groups(id, name),
         preferred_vehicle:vehicles(id, name, license_plate),
-        approvals(*, approver:users!approver_id(id, name, role, department:departments(name))),
         dispatch:dispatches(*, vehicle:vehicles(id, name, license_plate), driver:drivers(id, user:users(name, phone)))
       `)
       .eq('id', id)
@@ -26,11 +25,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 
     if (error) return createErrorResponse('신청을 찾을 수 없습니다', 404);
 
-    // approvals는 RLS에 막힐 수 있으므로 admin client로 별도 조회해서 병합
-    const adminSupabase = createAdminClient();
     const { data: approvals } = await adminSupabase
       .from('approvals')
-      .select('*, approver:users!approver_id(id, name, role, department:departments(name))')
+      .select('*, approver:users!approver_id(id, name, role)')
       .eq('request_id', id)
       .order('step', { ascending: true });
 

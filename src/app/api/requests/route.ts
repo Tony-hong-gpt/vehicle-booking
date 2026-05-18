@@ -22,11 +22,11 @@ export async function GET(request: Request) {
       .from('requests')
       .select(`
         *,
-        requester:users!requester_id(id, name, employee_no, email, department:departments(name)),
+        requester:users!requester_id(id, name, employee_no, email),
         department:departments(id, name),
         purpose:purposes(id, name),
         vehicle_group:vehicle_groups(id, name),
-        approvals(*, approver:users!approver_id(id, name, role, department:departments(name)))
+        approvals(*, approver:users!approver_id(id, name, role))
       `, { count: 'exact' });
 
     if (user.role === 'employee') {
@@ -97,24 +97,11 @@ export async function POST(request: Request) {
       department_id: departmentId,
     };
 
-    let { data, error } = await supabase
+    const { data, error } = await supabase
       .from('requests')
       .insert(insertPayload)
       .select(`*, requester:users!requester_id(id, name), department:departments(name), purpose:purposes(name), vehicle_group:vehicle_groups(name)`)
       .single();
-
-    // driver_name 컬럼 미존재 시 해당 필드 제외 후 재시도
-    if (error && error.message?.includes('driver_name')) {
-      const retryPayload = { ...insertPayload };
-      delete retryPayload.driver_name;
-      const retry = await supabase
-        .from('requests')
-        .insert(retryPayload)
-        .select(`*, requester:users!requester_id(id, name), department:departments(name), purpose:purposes(name), vehicle_group:vehicle_groups(name)`)
-        .single();
-      data = retry.data;
-      error = retry.error;
-    }
 
     if (error) return createErrorResponse(error.message);
     return Response.json({ data, error: null, message: '신청이 접수되었습니다' }, { status: 201 });
