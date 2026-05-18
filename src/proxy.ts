@@ -47,13 +47,23 @@ export async function proxy(request: NextRequest) {
 
   // 인증된 사용자가 공개 페이지 접근 → 역할별 홈으로 리다이렉트
   if (user && isPublicPath) {
-    const { data: profile } = await supabase
+    // RLS 우회를 위해 서비스 롤 키로 role 조회
+    const adminSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { cookies: { getAll: () => [], setAll: () => {} } }
+    );
+    const { data: profile } = await adminSupabase
       .from('users')
       .select('role')
       .eq('id', user.id)
       .single();
 
     const role = profile?.role;
+
+    // role 조회 실패 시 리다이렉트 하지 않음 (루프 방지)
+    if (!role) return supabaseResponse;
+
     const redirectUrl = request.nextUrl.clone();
 
     if (pathname.startsWith('/admin/login')) {
