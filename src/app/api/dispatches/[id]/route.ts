@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/server/supabase';
+import { createClient, createAdminClient } from '@/lib/server/supabase';
 import { getCurrentUser, createUnauthorizedResponse, createErrorResponse } from '@/lib/server/auth';
 import { updateDispatchSchema } from '@/lib/validators';
 
@@ -42,9 +42,28 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       return Response.json({ data: null, error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const supabase = await createClient();
-    const { data, error } = await supabase.from('dispatches').update(parsed.data).eq('id', id).select().single();
+    const adminSupabase = createAdminClient();
+
+    // 기존 배차 조회 (차량 변경 감지)
+    const { data: existing } = await adminSupabase
+      .from('dispatches').select('vehicle_id, is_rental').eq('id', id).single();
+
+    const { data, error } = await adminSupabase
+      .from('dispatches').update(parsed.data).eq('id', id).select().single();
     if (error) return createErrorResponse(error.message);
+
+    // 차량이 변경된 경우 vehicle.status 교체
+    if (parsed.data.vehicle_id !== undefined && existing) {
+      const oldId = existing.vehicle_id;
+      const newId = parsed.data.vehicle_id;
+      if (oldId && oldId !== newId && !existing.is_rental) {
+        await adminSupabase.from('vehicles').update({ status: 'available' }).eq('id', oldId);
+      }
+      if (newId && !parsed.data.is_rental) {
+        await adminSupabase.from('vehicles').update({ status: 'in_use' }).eq('id', newId);
+      }
+    }
+
     return Response.json({ data, error: null, message: '수정되었습니다' });
   } catch {
     return createErrorResponse('서버 오류가 발생했습니다');

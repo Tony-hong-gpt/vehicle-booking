@@ -36,6 +36,7 @@ export default function DispatchesPage() {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [editingDispatch, setEditingDispatch] = useState<any>(null);
   const [isRental, setIsRental] = useState(false);
   const [form, setForm] = useState({
     vehicle_group_id: '',
@@ -130,9 +131,42 @@ export default function DispatchesPage() {
     return g ? g.name.includes('버스') : false;
   };
 
+  const openEditModal = async (dispatch: any) => {
+    setEditingDispatch(dispatch);
+    setSelectedRequest(dispatch.request);
+    setError('');
+    const rental = dispatch.is_rental || false;
+    setIsRental(rental);
+    const initGroupId = dispatch.request?.vehicle_group_id || '';
+    setForm({
+      vehicle_group_id: initGroupId,
+      vehicle_id: dispatch.vehicle_id || '',
+      driver_id: dispatch.driver_id || '',
+      driver_name: dispatch.driver_name || '',
+      driver_phone: dispatch.driver_phone || '',
+      scheduled_start: dispatch.scheduled_start ? utcToLocalInput(dispatch.scheduled_start) : '',
+      scheduled_end: dispatch.scheduled_end ? utcToLocalInput(dispatch.scheduled_end) : '',
+      notes: dispatch.notes || '',
+    });
+    const [vgRes, vRes] = await Promise.all([
+      fetch('/api/vehicle-groups'),
+      fetch(`/api/vehicles?page_size=500${initGroupId ? `&vehicle_group_id=${initGroupId}` : ''}`),
+    ]);
+    const vgData = await vgRes.json();
+    const vData = await vRes.json();
+    setVehicleGroups(vgData.data || []);
+    // 사용 가능한 차량 + 현재 배차된 차량 포함
+    const all = (vData.data || []) as any[];
+    const filtered = all.filter((v: any) => v.status === 'available' || v.id === dispatch.vehicle_id);
+    setAllVehicles(filtered);
+    setVehicles(filtered);
+    setShowModal(true);
+  };
+
   const closeModal = () => {
     setShowModal(false);
     setSelectedRequest(null);
+    setEditingDispatch(null);
     setError('');
     setIsRental(false);
   };
@@ -153,23 +187,42 @@ export default function DispatchesPage() {
     setSubmitting(true);
     setError('');
     try {
-      const res = await fetch('/api/dispatches', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          request_id: selectedRequest.id,
-          vehicle_id: isRental ? null : form.vehicle_id,
-          driver_id: null,
-          driver_name: form.driver_name.trim() || null,
-          driver_phone: form.driver_phone.trim() || null,
-          scheduled_start: new Date(form.scheduled_start).toISOString(),
-          scheduled_end: new Date(form.scheduled_end).toISOString(),
-          notes: form.notes || undefined,
-          is_rental: isRental,
-        }),
-      });
+      let res: Response;
+      if (editingDispatch) {
+        // 배차 수정 (차량 교체)
+        res = await fetch(`/api/dispatches/${editingDispatch.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vehicle_id: isRental ? null : (form.vehicle_id || undefined),
+            driver_name: form.driver_name.trim() || null,
+            driver_phone: form.driver_phone.trim() || null,
+            scheduled_start: new Date(form.scheduled_start).toISOString(),
+            scheduled_end: new Date(form.scheduled_end).toISOString(),
+            notes: form.notes || undefined,
+            is_rental: isRental,
+          }),
+        });
+      } else {
+        // 신규 배차
+        res = await fetch('/api/dispatches', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            request_id: selectedRequest.id,
+            vehicle_id: isRental ? null : form.vehicle_id,
+            driver_id: null,
+            driver_name: form.driver_name.trim() || null,
+            driver_phone: form.driver_phone.trim() || null,
+            scheduled_start: new Date(form.scheduled_start).toISOString(),
+            scheduled_end: new Date(form.scheduled_end).toISOString(),
+            notes: form.notes || undefined,
+            is_rental: isRental,
+          }),
+        });
+      }
       const data = await res.json();
-      if (!res.ok) { setError(data.error || '배차 처리에 실패했습니다'); return; }
+      if (!res.ok) { setError(data.error || '처리에 실패했습니다'); return; }
       closeModal();
       fetchData();
     } finally {
@@ -273,6 +326,7 @@ export default function DispatchesPage() {
               <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">운전기사</th>
               <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">출발 예정</th>
               <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">상태</th>
+              <th className="px-5 py-3.5" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -318,6 +372,16 @@ export default function DispatchesPage() {
                     {DISPATCH_STATUS_LABELS[d.status] || d.status}
                   </span>
                 </td>
+                <td className="px-5 py-4 text-right">
+                  {['scheduled', 'in_progress'].includes(d.status) && (
+                    <button
+                      onClick={() => openEditModal(d)}
+                      className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition-colors"
+                    >
+                      차량 변경
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -330,7 +394,7 @@ export default function DispatchesPage() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             {/* 헤더 */}
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900">배차 처리</h2>
+              <h2 className="text-lg font-bold text-gray-900">{editingDispatch ? '배차 수정' : '배차 처리'}</h2>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-xl font-light">✕</button>
             </div>
 
@@ -518,7 +582,7 @@ export default function DispatchesPage() {
                 disabled={submitting || (!isRental && !form.vehicle_id)}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
               >
-                {submitting ? '처리 중...' : '배차 확정'}
+                {submitting ? '처리 중...' : editingDispatch ? '수정 완료' : '배차 확정'}
               </button>
             </div>
           </div>
