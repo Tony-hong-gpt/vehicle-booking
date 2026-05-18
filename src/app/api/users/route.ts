@@ -105,6 +105,13 @@ export async function POST(request: Request) {
       return createErrorResponse(profileError.message);
     }
 
+    // user_departments에도 동기화
+    if (parsed.data.department_id) {
+      await adminSupabase
+        .from('user_departments')
+        .insert({ user_id: authData.user.id, department_id: parsed.data.department_id });
+    }
+
     return Response.json({ data: profile, error: null, message: '사용자가 등록되었습니다' }, { status: 201 });
   } catch {
     return createErrorResponse('서버 오류가 발생했습니다');
