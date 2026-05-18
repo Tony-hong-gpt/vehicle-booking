@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { FUEL_TYPE_LABELS } from '@/lib/constants';
-import * as XLSX from 'xlsx';
 
 interface Vehicle {
   id: string;
@@ -35,10 +34,6 @@ const DB_SPECIAL_BADGE: Record<string, { label: string; badgeColor: string }> = 
   inactive:    { label: '비운행',  badgeColor: 'bg-gray-100 text-gray-500' },
 };
 
-const EMPTY_FORM = {
-  vehicle_group_id: '', name: '', license_plate: '', model: '',
-  year: '', capacity: '', fuel_type: 'gasoline', current_mileage: '0',
-};
 
 export default function VehiclesPage() {
   const router = useRouter();
@@ -57,11 +52,6 @@ export default function VehiclesPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [groupFilter, setGroupFilter]   = useState('');
 
-  /* 등록 모달 */
-  const [showModal, setShowModal]   = useState(false);
-  const [form, setForm]             = useState(EMPTY_FORM);
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError]   = useState('');
 
   /* 전체 차량 + 그룹 로드 */
   const fetchData = useCallback(async () => {
@@ -139,14 +129,7 @@ export default function VehiclesPage() {
     inactive:    allResolved.filter(s => s === 'inactive').length,
   };
 
-  const isAdmin = userRole === 'admin';
   const today = format(new Date(), 'yyyy-MM-dd');
-
-  /* Excel import 상태 */
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importing, setImporting] = useState(false);
-  const [importPreview, setImportPreview] = useState<any[]>([]);
-  const [importError, setImportError] = useState('');
 
   /* 상태 필터 옵션
      - 날짜 선택 시: 실제 배차 현황 기준 필터
@@ -163,159 +146,6 @@ export default function VehiclesPage() {
     { value: 'inactive',    label: '비운행' },
   ];
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`"${name}" 차량을 삭제하시겠습니까?`)) return;
-    const res = await fetch(`/api/vehicles/${id}`, { method: 'DELETE' });
-    const json = await res.json();
-    if (json.error) alert(json.error);
-    else fetchData();
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setFormError(''); setSubmitting(true);
-    const body: Record<string, unknown> = {
-      vehicle_group_id: form.vehicle_group_id, name: form.name,
-      license_plate: form.license_plate, fuel_type: form.fuel_type,
-      current_mileage: Number(form.current_mileage) || 0,
-    };
-    if (form.model) body.model = form.model;
-    if (form.year) body.year = Number(form.year);
-    if (form.capacity) body.capacity = Number(form.capacity);
-    const res = await fetch('/api/vehicles', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const json = await res.json();
-    if (json.error) setFormError(json.error);
-    else { setShowModal(false); setForm(EMPTY_FORM); fetchData(); }
-    setSubmitting(false);
-  }
-
-  function downloadTemplate() {
-    const ws = XLSX.utils.aoa_to_sheet([
-      ['차량군명', '차량명', '차량번호', '모델명', '연식', '정원(명)', '연료', '현재주행거리(km)'],
-      ['일반차량', '현대 소나타', '서울00가0000', '소나타 DN8', 2023, 5, '가솔린', 50000],
-    ]);
-    ws['A1'] = { v: '차량군명', t: 's' };
-    ws['G1'] = { v: '연료 (가솔린/디젤/전기/하이브리드 중 하나)', t: 's' };
-    ws['!cols'] = [
-      { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
-      { wch: 8 }, { wch: 10 }, { wch: 30 }, { wch: 18 },
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '차량입력양식');
-    XLSX.writeFile(wb, '차량_입력양식.xlsx');
-  }
-
-  function downloadData() {
-    const t = new Date();
-    const dateStr = `${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}`;
-    const STATUS_LABELS: Record<string, string> = {
-      available: '사용가능', in_use: '사용중', maintenance: '정비중', inactive: '비운행',
-    };
-    const rows = vehicles.map(v => ({
-      차량군: v.vehicle_group?.name || '',
-      차량명: v.name,
-      차량번호: v.license_plate,
-      모델명: (v as any).model || '',
-      연식: v.year || '',
-      정원: v.capacity || '',
-      연료: FUEL_TYPE_LABELS[v.fuel_type] || v.fuel_type,
-      '현재주행거리(km)': v.current_mileage,
-      상태: STATUS_LABELS[v.status] || v.status,
-    }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols'] = [
-      { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
-      { wch: 8 }, { wch: 8 }, { wch: 10 }, { wch: 18 }, { wch: 10 },
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '차량목록');
-    XLSX.writeFile(wb, `차량목록_${dateStr}.xlsx`);
-  }
-
-  function handleVehicleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImportError('');
-    const FUEL_KO_MAP: Record<string, string> = {
-      가솔린: 'gasoline', 디젤: 'diesel', 전기: 'electric', 하이브리드: 'hybrid',
-    };
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const wb = XLSX.read(ev.target?.result, { type: 'binary' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json<any>(ws);
-        const errors: string[] = [];
-        const parsed = rows
-          .filter(r => r['차량명']?.toString().trim())
-          .map((r, i) => {
-            const groupName = (r['차량군명'] || '').toString().trim();
-            const group = groups.find(g => g.name === groupName);
-            if (!group) errors.push(`${i+1}행: 차량군 "${groupName}"을 찾을 수 없습니다`);
-            const fuelKo = (r['연료'] || '').toString().trim();
-            return {
-              name: (r['차량명'] || '').toString().trim(),
-              license_plate: (r['차량번호'] || '').toString().trim(),
-              vehicle_group_id: group?.id || '',
-              group_name: groupName,
-              model: (r['모델명'] || '').toString().trim(),
-              year: r['연식'] ? Number(r['연식']) : undefined,
-              capacity: r['정원(명)'] ? Number(r['정원(명)']) : undefined,
-              fuel_type: FUEL_KO_MAP[fuelKo] || 'gasoline',
-              current_mileage: r['현재주행거리(km)'] ? Number(r['현재주행거리(km)']) : 0,
-            };
-          });
-        if (errors.length > 0) {
-          setImportError(errors.join(', '));
-          return;
-        }
-        if (parsed.length === 0) {
-          setImportError('데이터가 없습니다. 양식을 확인해주세요.');
-          return;
-        }
-        setImportPreview(parsed);
-      } catch {
-        setImportError('파일을 읽을 수 없습니다. Excel 파일(.xlsx)인지 확인해주세요.');
-      }
-    };
-    reader.readAsBinaryString(file);
-    e.target.value = '';
-  }
-
-  async function handleVehicleImport() {
-    if (importPreview.length === 0) return;
-    setImporting(true);
-    setImportError('');
-    let successCount = 0;
-    let failCount = 0;
-    for (const v of importPreview) {
-      const body: Record<string, unknown> = {
-        vehicle_group_id: v.vehicle_group_id,
-        name: v.name,
-        license_plate: v.license_plate,
-        fuel_type: v.fuel_type,
-        current_mileage: v.current_mileage,
-      };
-      if (v.model) body.model = v.model;
-      if (v.year) body.year = v.year;
-      if (v.capacity) body.capacity = v.capacity;
-      const res = await fetch('/api/vehicles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (res.ok) successCount++;
-      else failCount++;
-    }
-    setImportPreview([]);
-    setImporting(false);
-    fetchData();
-    if (failCount > 0) setImportError(`${successCount}개 등록 완료, ${failCount}개 실패 (차량번호 중복 등)`);
-  }
-
   return (
     <div className="p-8">
       {/* 헤더 */}
@@ -324,22 +154,6 @@ export default function VehiclesPage() {
           <h1 className="text-2xl font-bold text-gray-900">차량 현황</h1>
           <p className="text-gray-500 mt-1 text-sm">총 {vehicles.length}대</p>
         </div>
-        {isAdmin && (
-          <div className="flex items-center gap-2">
-            <button onClick={downloadTemplate}
-              className="text-xs text-green-600 hover:text-green-700 font-medium flex items-center gap-1 hover:bg-green-50 px-2.5 py-1.5 rounded-lg transition-colors">
-              ↓ 양식
-            </button>
-            <button onClick={downloadData}
-              className="text-xs text-green-600 hover:text-green-700 font-medium flex items-center gap-1 hover:bg-green-50 px-2.5 py-1.5 rounded-lg transition-colors">
-              ↓ 목록
-            </button>
-            <button onClick={() => { setShowModal(true); setFormError(''); setForm(EMPTY_FORM); }}
-              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-              <span className="text-lg leading-none">+</span> 차량 등록
-            </button>
-          </div>
-        )}
       </div>
 
       {/* 날짜 선택 바 */}
@@ -438,61 +252,6 @@ export default function VehiclesPage() {
         )}
       </div>
 
-      {/* Excel 일괄 등록 (관리자만) */}
-      {isAdmin && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-gray-700">Excel 일괄 등록</h2>
-            <button
-              onClick={downloadTemplate}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition-colors"
-            >
-              ↓ 양식 다운로드
-            </button>
-          </div>
-          <div className="flex gap-2">
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleVehicleFileChange} className="hidden" />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex-1 border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors text-center"
-            >
-              📂 Excel 파일 선택 (.xlsx)
-            </button>
-          </div>
-          {importError && <p className="text-red-500 text-xs mt-2">{importError}</p>}
-
-          {importPreview.length > 0 && (
-            <div className="mt-3">
-              <p className="text-xs text-gray-500 mb-2">아래 {importPreview.length}개 항목을 등록합니다:</p>
-              <div className="max-h-40 overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50">
-                {importPreview.map((v, i) => (
-                  <div key={i} className="flex items-center gap-2 px-3 py-2 text-sm">
-                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-mono">{v.group_name}</span>
-                    <span className="font-medium text-gray-800">{v.name}</span>
-                    <span className="text-xs text-gray-400 font-mono">{v.license_plate}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={handleVehicleImport}
-                  disabled={importing}
-                  className="flex-1 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                >
-                  {importing ? '등록 중...' : `${importPreview.length}개 등록하기`}
-                </button>
-                <button
-                  onClick={() => setImportPreview([])}
-                  className="px-4 py-2 border border-gray-200 text-sm text-gray-500 rounded-xl hover:bg-gray-50 transition-colors"
-                >
-                  취소
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* 차량 카드 그리드 */}
       {loading ? (
         <div className="text-center py-16 text-gray-400">불러오는 중...</div>
@@ -556,83 +315,12 @@ export default function VehiclesPage() {
                     <span className="text-gray-700">{v.current_mileage.toLocaleString()}km</span>
                   </div>
                 </div>
-                {isAdmin && (
-                  <div className="mt-4 pt-3 border-t border-gray-100">
-                    <button onClick={e => { e.stopPropagation(); handleDelete(v.id, v.name); }}
-                      className="w-full text-xs text-red-500 hover:text-red-700 hover:bg-red-50 py-1.5 rounded-lg transition-colors">
-                      차량 삭제
-                    </button>
-                  </div>
-                )}
               </div>
             );
           })}
         </div>
       )}
 
-      {/* 차량 등록 모달 */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900">차량 등록</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
-            </div>
-            <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-              {formError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">{formError}</div>
-              )}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">차량군 <span className="text-red-500">*</span></label>
-                  <select name="vehicle_group_id" value={form.vehicle_group_id}
-                    onChange={e => setForm(p => ({ ...p, vehicle_group_id: e.target.value }))} required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">선택하세요</option>
-                    {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                  </select>
-                </div>
-                {[
-                  { label: '차량명', key: 'name', required: true, placeholder: '예: 기아 K5' },
-                  { label: '차량번호', key: 'license_plate', required: true, placeholder: '예: 서울12가3456' },
-                  { label: '모델명', key: 'model', placeholder: '예: K5 2.0 LPi' },
-                  { label: '연식', key: 'year', type: 'number', placeholder: '예: 2022' },
-                  { label: '정원 (명)', key: 'capacity', type: 'number', placeholder: '예: 5' },
-                  { label: '현재 주행거리 (km)', key: 'current_mileage', type: 'number' },
-                ].map(f => (
-                  <div key={f.key}>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      {f.label} {f.required && <span className="text-red-500">*</span>}
-                    </label>
-                    <input type={f.type || 'text'} required={f.required}
-                      value={(form as any)[f.key]} placeholder={f.placeholder}
-                      onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-                ))}
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">연료 <span className="text-red-500">*</span></label>
-                  <select value={form.fuel_type} onChange={e => setForm(p => ({ ...p, fuel_type: e.target.value }))} required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="gasoline">가솔린</option>
-                    <option value="diesel">디젤</option>
-                    <option value="electric">전기</option>
-                    <option value="hybrid">하이브리드</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">취소</button>
-                <button type="submit" disabled={submitting}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium disabled:opacity-60">
-                  {submitting ? '등록 중...' : '등록하기'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
