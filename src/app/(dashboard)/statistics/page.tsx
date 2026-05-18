@@ -102,7 +102,7 @@ function OverviewTab({ months }: { months: number }) {
                 { name: '운행 중',   value: vehicles.in_use },
                 { name: '정비 중',   value: vehicles.maintenance },
                 { name: '비활성',    value: vehicles.inactive },
-              ]} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+              ]} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent = 0 }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                 {['#10b981','#3b82f6','#f59e0b','#9ca3af'].map((c, i) => <Cell key={i} fill={c} />)}
               </Pie>
               <Tooltip />
@@ -118,7 +118,7 @@ function OverviewTab({ months }: { months: number }) {
                 { name: '승인완료',  value: requests.approved },
                 { name: '처리대기',  value: requests.pending },
                 { name: '취소',      value: requests.cancelled },
-              ]} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+              ]} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent = 0 }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                 {['#10b981','#f59e0b','#ef4444'].map((c, i) => <Cell key={i} fill={c} />)}
               </Pie>
               <Tooltip />
@@ -302,7 +302,7 @@ function DepartmentsTab({ months }: { months: number }) {
           <SectionTitle>부서별 비중</SectionTitle>
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
-              <Pie data={ranking.slice(0, 8)} cx="50%" cy="50%" innerRadius={50} outerRadius={90} dataKey="count" nameKey="name" label={({ name, percent }) => percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}>
+              <Pie data={ranking.slice(0, 8)} cx="50%" cy="50%" innerRadius={50} outerRadius={90} dataKey="count" nameKey="name" label={({ name, percent = 0 }) => percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}>
                 {ranking.slice(0, 8).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
               <Tooltip formatter={(v: any, name: any) => [`${v}건`, name]} />
@@ -355,7 +355,7 @@ function PurposesTab({ months }: { months: number }) {
           <SectionTitle>사용목적별 비중</SectionTitle>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={purposes} cx="50%" cy="50%" innerRadius={55} outerRadius={90} dataKey="count" nameKey="name" label={({ name, percent }) => percent > 0.06 ? `${name} ${(percent*100).toFixed(0)}%` : ''}>
+              <Pie data={purposes} cx="50%" cy="50%" innerRadius={55} outerRadius={90} dataKey="count" nameKey="name" label={({ name, percent = 0 }) => percent > 0.06 ? `${name} ${(percent*100).toFixed(0)}%` : ''}>
                 {purposes.map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
               <Tooltip formatter={(v: any, n: any) => [`${v}건`, n]} />
