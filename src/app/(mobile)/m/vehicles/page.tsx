@@ -75,15 +75,11 @@ export default function MobileVehiclesPage() {
 
   // 차량에 표시할 상태 결정
   function resolveStatus(v: Vehicle): string {
-    if (availableIds === null) {
-      // 날짜 미선택 → DB 실제 상태 그대로
-      return v.status;
-    }
-    // 날짜 선택 → 배차 겹침 기준으로만 판단 (DB status 무시, 단 정비/비운행 제외)
-    if (v.status === 'maintenance') return 'maintenance';
+    if (v.status === 'maintenance') return 'maintenance'; // 날짜 무관 항상 정비 중
+    if (availableIds === null) return 'available';        // 날짜 미선택 → 정비 외 모두 사용 가능
     if (availableIds.has(v.id)) return 'available';
-    if (inProgressIds.has(v.id)) return 'in_progress'; // 실제 운행 중
-    return 'booked'; // 배차완료(출발 전)
+    if (inProgressIds.has(v.id)) return 'in_progress';
+    return 'booked';
   }
 
   const byGroup = groups.map(g => ({
