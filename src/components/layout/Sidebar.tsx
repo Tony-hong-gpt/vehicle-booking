@@ -70,8 +70,7 @@ export default function Sidebar({ user }: SidebarProps) {
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
-    router.refresh();
+    window.location.href = '/admin/login';
   }
 
   const isAdmin = user.role === 'admin';
