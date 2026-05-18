@@ -334,7 +334,8 @@ export default function VehicleManagementPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(`"${vehicleName(allVehicles.find(v => v.id === id))}" 차량을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+    const target = allVehicles.find(v => v.id === id);
+    if (!confirm(`"${vehicleName(target)}" 차량을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
     const res = await fetch(`/api/vehicles/${id}`, { method: 'DELETE' });
     const json = await res.json();
     if (json.error) alert(json.error);
@@ -717,7 +718,7 @@ export default function VehicleManagementPage() {
 
               return (
                 <tr key={v.id} className="hover:bg-gray-50/60 transition-colors group">
-                  <td className="px-5 py-3.5 font-semibold text-gray-900 text-sm">{vehicleName(v)}</td>
+                  <td className="px-5 py-3.5 font-semibold text-gray-900 text-sm">{v.name}</td>
                   <td className="px-5 py-3.5 text-gray-500 text-sm">{v.model || <span className="text-gray-300">-</span>}</td>
                   <td className="px-5 py-3.5 font-mono text-gray-400 text-sm">{v.license_plate}</td>
                   <td className="px-5 py-3.5 text-gray-500 text-sm">{v.vehicle_group?.name ?? <span className="text-gray-300">-</span>}</td>
