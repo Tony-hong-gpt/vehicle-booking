@@ -134,7 +134,7 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">부서/위원회 *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">부서/위원회</label>
               <select
                 name="department_id"
                 value={form.department_id}
@@ -146,6 +146,7 @@ export default function SignupPage() {
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
+              <p className="text-xs text-gray-400 mt-1">대표 부서 하나를 선택하세요. 부서는 로그인 후 추가하실 수 있습니다.</p>
             </div>
 
             <div>
