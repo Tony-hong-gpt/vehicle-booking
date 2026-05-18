@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { VEHICLE_STATUS_LABELS, VEHICLE_STATUS_COLORS, FUEL_TYPE_LABELS } from '@/lib/constants';
+import { vehicleName } from '@/lib/vehicle-utils';
 
 /* ─── 상수 ─── */
 const DISPATCH_STATUS: Record<string, { label: string; color: string }> = {
@@ -151,7 +152,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
   }
 
   async function handleDelete() {
-    if (!confirm(`"${vehicle?.name}" 차량을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+    if (!confirm(`"${vehicleName(vehicle)}" 차량을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
     const res = await fetch(`/api/vehicles/${id}`, { method: 'DELETE' });
     const json = await res.json();
     if (json.error) alert(json.error); else router.push('/vehicles');
@@ -222,7 +223,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
       <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
         <Link href="/vehicles" className="hover:text-blue-600 transition-colors">차량 현황</Link>
         <span>/</span>
-        <span className="text-gray-700 font-medium">{vehicle.name}</span>
+        <span className="text-gray-700 font-medium">{vehicleName(vehicle)}</span>
       </div>
 
       {/* ── 타이틀 카드 ── */}
@@ -245,7 +246,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
             </div>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-gray-900">{vehicle.name}</h1>
+                <h1 className="text-2xl font-bold text-gray-900">{vehicleName(vehicle)}</h1>
                 <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${VEHICLE_STATUS_COLORS[vehicle.status]}`}>
                   {VEHICLE_STATUS_LABELS[vehicle.status]}
                 </span>

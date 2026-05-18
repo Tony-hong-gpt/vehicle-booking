@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { REQUEST_STATUS_LABELS, REQUEST_STATUS_COLORS } from '@/lib/constants';
+import { vehicleName } from '@/lib/vehicle-utils';
 
 const STEP_LABELS: Record<number, string> = {
   1: '1단계 · 상위 승인',
@@ -288,7 +289,7 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
                 dispatch.is_rental
                   ? { label: '차량', value: '외부 대차' }
                   : dispatch.vehicle
-                    ? { label: '차량', value: `${dispatch.vehicle.name} (${dispatch.vehicle.license_plate})` }
+                    ? { label: '차량', value: `${vehicleName(dispatch.vehicle)} (${dispatch.vehicle.license_plate})` }
                     : null,
                 (dispatch.driver?.user?.name || dispatch.driver_name)
                   ? { label: '운전기사', value: dispatch.driver?.user?.name || dispatch.driver_name }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { vehicleName } from '@/lib/vehicle-utils';
 
 interface VehicleGroup { id: string; name: string; }
 interface Vehicle {
@@ -175,7 +176,7 @@ export default function MobileVehiclesPage() {
                     <div className="flex items-center gap-3">
                       <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">{v.name}</p>
+                        <p className="text-sm font-semibold text-gray-900">{vehicleName(v)}</p>
                         <p className="text-xs text-gray-400">
                           {v.license_plate} · {v.capacity}인승 · {FUEL_LABELS[v.fuel_type] || v.fuel_type}
                         </p>

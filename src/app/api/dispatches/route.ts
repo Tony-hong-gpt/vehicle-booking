@@ -21,7 +21,7 @@ export async function GET(request: Request) {
         *,
         request:requests(id, request_no, destination, start_datetime, end_datetime, passengers,
           purpose:purposes(name), requester:users!requester_id(id, name)),
-        vehicle:vehicles(id, name, license_plate, fuel_type, current_mileage),
+        vehicle:vehicles(id, name, model, license_plate, fuel_type, current_mileage),
         driver:drivers(id, user:users(name, phone))
       `, { count: 'exact' });
 

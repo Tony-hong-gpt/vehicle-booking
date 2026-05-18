@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { vehicleName } from '@/lib/vehicle-utils';
 
 interface TripDispatch {
   id: string;
@@ -13,7 +14,7 @@ interface TripDispatch {
   driver_name?: string;
   is_rental?: boolean;
   notes?: string;
-  vehicle?: { id: string; name: string; license_plate: string; fuel_type: string; current_mileage?: number };
+  vehicle?: { id: string; name: string; model?: string | null; license_plate: string; fuel_type: string; current_mileage?: number };
   request?: {
     id: string;
     request_no: string;
@@ -333,7 +334,7 @@ export default function MobileTripsPage() {
                           {trip.vehicle && (
                             <div className="flex items-center gap-2 text-xs">
                               <span className="text-gray-400 w-14">차량</span>
-                              <span className="font-medium text-gray-600">{trip.vehicle.name} ({trip.vehicle.license_plate})</span>
+                              <span className="font-medium text-gray-600">{vehicleName(trip.vehicle)} ({trip.vehicle.license_plate})</span>
                             </div>
                           )}
                           <div className="flex items-center gap-2 text-xs">
@@ -370,7 +371,7 @@ export default function MobileTripsPage() {
 
             {/* 차량 정보 */}
             <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 mb-4">
-              <p className="font-semibold text-blue-900">{pickupModal.vehicle?.name}</p>
+              <p className="font-semibold text-blue-900">{vehicleName(pickupModal.vehicle)}</p>
               <p className="text-xs text-blue-500 mt-0.5">{pickupModal.vehicle?.license_plate}</p>
               {pickupModal.vehicle?.current_mileage !== undefined && (
                 <div className="mt-2 flex items-center gap-1.5">
@@ -445,7 +446,7 @@ export default function MobileTripsPage() {
               <button onClick={() => setReturnModal(null)} className="text-gray-400 text-2xl leading-none">×</button>
             </div>
             <div className="bg-gray-50 rounded-2xl p-3 mb-4 text-sm text-gray-600">
-              <p className="font-semibold text-gray-800">{returnModal.vehicle?.name}</p>
+              <p className="font-semibold text-gray-800">{vehicleName(returnModal.vehicle)}</p>
               <p className="text-xs text-gray-400 mt-0.5">{returnModal.vehicle?.license_plate}</p>
             </div>
             {returnError && (
@@ -551,7 +552,7 @@ function TripCard({
                   d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h2m6-12h3l3 4v4h-6V4z" />
               </svg>
               <div>
-                <p className="text-sm font-semibold text-gray-800">{trip.vehicle.name}</p>
+                <p className="text-sm font-semibold text-gray-800">{vehicleName(trip.vehicle)}</p>
                 <p className="text-xs text-gray-400">{trip.vehicle.license_plate}</p>
               </div>
             </div>

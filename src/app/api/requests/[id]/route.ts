@@ -17,8 +17,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
         department:departments(id, name),
         purpose:purposes(id, name),
         vehicle_group:vehicle_groups(id, name),
-        preferred_vehicle:vehicles(id, name, license_plate),
-        dispatch:dispatches(*, vehicle:vehicles(id, name, license_plate), driver:drivers(id, user:users(name, phone)))
+        preferred_vehicle:vehicles(id, name, model, license_plate),
+        dispatch:dispatches(*, vehicle:vehicles(id, name, model, license_plate), driver:drivers(id, user:users(name, phone)))
       `)
       .eq('id', id)
       .single();

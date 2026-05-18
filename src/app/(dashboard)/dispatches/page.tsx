@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { vehicleName } from '@/lib/vehicle-utils';
 
 const DISPATCH_STATUS_LABELS: Record<string, string> = {
   scheduled: '배차완료',
@@ -356,7 +357,7 @@ export default function DispatchesPage() {
                     </span>
                   ) : (
                     <>
-                      <div className="font-semibold text-gray-900 text-sm">{d.vehicle?.name}</div>
+                      <div className="font-semibold text-gray-900 text-sm">{vehicleName(d.vehicle)}</div>
                       <div className="text-xs text-gray-400 mt-0.5">{d.vehicle?.license_plate}</div>
                     </>
                   )}
@@ -481,7 +482,7 @@ export default function DispatchesPage() {
                     <option value="">차량 선택</option>
                     {vehicles.map((v: any) => (
                       <option key={v.id} value={v.id}>
-                        {v.name} ({v.license_plate})
+                        {vehicleName(v)} ({v.license_plate})
                         {v.capacity ? ` · ${v.capacity}인승` : ''}
                       </option>
                     ))}

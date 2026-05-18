@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { FUEL_TYPE_LABELS } from '@/lib/constants';
+import { vehicleName } from '@/lib/vehicle-utils';
 
 interface Vehicle {
   id: string;
@@ -275,7 +276,7 @@ export default function VehiclesPage() {
                 className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all group">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{v.name}</h3>
+                    <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{vehicleName(v)}</h3>
                     <p className="text-sm text-gray-400 font-mono">{v.license_plate}</p>
                   </div>
                   {dateBadge && (

@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { FUEL_TYPE_LABELS } from '@/lib/constants';
 import * as XLSX from 'xlsx';
+import { vehicleName } from '@/lib/vehicle-utils';
 
 interface Vehicle {
   id: string;
@@ -332,8 +333,8 @@ export default function VehicleManagementPage() {
     else fetchData();
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`"${name}" 차량을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+  async function handleDelete(id: string) {
+    if (!confirm(`"${vehicleName(allVehicles.find(v => v.id === id))}" 차량을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
     const res = await fetch(`/api/vehicles/${id}`, { method: 'DELETE' });
     const json = await res.json();
     if (json.error) alert(json.error);
@@ -634,7 +635,7 @@ export default function VehicleManagementPage() {
               {importPreview.map((v, i) => (
                 <div key={i} className="flex items-center gap-2 px-3 py-2 text-sm">
                   <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-mono">{v.group_name}</span>
-                  <span className="font-medium text-gray-800">{v.name}</span>
+                  <span className="font-medium text-gray-800">{vehicleName(v)}</span>
                   <span className="text-xs text-gray-400 font-mono">{v.license_plate}</span>
                 </div>
               ))}
@@ -716,7 +717,7 @@ export default function VehicleManagementPage() {
 
               return (
                 <tr key={v.id} className="hover:bg-gray-50/60 transition-colors group">
-                  <td className="px-5 py-3.5 font-semibold text-gray-900 text-sm">{v.name}</td>
+                  <td className="px-5 py-3.5 font-semibold text-gray-900 text-sm">{vehicleName(v)}</td>
                   <td className="px-5 py-3.5 text-gray-500 text-sm">{v.model || <span className="text-gray-300">-</span>}</td>
                   <td className="px-5 py-3.5 font-mono text-gray-400 text-sm">{v.license_plate}</td>
                   <td className="px-5 py-3.5 text-gray-500 text-sm">{v.vehicle_group?.name ?? <span className="text-gray-300">-</span>}</td>
@@ -771,7 +772,7 @@ export default function VehicleManagementPage() {
                             </button>
                           ))}
                           {/* 삭제 버튼 */}
-                          <button onClick={() => handleDelete(v.id, v.name)}
+                          <button onClick={() => handleDelete(v.id)}
                             className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors">
                             삭제
                           </button>

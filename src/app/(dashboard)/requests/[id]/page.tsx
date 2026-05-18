@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import RequestActions from './RequestActions';
+import { vehicleName } from '@/lib/vehicle-utils';
 
 export default async function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -406,7 +407,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 {req.dispatch.is_rental
                   ? '외부 대차'
                   : req.dispatch.vehicle
-                    ? `${req.dispatch.vehicle.name} (${req.dispatch.vehicle.license_plate})`
+                    ? `${vehicleName(req.dispatch.vehicle)} (${req.dispatch.vehicle.license_plate})`
                     : '-'}
               </p>
             </div>

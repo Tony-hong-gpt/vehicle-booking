@@ -13,7 +13,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
       .select(`
         *,
         request:requests(*, requester:users!requester_id(name, phone), department:departments(name), purpose:purposes(name)),
-        vehicle:vehicles(id, name, license_plate, fuel_type, current_mileage),
+        vehicle:vehicles(id, name, model, license_plate, fuel_type, current_mileage),
         driver:drivers(id, user:users(name, phone)),
         dispatcher:users!dispatcher_id(id, name),
         return_info:returns(*)
