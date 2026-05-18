@@ -1,4 +1,4 @@
-import { createClient } from './supabase';
+import { createClient, createAdminClient } from './supabase';
 import { User } from '../types';
 
 export async function getSession() {
@@ -13,7 +13,9 @@ export async function getCurrentUser(): Promise<User | null> {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return null;
 
-  const { data: profile } = await supabase
+  // adminClient로 RLS 우회하여 프로필 조회
+  const adminSupabase = await createAdminClient();
+  const { data: profile } = await adminSupabase
     .from('users')
     .select('*, department:departments(*)')
     .eq('id', user.id)
