@@ -30,6 +30,14 @@ const mainNavItems = [
   },
 ];
 
+const statsNavItems = [
+  {
+    href: '/statistics',
+    label: '통계',
+    icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+  },
+];
+
 const adminNavItems = [
   {
     href: '/users',
@@ -120,7 +128,21 @@ export default function Sidebar({ user }: SidebarProps) {
         {/* 주요 메뉴 */}
         {mainNavItems.map(item => <NavItem key={item.href} item={item} />)}
 
-        {/* 관리자 전용 메뉴 */}
+        {/* 통계 관리 */}
+        {isAdmin && (
+          <>
+            <div className="pt-5 pb-2 px-1 flex items-center gap-2">
+              <span className="flex-1 h-px bg-gray-700" />
+              <span className="text-[11px] font-bold text-gray-400 tracking-widest whitespace-nowrap">
+                통계 관리
+              </span>
+              <span className="flex-1 h-px bg-gray-700" />
+            </div>
+            {statsNavItems.map(item => <NavItem key={item.href} item={item} />)}
+          </>
+        )}
+
+        {/* 시스템 관리 */}
         {isAdmin && (
           <>
             <div className="pt-5 pb-2 px-1 flex items-center gap-2">
