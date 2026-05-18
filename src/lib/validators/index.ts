@@ -6,11 +6,21 @@ export const loginSchema = z.object({
   password: z.string().min(6, '비밀번호는 최소 6자 이상이어야 합니다'),
 });
 
+// 비밀번호 강도: 영문/숫자/특수문자 중 2종류 이상 조합, 6자 이상
+const passwordSchema = z.string()
+  .min(6, '비밀번호는 최소 6자 이상이어야 합니다')
+  .refine(pw => {
+    const hasLetter  = /[a-zA-Z]/.test(pw);
+    const hasNumber  = /[0-9]/.test(pw);
+    const hasSpecial = /[^a-zA-Z0-9]/.test(pw);
+    return [hasLetter, hasNumber, hasSpecial].filter(Boolean).length >= 2;
+  }, '영문, 숫자, 특수문자 중 2종류 이상을 조합해주세요');
+
 // 신청자 자가 가입
 export const signupSchema = z.object({
   name: z.string().min(1, '이름을 입력해주세요'),
   phone: z.string().min(9, '전화번호를 입력해주세요').max(20),
-  password: z.string().min(6, '비밀번호는 최소 6자 이상이어야 합니다'),
+  password: passwordSchema,
   department_id: z.string().optional().transform(v => v || undefined),
 });
 

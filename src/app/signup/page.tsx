@@ -39,6 +39,13 @@ export default function SignupPage() {
     if (!form.name.trim()) { setError('이름을 입력해주세요'); return; }
     if (!form.phone.trim()) { setError('전화번호를 입력해주세요'); return; }
     if (form.password.length < 6) { setError('비밀번호는 최소 6자 이상이어야 합니다'); return; }
+    const hasLetter  = /[a-zA-Z]/.test(form.password);
+    const hasNumber  = /[0-9]/.test(form.password);
+    const hasSpecial = /[^a-zA-Z0-9]/.test(form.password);
+    if ([hasLetter, hasNumber, hasSpecial].filter(Boolean).length < 2) {
+      setError('비밀번호는 영문, 숫자, 특수문자 중 2종류 이상을 조합해야 합니다');
+      return;
+    }
     if (form.password !== form.passwordConfirm) { setError('비밀번호가 일치하지 않습니다'); return; }
 
     setLoading(true);
@@ -159,7 +166,7 @@ export default function SignupPage() {
                 placeholder="최소 6자 이상"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <p className="text-xs text-gray-400 mt-1">영문, 숫자, 특수문자 조합 6자 이상</p>
+              <p className="text-xs text-gray-400 mt-1">영문, 숫자, 특수문자 중 2종류 이상 조합 6자 이상</p>
             </div>
 
             <div>
