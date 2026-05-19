@@ -757,13 +757,15 @@ function UtilizationTab({ period }: { period: PeriodState }) {
 
 // ── 부서별 현황 탭 ────────────────────────────────────────────────────
 function DepartmentsTab({ period }: { period: PeriodState }) {
-  const [data, setData]     = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData]         = useState<any>(null);
+  const [loading, setLoading]   = useState(true);
+  const [selectedDept, setSelectedDept] = useState(''); // '' = 전체
 
   const { from, to } = periodToRange(period);
 
   useEffect(() => {
     setLoading(true);
+    setSelectedDept('');
     fetch(`/api/stats?type=departments&from=${from}&to=${to}`)
       .then(r => r.json()).then(j => { setData(j.data); setLoading(false); });
   }, [from, to]);
@@ -772,20 +774,25 @@ function DepartmentsTab({ period }: { period: PeriodState }) {
     if (!data) return;
     const label = periodLabel(period);
     const wb = XLSX.utils.book_new();
-
-    const rankRows = [
-      ['순위', '부서명', '운행건수'],
-      ...data.ranking.map((d: any, i: number) => [i + 1, d.name, d.count]),
-    ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rankRows), '부서별순위');
-
-    const monthHeaders = ['월', ...data.top_depts];
-    const monthRows = [
-      monthHeaders,
-      ...data.monthly.map((m: any) => [m.month, ...data.top_depts.map((d: string) => m[d] || 0)]),
-    ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(monthRows), '월별부서현황');
-    XLSX.writeFile(wb, `부서별현황_${label}.xlsx`);
+    if (selectedDept) {
+      // 선택 부서 월별 데이터
+      const rows = [
+        ['월', '운행건수'],
+        ...data.monthly.map((m: any) => [m.month, m[selectedDept] ?? 0]),
+      ];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), selectedDept);
+    } else {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+        ['순위', '부서명', '운행건수'],
+        ...data.ranking.map((d: any, i: number) => [i + 1, d.name, d.count]),
+      ]), '부서별순위');
+      const monthHeaders = ['월', ...data.top_depts];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+        monthHeaders,
+        ...data.monthly.map((m: any) => [m.month, ...data.top_depts.map((d: string) => m[d] || 0)]),
+      ]), '월별부서현황');
+    }
+    XLSX.writeFile(wb, `부서별현황_${selectedDept || '전체'}_${label}.xlsx`);
   }
 
   if (loading) return <Loader />;
@@ -794,92 +801,193 @@ function DepartmentsTab({ period }: { period: PeriodState }) {
   const { ranking, monthly, top_depts } = data;
   const total = ranking.reduce((s: number, d: any) => s + d.count, 0);
 
+  // 선택 부서 데이터
+  const deptInfo    = selectedDept ? ranking.find((d: any) => d.name === selectedDept) : null;
+  const deptRank    = selectedDept ? ranking.findIndex((d: any) => d.name === selectedDept) + 1 : 0;
+  const deptMonthly = monthly.map((m: any) => ({ month: m.month, 건수: m[selectedDept] ?? 0 }));
+  const deptAvg     = deptInfo ? Math.round((deptInfo.count / (monthly.length || 1)) * 10) / 10 : 0;
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end"><DownloadBtn onClick={handleDownload} /></div>
-
-      {/* 순위(좌) + 파이(중) + 월별추이(우) — 한 행 */}
-      <div className="grid grid-cols-9 gap-4">
-        {/* 순위 리스트 */}
-        <div className="col-span-3 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <SectionTitle>부서별 운행 건수 순위</SectionTitle>
-          <div className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 340 }}>
+      {/* 헤더: 부서 선택 + 다운로드 */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-1">
+          <span className="text-sm font-semibold text-gray-600 whitespace-nowrap">부서 선택</span>
+          <div className="flex gap-1.5 flex-wrap">
+            <button
+              onClick={() => setSelectedDept('')}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                selectedDept === '' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:border-blue-300 hover:text-blue-600'
+              }`}
+            >전체</button>
             {ranking.map((d: any, i: number) => (
-              <div key={d.name} className="flex items-center gap-2">
-                <span className={`text-xs font-bold w-4 text-center flex-shrink-0 ${i < 3 ? 'text-blue-600' : 'text-gray-400'}`}>{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-0.5">
-                    <span className="text-sm font-medium text-gray-800 truncate">{d.name}</span>
-                    <span className="text-xs text-gray-500 ml-2 flex-shrink-0">{d.count}건 ({total > 0 ? Math.round(d.count / total * 100) : 0}%)</span>
-                  </div>
-                  <div className="bg-gray-100 rounded-full h-1.5">
-                    <div className="h-1.5 rounded-full" style={{ width: `${ranking[0].count > 0 ? (d.count / ranking[0].count) * 100 : 0}%`, backgroundColor: COLORS[i % COLORS.length] }} />
-                  </div>
-                </div>
-              </div>
+              <button
+                key={d.name}
+                onClick={() => setSelectedDept(d.name)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                  selectedDept === d.name
+                    ? 'text-white shadow-sm'
+                    : 'bg-white border border-gray-200 text-gray-500 hover:border-blue-300 hover:text-blue-600'
+                }`}
+                style={selectedDept === d.name ? { backgroundColor: COLORS[i % COLORS.length] } : {}}
+              >
+                {d.name}
+                <span className={`ml-1 ${selectedDept === d.name ? 'opacity-80' : 'text-gray-400'}`}>{d.count}</span>
+              </button>
             ))}
           </div>
         </div>
-
-        {/* 파이차트 */}
-        <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <SectionTitle>부서별 비중</SectionTitle>
-          <ResponsiveContainer width="100%" height={340}>
-            <PieChart>
-              <Pie data={ranking.slice(0, 8)} cx="50%" cy="38%" innerRadius={45} outerRadius={80}
-                dataKey="count" nameKey="name" labelLine={false}>
-                {ranking.slice(0, 8).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-              </Pie>
-              <Tooltip formatter={(v: any, name: any) => [`${v}건`, name]} />
-              <Legend iconType="circle" iconSize={9}
-                formatter={(value) => <span className="text-xs text-gray-600">{value}</span>} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* 월별 추이 */}
-        <div className="col-span-4 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <SectionTitle>월별 부서 운행 추이 (상위 5개)</SectionTitle>
-          <ResponsiveContainer width="100%" height={340}>
-            <BarChart data={monthly} barGap={2}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
-              <Tooltip />
-              <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-              {top_depts.slice(0, 5).map((dept: string, i: number) => (
-                <Bar key={dept} dataKey={dept} name={dept} fill={COLORS[i % COLORS.length]} radius={[3,3,0,0]} stackId="a" />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <DownloadBtn onClick={handleDownload} />
       </div>
 
-      {/* 상세 테이블 (스크롤) */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-        <SectionTitle>부서별 상세 현황</SectionTitle>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100">
-                {['순위','부서명','운행건수','비율'].map(h => (
-                  <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
+      {selectedDept && deptInfo ? (
+        /* ── 단일 부서 상세 뷰 ── */
+        <>
+          {/* KPI 3개 */}
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: '기간 총 운행건수', value: `${deptInfo.count}건` },
+              { label: '전체 비율', value: `${total > 0 ? Math.round(deptInfo.count / total * 100) : 0}%` },
+              { label: `월 평균 / 순위`, value: `${deptAvg}건`, sub: `전체 ${ranking.length}개 부서 중 ${deptRank}위` },
+            ].map(k => (
+              <div key={k.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                <p className="text-xs font-medium text-gray-400 mb-1">{k.label}</p>
+                <p className="text-2xl font-bold text-gray-900">{k.value}</p>
+                {k.sub && <p className="text-xs text-gray-400 mt-1">{k.sub}</p>}
+              </div>
+            ))}
+          </div>
+
+          {/* 월별 추이 라인차트 */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <SectionTitle>{selectedDept} — 월별 운행 건수 추이</SectionTitle>
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={deptMonthly}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
+                <Tooltip formatter={(v: any) => [`${v}건`, selectedDept]} />
+                <Line type="monotone" dataKey="건수" stroke="#3b82f6" strokeWidth={2.5}
+                  dot={{ fill: '#3b82f6', r: 4 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 월별 상세 테이블 */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <SectionTitle>월별 상세 현황</SectionTitle>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    {['월', '운행건수'].map(h => (
+                      <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-gray-500">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {deptMonthly.map((m: any) => (
+                    <tr key={m.month} className="border-b border-gray-50 hover:bg-gray-50">
+                      <td className="py-2 px-3 text-gray-600">{m.month}</td>
+                      <td className="py-2 px-3 font-semibold text-blue-600">{m.건수}건</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      ) : (
+        /* ── 전체 보기 ── */
+        <>
+          <div className="grid grid-cols-9 gap-4">
+            {/* 순위 리스트 — 클릭으로 해당 부서 선택 */}
+            <div className="col-span-3 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+              <SectionTitle>부서별 운행 건수 순위 <span className="text-gray-400 font-normal text-xs ml-1">(클릭하면 상세보기)</span></SectionTitle>
+              <div className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 340 }}>
+                {ranking.map((d: any, i: number) => (
+                  <button key={d.name} onClick={() => setSelectedDept(d.name)}
+                    className="w-full flex items-center gap-2 hover:bg-blue-50 rounded-lg px-1 py-0.5 transition-colors group">
+                    <span className={`text-xs font-bold w-4 text-center flex-shrink-0 ${i < 3 ? 'text-blue-600' : 'text-gray-400'}`}>{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-0.5">
+                        <span className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-700">{d.name}</span>
+                        <span className="text-xs text-gray-500 ml-2 flex-shrink-0">{d.count}건 ({total > 0 ? Math.round(d.count / total * 100) : 0}%)</span>
+                      </div>
+                      <div className="bg-gray-100 rounded-full h-1.5">
+                        <div className="h-1.5 rounded-full" style={{ width: `${ranking[0].count > 0 ? (d.count / ranking[0].count) * 100 : 0}%`, backgroundColor: COLORS[i % COLORS.length] }} />
+                      </div>
+                    </div>
+                  </button>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {ranking.map((d: any, i: number) => (
-                <tr key={d.name} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-2 px-3 text-gray-400 whitespace-nowrap">{i + 1}</td>
-                  <td className="py-2 px-3 font-medium whitespace-nowrap">{d.name}</td>
-                  <td className="py-2 px-3 text-blue-600 font-semibold whitespace-nowrap">{d.count}건</td>
-                  <td className="py-2 px-3 text-gray-500 whitespace-nowrap">{total > 0 ? Math.round(d.count / total * 100) : 0}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              </div>
+            </div>
+
+            {/* 파이차트 */}
+            <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+              <SectionTitle>부서별 비중</SectionTitle>
+              <ResponsiveContainer width="100%" height={340}>
+                <PieChart>
+                  <Pie data={ranking.slice(0, 8)} cx="50%" cy="38%" innerRadius={45} outerRadius={80}
+                    dataKey="count" nameKey="name" labelLine={false}
+                    onClick={(entry: any) => setSelectedDept(entry.name)}
+                    style={{ cursor: 'pointer' }}>
+                    {ranking.slice(0, 8).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip formatter={(v: any, name: any) => [`${v}건`, name]} />
+                  <Legend iconType="circle" iconSize={9}
+                    formatter={(value) => <span className="text-xs text-gray-600">{value}</span>} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 월별 추이 */}
+            <div className="col-span-4 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+              <SectionTitle>월별 부서 운행 추이 (상위 5개)</SectionTitle>
+              <ResponsiveContainer width="100%" height={340}>
+                <BarChart data={monthly} barGap={2}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
+                  <Tooltip />
+                  <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+                  {top_depts.slice(0, 5).map((dept: string, i: number) => (
+                    <Bar key={dept} dataKey={dept} name={dept} fill={COLORS[i % COLORS.length]} radius={[3,3,0,0]} stackId="a"
+                      onClick={() => setSelectedDept(dept)} style={{ cursor: 'pointer' }} />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* 상세 테이블 */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <SectionTitle>부서별 상세 현황</SectionTitle>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    {['순위','부서명','운행건수','비율'].map(h => (
+                      <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ranking.map((d: any, i: number) => (
+                    <tr key={d.name} className="border-b border-gray-50 hover:bg-blue-50 cursor-pointer"
+                      onClick={() => setSelectedDept(d.name)}>
+                      <td className="py-2 px-3 text-gray-400 whitespace-nowrap">{i + 1}</td>
+                      <td className="py-2 px-3 font-medium whitespace-nowrap text-blue-700">{d.name}</td>
+                      <td className="py-2 px-3 text-blue-600 font-semibold whitespace-nowrap">{d.count}건</td>
+                      <td className="py-2 px-3 text-gray-500 whitespace-nowrap">{total > 0 ? Math.round(d.count / total * 100) : 0}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
