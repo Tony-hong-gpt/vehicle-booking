@@ -91,12 +91,13 @@ export default function ManagerProfilePage() {
         <div className="bg-[#02AA4B] rounded-2xl px-4 py-3.5">
           {/* 아바타 + 이름·연락처 */}
           <div className="flex items-center gap-3 mb-3">
-            {/* 아바타 박스: 이니셜 + 직책 배지 */}
-            <div className="flex flex-col items-center justify-center bg-white/20 rounded-xl px-2.5 py-2 flex-shrink-0 min-w-[52px]">
-              <span className="text-white text-xl font-bold leading-none">
-                {user?.name?.charAt(0)}
-              </span>
-              <span className="mt-1.5 bg-white/25 rounded-md px-1.5 py-0.5 text-white text-[9px] font-semibold tracking-tight whitespace-nowrap">
+            {/* 아바타 박스: 부서관리자 아이콘 */}
+            <div className="flex flex-col items-center justify-center bg-white/20 rounded-xl px-3 py-2.5 flex-shrink-0 gap-1.5">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span className="text-white text-[10px] font-bold tracking-tight whitespace-nowrap">
                 부서관리자
               </span>
             </div>
@@ -110,7 +111,7 @@ export default function ManagerProfilePage() {
           {/* 소속 — 태그 방식으로 여러 개 표시 */}
           {myDepts.length > 0 && (
             <div className="bg-white/15 rounded-xl px-3 py-2">
-              <p className="text-green-100 text-[10px] font-medium mb-1.5">소속</p>
+              <p className="text-white text-sm font-bold mb-1.5">소속</p>
               <div className="flex flex-wrap gap-1.5">
                 {myDepts.map(d => (
                   <span
