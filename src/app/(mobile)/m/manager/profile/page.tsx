@@ -88,25 +88,27 @@ export default function ManagerProfilePage() {
       <div className="flex-1 px-4 py-4 space-y-4">
 
         {/* 프로필 카드 */}
-        <div className="bg-[#02AA4B] rounded-2xl p-5">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+        <div className="bg-[#02AA4B] rounded-2xl px-4 py-3.5">
+          {/* 이름 + 아바타 */}
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white text-base font-bold flex-shrink-0">
               {user?.name?.charAt(0)}
             </div>
-            <div>
-              <p className="text-white font-bold text-lg leading-tight">{user?.name}</p>
-              <p className="text-green-100 text-xs mt-0.5">부서관리자</p>
+            <div className="min-w-0">
+              <p className="text-white font-bold text-base leading-tight">{user?.name}</p>
+              <p className="text-green-100 text-[11px] mt-0.5">부서관리자</p>
             </div>
           </div>
-          <div className="space-y-2">
-            <div className="bg-white/10 rounded-xl px-3 py-2">
-              <p className="text-green-100 text-[10px] font-medium">연락처</p>
-              <p className="text-white text-xs font-semibold mt-0.5">{user?.phone || '-'}</p>
+          {/* 연락처 + 소속 가로 배치 */}
+          <div className="flex gap-2">
+            <div className="flex-1 bg-white/15 rounded-xl px-3 py-2">
+              <p className="text-green-100 text-[10px] font-medium mb-0.5">연락처</p>
+              <p className="text-white text-xs font-semibold">{user?.phone || '-'}</p>
             </div>
             {myDepts.length > 0 && (
-              <div className="bg-white/10 rounded-xl px-3 py-2">
-                <p className="text-green-100 text-[10px] font-medium">소속</p>
-                <p className="text-white text-xs font-semibold mt-0.5">
+              <div className="flex-[2] bg-white/15 rounded-xl px-3 py-2 min-w-0">
+                <p className="text-green-100 text-[10px] font-medium mb-0.5">소속</p>
+                <p className="text-white text-xs font-semibold truncate">
                   {myDepts.map(d => d.name).join(', ')}
                 </p>
               </div>
