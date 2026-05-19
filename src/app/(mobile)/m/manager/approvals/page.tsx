@@ -46,13 +46,7 @@ export default function ManagerApprovalsPage() {
     try {
       const res = await fetch('/api/requests?page_size=200');
       const json = await res.json();
-      // 출발일 빠른 순 정렬
-      const sorted = (json.data || []).sort((a: any, b: any) => {
-        const aTime = a.start_datetime ? new Date(a.start_datetime).getTime() : Infinity;
-        const bTime = b.start_datetime ? new Date(b.start_datetime).getTime() : Infinity;
-        return aTime - bTime;
-      });
-      setRequests(sorted);
+      setRequests(json.data || []);
     } finally {
       setLoading(false);
     }
@@ -81,7 +75,7 @@ export default function ManagerApprovalsPage() {
   /* 탭 + 필터 적용 */
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return requests.filter(r => {
+    const list = requests.filter(r => {
       if (!tabConfig.status.includes(r.status)) return false;
       if (filterVehicleGroup && r.vehicle_group?.name !== filterVehicleGroup) return false;
       if (filterDept && r.department?.name !== filterDept) return false;
@@ -101,7 +95,14 @@ export default function ManagerApprovalsPage() {
       }
       return true;
     });
-  }, [requests, tabConfig, filterVehicleGroup, filterDept, filterDateFrom, filterDateTo, searchQuery]);
+    // 대기: 출발일 빠른 순 / 처리완료: 출발일 최신 순
+    const asc = tab === 'pending';
+    return list.sort((a, b) => {
+      const aTime = a.start_datetime ? new Date(a.start_datetime).getTime() : 0;
+      const bTime = b.start_datetime ? new Date(b.start_datetime).getTime() : 0;
+      return asc ? aTime - bTime : bTime - aTime;
+    });
+  }, [requests, tab, tabConfig, filterVehicleGroup, filterDept, filterDateFrom, filterDateTo, searchQuery]);
 
   const hasFilter = filterVehicleGroup || filterDept || filterDateFrom || filterDateTo;
   const hasSearch = searchQuery.trim().length > 0;
@@ -288,7 +289,7 @@ export default function ManagerApprovalsPage() {
           <p className="text-xs text-gray-400">
             {(hasFilter || hasSearch) ? '검색 결과 ' : ''}<span className="font-bold text-gray-600">{filtered.length}건</span>
             {(hasFilter || hasSearch) && ` / 전체 ${requests.filter(r => tabConfig.status.includes(r.status)).length}건`}
-            <span className="ml-1 text-gray-300">· 출발일 빠른 순</span>
+            <span className="ml-1 text-gray-300">· {tab === 'pending' ? '출발일 빠른 순' : '출발일 최신 순'}</span>
           </p>
         </div>
       )}
