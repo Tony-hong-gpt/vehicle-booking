@@ -599,19 +599,38 @@ function TripCard({
         </div>
 
         <div className="mt-4">
-          {!isInProgress && onPickup && (
-            <button onClick={onPickup} disabled={loading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
-              {loading ? (
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          {!isInProgress && onPickup && (() => {
+            const departureMs   = new Date(trip.scheduled_start).getTime();
+            const nowMs         = Date.now();
+            const canPickup     = departureMs - nowMs <= 24 * 60 * 60 * 1000; // 출발 24시간 이내
+            const availableTime = new Date(departureMs - 24 * 60 * 60 * 1000);
+            const availableStr  = format(availableTime, 'M/d(EEE) HH:mm', { locale: ko });
+
+            return canPickup ? (
+              <button onClick={onPickup} disabled={loading}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
+                {loading ? (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+                차량 인수 확인
+              </button>
+            ) : (
+              <div className="w-full rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 flex items-start gap-2.5">
+                <svg className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-              )}
-              차량 인수 확인
-            </button>
-          )}
+                <div>
+                  <p className="text-xs font-semibold text-gray-500">출발 24시간 전부터 인수 가능</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{availableStr} 이후 인수할 수 있습니다</p>
+                </div>
+              </div>
+            );
+          })()}
           {isInProgress && onReturn && (
             <button onClick={onReturn} disabled={loading}
               className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-semibold disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
