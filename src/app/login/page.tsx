@@ -68,13 +68,13 @@ export default function LoginPage() {
               </div>
             )}
             <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-gray-700">전화번호 또는 이메일</label>
+              <label className="block text-sm font-semibold text-gray-700">전화번호</label>
               <input
                 type="text"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                placeholder="010-0000-0000"
+                placeholder="010-0000-0000 또는 01000000000"
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 focus:bg-white"
               />
             </div>
