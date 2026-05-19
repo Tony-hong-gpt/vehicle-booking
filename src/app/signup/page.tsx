@@ -9,6 +9,7 @@ interface Department { id: string; name: string; }
 export default function SignupPage() {
   const router = useRouter();
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [deptLoading, setDeptLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -22,9 +23,12 @@ export default function SignupPage() {
   });
 
   useEffect(() => {
+    setDeptLoading(true);
     fetch('/api/departments')
       .then(r => r.json())
-      .then(json => setDepartments(json.data || []));
+      .then(json => setDepartments(json.data || []))
+      .catch(() => setDepartments([]))
+      .finally(() => setDeptLoading(false));
   }, []);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -142,17 +146,23 @@ export default function SignupPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">부서/위원회</label>
-              <select
-                name="department_id"
-                value={form.department_id}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">선택하세요</option>
-                {departments.map(d => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
+              {deptLoading ? (
+                <div className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-400 bg-gray-50">
+                  부서 목록 불러오는 중...
+                </div>
+              ) : (
+                <select
+                  name="department_id"
+                  value={form.department_id}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">선택하세요 ({departments.length}개)</option>
+                  {departments.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              )}
               <p className="text-xs text-gray-400 mt-1">대표 부서 하나를 선택하세요. 부서는 로그인 후 추가하실 수 있습니다.</p>
             </div>
 
