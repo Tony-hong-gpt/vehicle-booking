@@ -17,16 +17,17 @@ interface CalendarRequest {
   vehicle_group?: { name: string };
 }
 
-const STATUS_CONFIG: Record<string, { label: string; dot: string; pill: string; emoji: string }> = {
-  pending:        { label: '상위승인대기', dot: 'bg-yellow-400',  pill: 'bg-yellow-50 text-yellow-800 border-yellow-200',   emoji: '🟡' },
-  upper_approved: { label: '위원회대기',  dot: 'bg-indigo-400',  pill: 'bg-indigo-50 text-indigo-800 border-indigo-200',   emoji: '🔷' },
-  on_hold:        { label: '대기',        dot: 'bg-orange-400',  pill: 'bg-orange-50 text-orange-800 border-orange-200',   emoji: '⏸' },
-  approved:       { label: '승인',        dot: 'bg-green-400',   pill: 'bg-green-50 text-green-800 border-green-200',      emoji: '🟢' },
-  rejected:       { label: '반려',        dot: 'bg-red-400',     pill: 'bg-red-50 text-red-700 border-red-200',            emoji: '🔴' },
-  cancelled:      { label: '취소',        dot: 'bg-gray-300',    pill: 'bg-gray-50 text-gray-500 border-gray-200',         emoji: '⚫' },
-  dispatched:     { label: '배차완료',    dot: 'bg-blue-400',    pill: 'bg-blue-50 text-blue-800 border-blue-200',         emoji: '🔵' },
-  in_use:         { label: '운행중',      dot: 'bg-purple-400',  pill: 'bg-purple-50 text-purple-800 border-purple-200',   emoji: '🟣' },
-  returned:       { label: '반납완료',    dot: 'bg-slate-300',   pill: 'bg-slate-50 text-slate-600 border-slate-200',      emoji: '⚪' },
+const STATUS_CONFIG: Record<string, { label: string; dot: string; bar: string; pill: string; emoji: string }> = {
+  // dot: 범례용 점 색상 / bar: 달력 이벤트 왼쪽 강조 바 / pill: 팝업 배지
+  pending:        { label: '상위승인대기', dot: 'bg-amber-400',   bar: 'border-l-amber-400   bg-amber-50   text-amber-800',   pill: 'bg-amber-50 text-amber-800 border-amber-200',    emoji: '🟡' },
+  upper_approved: { label: '위원회대기',  dot: 'bg-violet-500',  bar: 'border-l-violet-500  bg-violet-50  text-violet-800',  pill: 'bg-violet-50 text-violet-800 border-violet-200',  emoji: '🔷' },
+  on_hold:        { label: '대기',        dot: 'bg-orange-500',  bar: 'border-l-orange-500  bg-orange-50  text-orange-800',  pill: 'bg-orange-50 text-orange-800 border-orange-200',  emoji: '⏸' },
+  approved:       { label: '승인',        dot: 'bg-emerald-500', bar: 'border-l-emerald-500 bg-emerald-50 text-emerald-800', pill: 'bg-emerald-50 text-emerald-800 border-emerald-200', emoji: '🟢' },
+  rejected:       { label: '반려',        dot: 'bg-red-500',     bar: 'border-l-red-500     bg-red-50     text-red-700',     pill: 'bg-red-50 text-red-700 border-red-200',            emoji: '🔴' },
+  cancelled:      { label: '취소',        dot: 'bg-slate-400',   bar: 'border-l-slate-400   bg-slate-100  text-slate-500',   pill: 'bg-slate-100 text-slate-500 border-slate-200',     emoji: '⚫' },
+  dispatched:     { label: '배차완료',    dot: 'bg-sky-500',     bar: 'border-l-sky-500     bg-sky-50     text-sky-800',     pill: 'bg-sky-50 text-sky-800 border-sky-200',            emoji: '🔵' },
+  in_use:         { label: '운행중',      dot: 'bg-teal-500',    bar: 'border-l-teal-500    bg-teal-50    text-teal-800',    pill: 'bg-teal-50 text-teal-800 border-teal-200',         emoji: '🚗' },
+  returned:       { label: '반납완료',    dot: 'bg-zinc-400',    bar: 'border-l-zinc-400    bg-zinc-100   text-zinc-500',    pill: 'bg-zinc-100 text-zinc-500 border-zinc-200',        emoji: '⚪' },
 };
 
 const DAYS_OF_WEEK = ['일', '월', '화', '수', '목', '금', '토'];
@@ -132,7 +133,7 @@ export default function RequestCalendar() {
         <div className="flex items-center gap-3 flex-wrap">
           {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
             <span key={key} className="flex items-center gap-1.5 text-xs text-gray-500">
-              <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
+              <span className={`w-3 h-2.5 rounded-sm flex-shrink-0 border-l-4 ${cfg.bar}`} />
               {cfg.label}
             </span>
           ))}
@@ -189,11 +190,10 @@ export default function RequestCalendar() {
                       <button
                         key={`${req.id}-${key}`}
                         onClick={() => setSelectedEvent(req)}
-                        className={`w-full flex items-center gap-1 px-1.5 py-0.5 rounded border text-left
-                          text-xs truncate transition-opacity hover:opacity-75 ${cfg.pill}
+                        className={`w-full flex items-center px-1.5 py-0.5 rounded-r border-l-4 text-left
+                          text-xs truncate transition-opacity hover:opacity-75 ${cfg.bar}
                           ${!isThisMonth ? 'opacity-50' : ''}`}
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
                         <span className="truncate leading-tight">
                           {isStart ? '' : '↳ '}{req.destination}
                         </span>
