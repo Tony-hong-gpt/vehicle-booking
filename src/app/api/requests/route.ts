@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/server/supabase';
+import { createClient, createAdminClient } from '@/lib/server/supabase';
 import { getCurrentUser, createUnauthorizedResponse, createErrorResponse } from '@/lib/server/auth';
 import { createRequestSchema, paginationSchema } from '@/lib/validators';
 import { PAGE_SIZE } from '@/lib/constants';
@@ -32,8 +32,24 @@ export async function GET(request: Request) {
     if (user.role === 'employee') {
       query = query.eq('requester_id', user.id);
     }
-    if (user.role === 'manager' && user.department_id) {
-      query = query.eq('department_id', user.department_id);
+    if (user.role === 'manager') {
+      // 이 관리자가 담당하는 모든 부서 조회 (user_departments)
+      const adminSupa = createAdminClient();
+      const { data: udRows } = await adminSupa
+        .from('user_departments')
+        .select('department_id')
+        .eq('user_id', user.id);
+      const deptIds: string[] = (udRows || []).map((r: any) => r.department_id);
+      // 프로필의 primary department_id도 포함
+      if (user.department_id && !deptIds.includes(user.department_id)) {
+        deptIds.push(user.department_id);
+      }
+      if (deptIds.length > 0) {
+        query = query.in('department_id', deptIds);
+      } else {
+        // 담당 부서 없음 → 빈 결과
+        return Response.json({ data: [], total: 0, page: 1, page_size: pagination.page_size, total_pages: 0, error: null });
+      }
     }
 
     const status = searchParams.get('status');

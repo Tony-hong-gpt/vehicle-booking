@@ -411,40 +411,39 @@ export default function ManagerApprovalsPage() {
                     </p>
                   )}
 
-                  {/* 반려 사유 (처리완료 탭) */}
-                  {req.status === 'rejected' && (() => {
-                    const rejectedApproval = req.approvals?.find((a: any) => a.status === 'rejected');
-                    if (!rejectedApproval) return null;
-                    const approver = rejectedApproval.approver;
-                    const approverLabel = approver?.role === 'admin'
-                      ? '관리자'
-                      : approver?.department?.name || approver?.name || '-';
+                  {/* 처리완료 탭 — 승인/반려 이력 */}
+                  {req.status !== 'pending' && (() => {
+                    const step1 = req.approvals?.find((a: any) => a.step === 1);
+                    if (!step1) return null;
+                    const approver = step1.approver;
+                    const isApproved = step1.status === 'approved';
                     return (
-                      <div className="border border-red-100 rounded-xl overflow-hidden mb-3">
-                        {/* 반려자 정보 헤더 */}
-                        <div className="bg-red-50 px-3 py-2 flex items-center justify-between">
+                      <div className={`border rounded-xl overflow-hidden mb-3 ${isApproved ? 'border-blue-100' : 'border-red-100'}`}>
+                        <div className={`px-3 py-2 flex items-center justify-between ${isApproved ? 'bg-blue-50' : 'bg-red-50'}`}>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-red-400 text-xs">✗</span>
-                            <span className="text-xs font-semibold text-red-600">반려</span>
+                            <span className={`text-xs ${isApproved ? 'text-blue-400' : 'text-red-400'}`}>
+                              {isApproved ? '✓' : '✗'}
+                            </span>
+                            <span className={`text-xs font-semibold ${isApproved ? 'text-blue-600' : 'text-red-600'}`}>
+                              {isApproved ? '상위 승인' : '반려'}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-2 text-right">
+                          <div className="flex items-center gap-2">
                             {approver && (
-                              <span className="text-xs text-red-500 font-medium">
+                              <span className={`text-xs font-medium ${isApproved ? 'text-blue-600' : 'text-red-500'}`}>
                                 {approver.name}
-                                <span className="text-red-400 font-normal"> · {approverLabel}</span>
                               </span>
                             )}
-                            {rejectedApproval.approved_at && (
-                              <span className="text-[10px] text-red-300">
-                                {format(new Date(rejectedApproval.approved_at), 'MM.dd HH:mm')}
+                            {step1.approved_at && (
+                              <span className={`text-[10px] ${isApproved ? 'text-blue-300' : 'text-red-300'}`}>
+                                {format(new Date(step1.approved_at), 'MM.dd HH:mm')}
                               </span>
                             )}
                           </div>
                         </div>
-                        {/* 반려 사유 */}
-                        {rejectedApproval.comment && (
+                        {!isApproved && step1.comment && (
                           <div className="px-3 py-2 bg-white">
-                            <p className="text-xs text-gray-600 leading-relaxed">{rejectedApproval.comment}</p>
+                            <p className="text-xs text-gray-600 leading-relaxed">{step1.comment}</p>
                           </div>
                         )}
                       </div>
