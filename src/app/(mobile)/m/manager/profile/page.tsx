@@ -89,31 +89,40 @@ export default function ManagerProfilePage() {
 
         {/* 프로필 카드 */}
         <div className="bg-[#02AA4B] rounded-2xl px-4 py-3.5">
-          {/* 이름 + 아바타 */}
+          {/* 아바타 + 이름·연락처 */}
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white text-base font-bold flex-shrink-0">
-              {user?.name?.charAt(0)}
+            {/* 아바타 박스: 이니셜 + 직책 배지 */}
+            <div className="flex flex-col items-center justify-center bg-white/20 rounded-xl px-2.5 py-2 flex-shrink-0 min-w-[52px]">
+              <span className="text-white text-xl font-bold leading-none">
+                {user?.name?.charAt(0)}
+              </span>
+              <span className="mt-1.5 bg-white/25 rounded-md px-1.5 py-0.5 text-white text-[9px] font-semibold tracking-tight whitespace-nowrap">
+                부서관리자
+              </span>
             </div>
+            {/* 이름 + 전화번호 */}
             <div className="min-w-0">
               <p className="text-white font-bold text-base leading-tight">{user?.name}</p>
-              <p className="text-green-100 text-[11px] mt-0.5">부서관리자</p>
+              <p className="text-white/75 text-xs mt-1 font-medium">{user?.phone || '-'}</p>
             </div>
           </div>
-          {/* 연락처 + 소속 가로 배치 */}
-          <div className="flex gap-2">
-            <div className="flex-1 bg-white/15 rounded-xl px-3 py-2">
-              <p className="text-green-100 text-[10px] font-medium mb-0.5">연락처</p>
-              <p className="text-white text-xs font-semibold">{user?.phone || '-'}</p>
-            </div>
-            {myDepts.length > 0 && (
-              <div className="flex-[2] bg-white/15 rounded-xl px-3 py-2 min-w-0">
-                <p className="text-green-100 text-[10px] font-medium mb-0.5">소속</p>
-                <p className="text-white text-xs font-semibold truncate">
-                  {myDepts.map(d => d.name).join(', ')}
-                </p>
+
+          {/* 소속 — 태그 방식으로 여러 개 표시 */}
+          {myDepts.length > 0 && (
+            <div className="bg-white/15 rounded-xl px-3 py-2">
+              <p className="text-green-100 text-[10px] font-medium mb-1.5">소속</p>
+              <div className="flex flex-wrap gap-1.5">
+                {myDepts.map(d => (
+                  <span
+                    key={d.id}
+                    className="bg-white/25 text-white text-xs font-medium px-2.5 py-1 rounded-lg leading-tight"
+                  >
+                    {d.name}
+                  </span>
+                ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* 소속 관리 */}
