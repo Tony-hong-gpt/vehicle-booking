@@ -98,25 +98,20 @@ export default function ManagerProfilePage() {
               <p className="text-green-100 text-xs mt-0.5">부서관리자</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { label: '이메일', value: user?.email },
-              { label: '연락처', value: user?.phone || '-' },
-            ].map(item => (
-              <div key={item.label} className="bg-white/10 rounded-xl px-3 py-2">
-                <p className="text-green-100 text-[10px] font-medium">{item.label}</p>
-                <p className="text-white text-xs font-semibold mt-0.5 truncate">{item.value}</p>
-              </div>
-            ))}
-          </div>
-          {myDepts.length > 0 && (
-            <div className="mt-2 bg-white/10 rounded-xl px-3 py-2">
-              <p className="text-green-100 text-[10px] font-medium">소속</p>
-              <p className="text-white text-xs font-semibold mt-0.5">
-                {myDepts.map(d => d.name).join(', ')}
-              </p>
+          <div className="space-y-2">
+            <div className="bg-white/10 rounded-xl px-3 py-2">
+              <p className="text-green-100 text-[10px] font-medium">연락처</p>
+              <p className="text-white text-xs font-semibold mt-0.5">{user?.phone || '-'}</p>
             </div>
-          )}
+            {myDepts.length > 0 && (
+              <div className="bg-white/10 rounded-xl px-3 py-2">
+                <p className="text-green-100 text-[10px] font-medium">소속</p>
+                <p className="text-white text-xs font-semibold mt-0.5">
+                  {myDepts.map(d => d.name).join(', ')}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 소속 관리 */}
