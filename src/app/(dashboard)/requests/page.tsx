@@ -4,30 +4,51 @@ import { REQUEST_STATUS_LABELS, REQUEST_STATUS_COLORS } from '@/lib/constants';
 import Link from 'next/link';
 import { formatKST } from '@/lib/date-utils';
 import RequestsExportBtn from '@/components/dashboard/RequestsExportBtn';
+import RequestsFilterBar from '@/components/dashboard/RequestsFilterBar';
+import { Suspense } from 'react';
 
-export default async function RequestsPage({ searchParams }: { searchParams: Promise<{ status?: string; page?: string }> }) {
+export default async function RequestsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    status?: string;
+    page?: string;
+    period?: string;
+    date_from?: string;
+    date_to?: string;
+  }>;
+}) {
   const user = await getCurrentUser();
   const supabase = await createClient();
   const params = await searchParams;
-  const page = Number(params.page) || 1;
+  const page     = Number(params.page) || 1;
   const pageSize = 10;
-  const status = params.status;
+  const status   = params.status;
+  const dateFrom = params.date_from;
+  const dateTo   = params.date_to;
+  const period   = params.period;
 
   let query = supabase
     .from('requests')
-    .select(`
-      id, request_no, destination, status, start_datetime, end_datetime, passengers, created_at,
-      driver_name, driver_phone,
-      requester:users!requester_id(name, employee_no),
-      department:departments(name),
-      purpose:purposes(name),
-      vehicle_group:vehicle_groups(name)
-    `, { count: 'exact' });
+    .select(
+      `id, request_no, destination, status, start_datetime, end_datetime, passengers, created_at,
+       driver_name, driver_phone,
+       requester:users!requester_id(name, employee_no),
+       department:departments(name),
+       purpose:purposes(name),
+       vehicle_group:vehicle_groups(name)`,
+      { count: 'exact' }
+    );
 
   if (user?.role === 'employee') query = query.eq('requester_id', user.id);
   if (user?.role === 'manager' && user.department_id) query = query.eq('department_id', user.department_id);
-  if (status) query = query.eq('status', status);
-  query = query.order('created_at', { ascending: false }).range((page - 1) * pageSize, page * pageSize - 1);
+  if (status)   query = query.eq('status', status);
+
+  // 날짜 필터 (KST → UTC 변환)
+  if (dateFrom) query = query.gte('start_datetime', new Date(`${dateFrom}T00:00:00+09:00`).toISOString());
+  if (dateTo)   query = query.lte('start_datetime', new Date(`${dateTo}T23:59:59+09:00`).toISOString());
+
+  query = query.order('start_datetime', { ascending: false }).range((page - 1) * pageSize, page * pageSize - 1);
 
   const { data: requests, count } = await query;
   const totalPages = Math.ceil((count || 0) / pageSize);
@@ -45,16 +66,36 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
     { value: 'cancelled',      label: '취소' },
   ];
 
+  // 페이지 링크 생성 시 현재 필터 유지
+  function buildPageUrl(p: number, newStatus?: string) {
+    const sp = new URLSearchParams();
+    const s = newStatus !== undefined ? newStatus : (status ?? '');
+    if (s)      sp.set('status', s);
+    if (period)  sp.set('period', period);
+    if (dateFrom) sp.set('date_from', dateFrom);
+    if (dateTo)   sp.set('date_to', dateTo);
+    if (p > 1)  sp.set('page', String(p));
+    const qs = sp.toString();
+    return `/requests${qs ? `?${qs}` : ''}`;
+  }
+
   return (
     <div className="p-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">신청 관리</h1>
-          <p className="text-gray-400 mt-1 text-sm">총 <span className="font-semibold text-gray-600">{count ?? 0}건</span></p>
+          <p className="text-gray-400 mt-1 text-sm">
+            총 <span className="font-semibold text-gray-600">{count ?? 0}건</span>
+            {dateFrom && dateTo && (
+              <span className="ml-2 text-xs text-blue-500 font-medium">
+                ({dateFrom.replace(/-/g, '.')} ~ {dateTo.replace(/-/g, '.')})
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <RequestsExportBtn />
+          <RequestsExportBtn dateFrom={dateFrom} dateTo={dateTo} />
           <Link
             href="/requests/new"
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
@@ -67,6 +108,11 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
         </div>
       </div>
 
+      {/* 기간 필터 */}
+      <Suspense>
+        <RequestsFilterBar status={status ?? ''} />
+      </Suspense>
+
       {/* 상태 필터 */}
       <div className="flex gap-1.5 mb-5 flex-wrap">
         {statusOptions.map(opt => {
@@ -74,7 +120,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
           return (
             <Link
               key={opt.value}
-              href={opt.value ? `/requests?status=${opt.value}` : '/requests'}
+              href={buildPageUrl(1, opt.value)}
               className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                 isActive
                   ? 'bg-gray-900 text-white shadow-sm'
@@ -105,7 +151,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
             {(!requests || requests.length === 0) && (
               <tr>
                 <td colSpan={7} className="px-5 py-14 text-center text-gray-400 text-sm">
-                  신청 내역이 없습니다
+                  {dateFrom || dateTo ? '해당 기간에 신청 내역이 없습니다' : '신청 내역이 없습니다'}
                 </td>
               </tr>
             )}
@@ -149,7 +195,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
         <div className="flex justify-center items-center gap-1.5 mt-6">
           {page > 1 && (
             <Link
-              href={`/requests?${status ? `status=${status}&` : ''}page=${page - 1}`}
+              href={buildPageUrl(page - 1)}
               className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,7 +206,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
             <Link
               key={p}
-              href={`/requests?${status ? `status=${status}&` : ''}page=${p}`}
+              href={buildPageUrl(p)}
               className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
                 page === p
                   ? 'bg-gray-900 text-white'
@@ -172,7 +218,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
           ))}
           {page < totalPages && (
             <Link
-              href={`/requests?${status ? `status=${status}&` : ''}page=${page + 1}`}
+              href={buildPageUrl(page + 1)}
               className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

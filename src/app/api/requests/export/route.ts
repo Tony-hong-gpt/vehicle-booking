@@ -28,8 +28,9 @@ export async function GET(request: Request) {
       .in('status', EXPORT_STATUSES)
       .order('start_datetime', { ascending: true });
 
-    if (fromParam) reqQuery = reqQuery.gte('start_datetime', fromParam);
-    if (toParam)   reqQuery = reqQuery.lte('start_datetime', toParam + 'T23:59:59');
+    // KST 날짜를 UTC ISO로 변환 (KST = UTC+9)
+    if (fromParam) reqQuery = reqQuery.gte('start_datetime', new Date(`${fromParam}T00:00:00+09:00`).toISOString());
+    if (toParam)   reqQuery = reqQuery.lte('start_datetime', new Date(`${toParam}T23:59:59+09:00`).toISOString());
 
     const { data: requests, error: reqError } = await reqQuery;
     if (reqError) return createErrorResponse(reqError.message);

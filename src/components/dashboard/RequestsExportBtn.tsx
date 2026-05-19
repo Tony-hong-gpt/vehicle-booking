@@ -37,7 +37,12 @@ function getDateKey(dt: string): string {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
-export default function RequestsExportBtn() {
+interface Props {
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export default function RequestsExportBtn({ dateFrom, dateTo }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
 
@@ -45,7 +50,11 @@ export default function RequestsExportBtn() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/requests/export');
+      const params = new URLSearchParams();
+      if (dateFrom) params.set('from', dateFrom);
+      if (dateTo)   params.set('to', dateTo);
+      const qs = params.toString();
+      const res = await fetch(`/api/requests/export${qs ? `?${qs}` : ''}`);
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
         throw new Error(json.error ?? `서버 오류 (${res.status})`);
@@ -119,8 +128,12 @@ export default function RequestsExportBtn() {
       const url   = URL.createObjectURL(blob);
       const a     = document.createElement('a');
       const today = new Date();
+      const todayStr = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
+      const suffix = (dateFrom && dateTo)
+        ? `_${dateFrom.replace(/-/g, '')}~${dateTo.replace(/-/g, '')}`
+        : `_${todayStr}`;
       a.href     = url;
-      a.download = `신청현황_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.xlsx`;
+      a.download = `신청현황${suffix}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
