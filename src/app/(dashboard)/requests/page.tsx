@@ -2,8 +2,7 @@ import { createClient } from '@/lib/server/supabase';
 import { getCurrentUser } from '@/lib/server/auth';
 import { REQUEST_STATUS_LABELS, REQUEST_STATUS_COLORS } from '@/lib/constants';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { formatKST } from '@/lib/date-utils';
 import RequestsExportBtn from '@/components/dashboard/RequestsExportBtn';
 
 export default async function RequestsPage({ searchParams }: { searchParams: Promise<{ status?: string; page?: string }> }) {
@@ -120,8 +119,8 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
                 <td className="px-5 py-4 font-semibold text-gray-900 text-sm">{req.destination}</td>
                 <td className="px-5 py-4 text-gray-500 text-sm">{req.purpose?.name}</td>
                 <td className="px-5 py-4 text-sm whitespace-nowrap">
-                  <div className="text-gray-900 font-medium">{format(new Date(req.start_datetime), 'yy.MM.dd(EEE) HH:mm', { locale: ko })}</div>
-                  <div className="text-gray-400 text-xs mt-0.5">~ {format(new Date(req.end_datetime), 'yy.MM.dd(EEE) HH:mm', { locale: ko })}</div>
+                  <div className="text-gray-900 font-medium">{formatKST(req.start_datetime, 'yy.MM.dd(EEE) HH:mm')}</div>
+                  <div className="text-gray-400 text-xs mt-0.5">~ {formatKST(req.end_datetime, 'yy.MM.dd(EEE) HH:mm')}</div>
                 </td>
                 <td className="px-5 py-4">
                   <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${REQUEST_STATUS_COLORS[req.status]}`}>

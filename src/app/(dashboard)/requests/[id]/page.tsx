@@ -2,8 +2,7 @@ import { createClient, createAdminClient } from '@/lib/server/supabase';
 import { getCurrentUser } from '@/lib/server/auth';
 import { REQUEST_STATUS_LABELS, REQUEST_STATUS_COLORS } from '@/lib/constants';
 import { notFound } from 'next/navigation';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { formatKST } from '@/lib/date-utils';
 import RequestActions from './RequestActions';
 import { vehicleName } from '@/lib/vehicle-utils';
 
@@ -114,7 +113,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                     </p>
                     {bannerApproval.approved_at && (
                       <p className="text-xs text-orange-400 mt-0.5">
-                        {format(new Date(bannerApproval.approved_at), 'yyyy.MM.dd HH:mm')}
+                        {formatKST(bannerApproval.approved_at, 'yyyy.MM.dd HH:mm')}
                       </p>
                     )}
                   </div>
@@ -150,7 +149,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                     </p>
                     {bannerApproval.approved_at && (
                       <p className="text-xs text-red-400 mt-0.5">
-                        {format(new Date(bannerApproval.approved_at), 'yyyy.MM.dd HH:mm')}
+                        {formatKST(bannerApproval.approved_at, 'yyyy.MM.dd HH:mm')}
                       </p>
                     )}
                   </div>
@@ -194,14 +193,14 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           </div>
           <div>
             <span className="text-gray-500">신청일시</span>
-            <p className="mt-1 font-medium">{format(new Date(req.created_at), 'yyyy.MM.dd HH:mm')}</p>
+            <p className="mt-1 font-medium">{formatKST(req.created_at, 'yyyy.MM.dd HH:mm')}</p>
           </div>
           <div className="col-span-2">
             <span className="text-gray-500">출발 ~ 반납</span>
             <p className="mt-1 font-medium">
-              {format(new Date(req.start_datetime), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko })}
+              {formatKST(req.start_datetime, 'yyyy.MM.dd(EEE) HH:mm')}
               {' ~ '}
-              {format(new Date(req.end_datetime), 'MM.dd(EEE) HH:mm', { locale: ko })}
+              {formatKST(req.end_datetime, 'MM.dd(EEE) HH:mm')}
             </p>
           </div>
           <div>
@@ -310,7 +309,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                       </div>
                       <span className="text-xs text-gray-400 flex-shrink-0">
                         {approval.approved_at
-                          ? format(new Date(approval.approved_at), 'yyyy.MM.dd HH:mm')
+                          ? formatKST(approval.approved_at, 'yyyy.MM.dd HH:mm')
                           : '처리 전'}
                       </span>
                     </div>
@@ -429,7 +428,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               <div>
                 <span className="text-gray-500">출발 예정</span>
                 <p className="mt-1 font-medium">
-                  {format(new Date(req.dispatch.scheduled_start), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko })}
+                  {formatKST(req.dispatch.scheduled_start, 'yyyy.MM.dd(EEE) HH:mm')}
                 </p>
               </div>
             )}

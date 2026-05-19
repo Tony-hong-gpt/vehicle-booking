@@ -2,8 +2,7 @@ import { createClient } from '@/lib/server/supabase';
 import { getCurrentUser } from '@/lib/server/auth';
 import { REQUEST_STATUS_LABELS, REQUEST_STATUS_COLORS, VEHICLE_STATUS_LABELS, VEHICLE_STATUS_COLORS } from '@/lib/constants';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { formatKST } from '@/lib/date-utils';
 import RequestCalendar from '@/components/dashboard/RequestCalendar';
 
 export default async function DashboardPage() {
@@ -88,7 +87,7 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">대시보드</h1>
         <p className="text-gray-400 mt-1 text-sm">
           안녕하세요,&nbsp;<span className="font-semibold text-gray-600">{user?.name}</span>님
-          &nbsp;·&nbsp;{format(new Date(), 'yyyy년 MM월 dd일 EEEE', { locale: ko })}
+          &nbsp;·&nbsp;{formatKST(new Date(), 'yyyy년 MM월 dd일 EEEE')}
         </p>
       </div>
 
@@ -146,7 +145,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="text-xs text-gray-400 whitespace-nowrap">
-                    {format(new Date(req.start_datetime), 'MM/dd HH:mm')}
+                    {formatKST(req.start_datetime, 'MM/dd HH:mm')}
                   </div>
                   <svg className="w-4 h-4 text-gray-200 group-hover:text-gray-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
