@@ -362,7 +362,7 @@ export default function MobileTripsPage() {
 
       {/* ── 인수 확인 모달 ── */}
       {pickupModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-end">
           <div className="bg-white rounded-t-3xl w-full max-w-md mx-auto p-5 pb-28 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900">차량 인수 확인</h3>
@@ -439,7 +439,7 @@ export default function MobileTripsPage() {
 
       {/* ── 반납 모달 ── */}
       {returnModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-end">
           <div className="bg-white rounded-t-3xl w-full max-w-md mx-auto p-5 pb-28 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900">반납 완료</h3>

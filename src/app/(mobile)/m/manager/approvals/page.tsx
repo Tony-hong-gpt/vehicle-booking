@@ -496,7 +496,7 @@ export default function ManagerApprovalsPage() {
       {/* 반려 사유 입력 모달 */}
       {rejectModal && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4"
+          className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center px-4"
           onClick={e => { if (e.target === e.currentTarget) setRejectModal(null); }}>
           <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden">
             {/* 모달 헤더 */}

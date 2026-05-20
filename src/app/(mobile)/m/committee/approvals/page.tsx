@@ -730,7 +730,7 @@ export default function CommitteeApprovalsPage() {
           총무 검토 의견 모달
       ══════════════════════════════════════════ */}
       {secretaryModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-end justify-center"
           onClick={e => { if (e.target === e.currentTarget) setSecretaryModal(null); }}>
           <div className="bg-white rounded-t-3xl w-full shadow-2xl flex flex-col" style={{ maxHeight: '85vh' }}>
             {/* 드래그 핸들 */}
@@ -802,7 +802,7 @@ export default function CommitteeApprovalsPage() {
           부위원장 결재 모달
       ══════════════════════════════════════════ */}
       {viceModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-end justify-center"
           onClick={e => { if (e.target === e.currentTarget) setViceModal(null); }}>
           <div className="bg-white rounded-t-3xl w-full shadow-2xl flex flex-col" style={{ maxHeight: '85vh' }}>
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 flex-shrink-0" />
@@ -880,7 +880,7 @@ export default function CommitteeApprovalsPage() {
           위원장 최종 승인 모달
       ══════════════════════════════════════════ */}
       {approveModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-end justify-center"
           onClick={e => { if (e.target === e.currentTarget) setApproveModal(null); }}>
           <div className="bg-white rounded-t-3xl w-full shadow-2xl flex flex-col" style={{ maxHeight: '85vh' }}>
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 flex-shrink-0" />
@@ -951,7 +951,7 @@ export default function CommitteeApprovalsPage() {
           반려 모달
       ══════════════════════════════════════════ */}
       {rejectModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4"
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center px-4"
           onClick={e => { if (e.target === e.currentTarget) setRejectModal(null); }}>
           <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
@@ -1006,7 +1006,7 @@ export default function CommitteeApprovalsPage() {
           대기 모달
       ══════════════════════════════════════════ */}
       {holdModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4"
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center px-4"
           onClick={e => { if (e.target === e.currentTarget) setHoldModal(null); }}>
           <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
@@ -1061,7 +1061,7 @@ export default function CommitteeApprovalsPage() {
           배차 등록 모달 (총무)
       ══════════════════════════════════════════ */}
       {dispatchModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-end justify-center"
           onClick={e => { if (e.target === e.currentTarget) setDispatchModal(null); }}>
           <div className="bg-white rounded-t-3xl w-full shadow-2xl flex flex-col" style={{ maxHeight: '90vh' }}>
             <div className="flex-shrink-0 border-b border-gray-100">
