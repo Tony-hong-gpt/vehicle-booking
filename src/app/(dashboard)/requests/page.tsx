@@ -57,7 +57,7 @@ export default async function RequestsPage({
     { value: '',                          label: '전체' },
     { value: 'pending',                   label: '상위승인대기' },
     { value: 'upper_approved',            label: '위원회대기' },
-    { value: 'committee_reviewing',       label: '간사검토중' },
+    { value: 'committee_reviewing',       label: '총무검토중' },
     { value: 'committee_vice_reviewing',  label: '부위원장검토중' },
     { value: 'on_hold',                   label: '대기' },
     { value: 'approved',                  label: '승인' },

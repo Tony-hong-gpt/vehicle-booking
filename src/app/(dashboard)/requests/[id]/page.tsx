@@ -51,7 +51,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
   // 1단계: 상위 승인 (manager가 pending 상태 건에 서명)
   const canUpperApprove = user?.role === 'manager' && req.status === 'pending';
-  // 간사: upper_approved → committee_reviewing
+  // 총무: upper_approved → committee_reviewing
   const canSecretaryReview = user?.role === 'committee_secretary' && req.status === 'upper_approved';
   // 부위원장: committee_reviewing → committee_vice_reviewing
   const canViceReview = user?.role === 'committee_vice' && req.status === 'committee_reviewing';
