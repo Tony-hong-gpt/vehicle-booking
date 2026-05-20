@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 const ROLE_LABELS: Record<string, string> = {
-  committee_secretary: '차량위원회 간사',
+  committee_secretary: '차량위원회 총무',
   committee_vice: '차량위원회 부위원장',
   committee_chair: '차량위원회 위원장',
   admin: '시스템 관리자',

@@ -4,17 +4,18 @@ import { getCurrentUser, createUnauthorizedResponse, createErrorResponse } from 
 /**
  * 반려 처리
  * - manager: pending → rejected (step 1)
- * - committee_secretary: upper_approved / committee_reviewing → rejected (step 3)
- * - committee_vice: committee_reviewing / committee_vice_reviewing → rejected (step 4)
+ * - committee_vice: committee_reviewing → rejected (step 4)
  * - committee_chair: committee_vice_reviewing → rejected (step 5)
  * - admin: upper_approved / on_hold / committee_* / pending(강제) → rejected
+ *
+ * ※ committee_secretary(총무)는 직접 반려 불가 — 검토 의견만 작성 후 부위원장에게 결재 상신
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
     if (!user) return createUnauthorizedResponse();
 
-    const ALLOWED_ROLES = ['admin', 'manager', 'committee_secretary', 'committee_vice', 'committee_chair'];
+    const ALLOWED_ROLES = ['admin', 'manager', 'committee_vice', 'committee_chair'];
     if (!ALLOWED_ROLES.includes(user.role)) {
       return Response.json({ data: null, error: '반려 권한이 없습니다' }, { status: 403 });
     }
@@ -39,14 +40,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         return Response.json({ data: null, error: '상위승인대기 상태인 신청만 반려할 수 있습니다' }, { status: 400 });
       }
       step = 1;
-    } else if (user.role === 'committee_secretary') {
-      if (!['upper_approved', 'committee_reviewing'].includes(req.status)) {
-        return Response.json({ data: null, error: '처리할 수 없는 상태입니다' }, { status: 400 });
-      }
-      step = 3;
     } else if (user.role === 'committee_vice') {
-      if (!['committee_reviewing', 'committee_vice_reviewing'].includes(req.status)) {
-        return Response.json({ data: null, error: '처리할 수 없는 상태입니다' }, { status: 400 });
+      if (req.status !== 'committee_reviewing') {
+        return Response.json({ data: null, error: '총무검토중 상태인 신청만 반려할 수 있습니다' }, { status: 400 });
       }
       step = 4;
     } else if (user.role === 'committee_chair') {

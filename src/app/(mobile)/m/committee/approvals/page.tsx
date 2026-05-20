@@ -21,7 +21,7 @@ const ROLE_DONE_STATUSES = [
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
   pending:                  { label: '상위승인대기',   color: 'bg-yellow-100 text-yellow-700',   dot: 'bg-yellow-400' },
   upper_approved:           { label: '차량위원회대기', color: 'bg-indigo-100 text-indigo-700',   dot: 'bg-indigo-400' },
-  committee_reviewing:      { label: '간사검토중',     color: 'bg-violet-100 text-violet-700',   dot: 'bg-violet-400' },
+  committee_reviewing:      { label: '총무검토중',     color: 'bg-violet-100 text-violet-700',   dot: 'bg-violet-400' },
   committee_vice_reviewing: { label: '부위원장검토중', color: 'bg-fuchsia-100 text-fuchsia-700', dot: 'bg-fuchsia-400' },
   approved:                 { label: '승인완료',       color: 'bg-green-100 text-green-700',     dot: 'bg-green-400' },
   rejected:                 { label: '반려',           color: 'bg-red-100 text-red-700',         dot: 'bg-red-400' },
@@ -45,19 +45,29 @@ export default function CommitteeApprovalsPage() {
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
 
-  /* 반려 모달 */
+  /* 총무 검토 의견 모달 */
+  const [secretaryModal,   setSecretaryModal]   = useState<any | null>(null);
+  const [secretaryComment, setSecretaryComment] = useState('');
+  const [secretaryError,   setSecretaryError]   = useState('');
+
+  /* 부위원장 결재 모달 */
+  const [viceModal,   setViceModal]   = useState<any | null>(null);
+  const [viceComment, setViceComment] = useState('');
+  const [viceError,   setViceError]   = useState('');
+
+  /* 반려 모달 (위원장 / admin) */
   const [rejectModal,   setRejectModal]   = useState<any | null>(null);
   const [rejectComment, setRejectComment] = useState('');
   const [rejectError,   setRejectError]   = useState('');
 
-  /* 대기 모달 */
+  /* 대기 모달 (위원장) */
   const [holdModal,   setHoldModal]   = useState<any | null>(null);
   const [holdComment, setHoldComment] = useState('');
   const [holdError,   setHoldError]   = useState('');
 
   /* 토스트 */
   const [toast, setToast] = useState('');
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500); };
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -135,29 +145,42 @@ export default function CommitteeApprovalsPage() {
     return json;
   }
 
-  /* 간사: 검토 시작 */
-  const handleSecretaryReview = async (req: any) => {
-    if (!confirm(`"${req.destination}" 신청을 검토 시작하시겠습니까?\n(차량위원회 대기 → 간사 검토 중)`)) return;
-    setActionId(req.id);
+  /* 총무: 검토 의견 제출 */
+  const handleSecretarySubmit = async () => {
+    if (!secretaryModal) return;
+    const comment = secretaryComment.trim();
+    if (!comment) { setSecretaryError('검토 의견을 작성해주세요'); return; }
+    setActionId(secretaryModal.id);
+    setSecretaryError('');
     try {
-      await apiCall(`/api/requests/${req.id}/committee-review`);
-      showToast('✅ 간사 검토가 시작되었습니다');
+      await apiCall(`/api/requests/${secretaryModal.id}/committee-review`, { comment });
+      setSecretaryModal(null);
+      setSecretaryComment('');
+      showToast('✅ 검토 의견이 제출되었습니다. 부위원장 결재 단계로 이동합니다.');
       fetchAll();
     } catch (e: any) {
-      alert(e.message);
+      setSecretaryError(e.message);
     } finally { setActionId(null); }
   };
 
-  /* 부위원장: 검토 완료 */
-  const handleViceReview = async (req: any) => {
-    if (!confirm(`"${req.destination}" 신청 검토를 완료하시겠습니까?\n(간사 검토 중 → 부위원장 검토 완료)`)) return;
-    setActionId(req.id);
+  /* 부위원장: 개별 결재 제출 */
+  const handleViceSubmit = async () => {
+    if (!viceModal) return;
+    setActionId(viceModal.id);
+    setViceError('');
     try {
-      await apiCall(`/api/requests/${req.id}/committee-vice-review`);
-      showToast('✅ 부위원장 검토가 완료되었습니다');
+      const json = await apiCall(`/api/requests/${viceModal.id}/committee-vice-review`, {
+        comment: viceComment.trim() || null,
+      });
+      setViceModal(null);
+      setViceComment('');
+      const msg = json.allDone
+        ? '✅ 부위원장 검토가 완료되었습니다. 위원장 최종 결재 단계로 이동합니다.'
+        : `✅ 검토 의견이 제출되었습니다. (${json.doneCount}/${json.totalVice}명 완료)`;
+      showToast(msg);
       fetchAll();
     } catch (e: any) {
-      alert(e.message);
+      setViceError(e.message);
     } finally { setActionId(null); }
   };
 
@@ -190,7 +213,7 @@ export default function CommitteeApprovalsPage() {
     } finally { setActionId(null); }
   };
 
-  /* 대기 (위원장만) */
+  /* 대기 (위원장) */
   const handleHold = async () => {
     if (!holdModal) return;
     if (!holdComment.trim()) { setHoldError('대기 사유를 입력해주세요'); return; }
@@ -211,50 +234,113 @@ export default function CommitteeApprovalsPage() {
     const isActing = actionId === req.id;
     const btnBase = 'flex-1 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5';
 
-    if (role === 'committee_secretary' && req.status === 'upper_approved') {
+    /* ── 총무: 검토 의견 작성 → 제출 (반려 불가) ── */
+    if ((role === 'committee_secretary' || (role === 'admin' && req.status === 'upper_approved'))
+        && req.status === 'upper_approved') {
       return (
         <div className="flex gap-2 pt-1">
-          <button onClick={() => handleSecretaryReview(req)} disabled={isActing}
+          <button
+            onClick={() => { setSecretaryModal(req); setSecretaryComment(''); setSecretaryError(''); }}
+            disabled={isActing}
             className={`${btnBase} bg-violet-600 hover:bg-violet-700 text-white`}>
-            {isActing ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '검토 시작'}
-          </button>
-          <button onClick={() => { setRejectModal(req); setRejectComment(''); setRejectError(''); }} disabled={isActing}
-            className={`${btnBase} bg-white border border-red-300 text-red-600`}>
-            반려
+            {isActing
+              ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              : <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  검토 의견 작성
+                </>}
           </button>
         </div>
       );
     }
 
-    if (role === 'committee_vice' && req.status === 'committee_reviewing') {
+    /* ── 부위원장: 개별 결재 (선택적 의견 작성 가능) ── */
+    if ((role === 'committee_vice' || (role === 'admin' && req.status === 'committee_reviewing'))
+        && req.status === 'committee_reviewing') {
+      // 현재 사용자가 이미 결재했는지 확인
+      const myApproval = req.approvals?.find(
+        (a: any) => a.step === 4 && a.approver_id === user?.id && a.status === 'approved'
+      );
+      // step=4 결재 완료 수
+      const doneCount = req.approvals?.filter(
+        (a: any) => a.step === 4 && a.status === 'approved'
+      ).length ?? 0;
+
+      if (myApproval) {
+        return (
+          <div className="pt-1">
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-fuchsia-50 border border-fuchsia-200 rounded-xl">
+              <svg className="w-4 h-4 text-fuchsia-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-fuchsia-700">결재 완료</p>
+                {myApproval.comment && (
+                  <p className="text-xs text-fuchsia-600 mt-0.5 leading-relaxed">{myApproval.comment}</p>
+                )}
+              </div>
+              {doneCount > 0 && (
+                <span className="text-xs text-fuchsia-500 font-medium bg-fuchsia-100 px-2 py-0.5 rounded-full">
+                  {doneCount}명 완료
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      }
+
       return (
-        <div className="flex gap-2 pt-1">
-          <button onClick={() => handleViceReview(req)} disabled={isActing}
-            className={`${btnBase} bg-fuchsia-600 hover:bg-fuchsia-700 text-white`}>
-            {isActing ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '검토 완료'}
-          </button>
-          <button onClick={() => { setRejectModal(req); setRejectComment(''); setRejectError(''); }} disabled={isActing}
-            className={`${btnBase} bg-white border border-red-300 text-red-600`}>
-            반려
-          </button>
+        <div className="space-y-2 pt-1">
+          {doneCount > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-50 rounded-lg">
+              <span className="w-1.5 h-1.5 rounded-full bg-fuchsia-400" />
+              <p className="text-xs text-fuchsia-600 font-medium">{doneCount}명 결재 완료 · 내 결재 대기중</p>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setViceModal(req); setViceComment(''); setViceError(''); }}
+              disabled={isActing}
+              className={`${btnBase} bg-fuchsia-600 hover:bg-fuchsia-700 text-white`}>
+              {isActing
+                ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                : <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    결재
+                  </>}
+            </button>
+            <button
+              onClick={() => { setRejectModal(req); setRejectComment(''); setRejectError(''); }}
+              disabled={isActing}
+              className={`${btnBase} bg-white border border-red-300 text-red-600`}>
+              반려
+            </button>
+          </div>
         </div>
       );
     }
 
-    if (role === 'committee_chair' && req.status === 'committee_vice_reviewing') {
+    /* ── 위원장: 최종 승인 / 반려 / 대기 ── */
+    if ((role === 'committee_chair' || (role === 'admin' && req.status === 'committee_vice_reviewing'))
+        && req.status === 'committee_vice_reviewing') {
       return (
         <div className="space-y-2 pt-1">
           <div className="flex gap-2">
             <button onClick={() => handleChairApprove(req)} disabled={isActing}
               className={`${btnBase} bg-green-600 hover:bg-green-700 text-white`}>
-              {isActing ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  최종 승인
-                </>
-              )}
+              {isActing
+                ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                : <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    최종 승인
+                  </>}
             </button>
             <button onClick={() => { setRejectModal(req); setRejectComment(''); setRejectError(''); }} disabled={isActing}
               className={`${btnBase} bg-white border border-red-300 text-red-600`}>
@@ -262,63 +348,11 @@ export default function CommitteeApprovalsPage() {
             </button>
           </div>
           <button onClick={() => { setHoldModal(req); setHoldComment(''); setHoldError(''); }} disabled={isActing}
-            className={`w-full py-2 rounded-xl text-sm font-medium border border-orange-300 text-orange-600 bg-orange-50`}>
+            className="w-full py-2 rounded-xl text-sm font-medium border border-orange-300 text-orange-600 bg-orange-50">
             대기
           </button>
         </div>
       );
-    }
-
-    /* admin: 순서에 맞는 버튼 표시 */
-    if (role === 'admin') {
-      if (req.status === 'upper_approved') {
-        return (
-          <div className="flex gap-2 pt-1">
-            <button onClick={() => handleSecretaryReview(req)} disabled={isActing}
-              className={`${btnBase} bg-violet-600 hover:bg-violet-700 text-white`}>
-              {isActing ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '간사 검토 시작'}
-            </button>
-            <button onClick={() => { setRejectModal(req); setRejectComment(''); setRejectError(''); }} disabled={isActing}
-              className={`${btnBase} bg-white border border-red-300 text-red-600`}>
-              반려
-            </button>
-          </div>
-        );
-      }
-      if (req.status === 'committee_reviewing') {
-        return (
-          <div className="flex gap-2 pt-1">
-            <button onClick={() => handleViceReview(req)} disabled={isActing}
-              className={`${btnBase} bg-fuchsia-600 hover:bg-fuchsia-700 text-white`}>
-              {isActing ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '부위원장 검토 완료'}
-            </button>
-            <button onClick={() => { setRejectModal(req); setRejectComment(''); setRejectError(''); }} disabled={isActing}
-              className={`${btnBase} bg-white border border-red-300 text-red-600`}>
-              반려
-            </button>
-          </div>
-        );
-      }
-      if (req.status === 'committee_vice_reviewing') {
-        return (
-          <div className="space-y-2 pt-1">
-            <div className="flex gap-2">
-              <button onClick={() => handleChairApprove(req)} disabled={isActing}
-                className={`${btnBase} bg-green-600 hover:bg-green-700 text-white`}>
-                {isActing ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '최종 승인'}
-              </button>
-              <button onClick={() => { setRejectModal(req); setRejectComment(''); setRejectError(''); }} disabled={isActing}
-                className={`${btnBase} bg-white border border-red-300 text-red-600`}>
-                반려
-              </button>
-            </div>
-            <button onClick={() => { setHoldModal(req); setHoldComment(''); setHoldError(''); }} disabled={isActing}
-              className="w-full py-2 rounded-xl text-sm font-medium border border-orange-300 text-orange-600 bg-orange-50">
-              대기
-            </button>
-          </div>
-        );
-      }
     }
 
     return null;
@@ -326,7 +360,7 @@ export default function CommitteeApprovalsPage() {
 
   /* 역할 레이블 */
   const roleLabel: Record<string, string> = {
-    committee_secretary: '간사',
+    committee_secretary: '총무',
     committee_vice: '부위원장',
     committee_chair: '위원장',
     admin: '관리자',
@@ -433,7 +467,7 @@ export default function CommitteeApprovalsPage() {
 
       {/* 토스트 */}
       {toast && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm px-5 py-2.5 rounded-full shadow-lg">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm px-5 py-2.5 rounded-full shadow-lg max-w-xs text-center">
           {toast}
         </div>
       )}
@@ -450,7 +484,7 @@ export default function CommitteeApprovalsPage() {
       )}
 
       {/* 목록 */}
-      <div className="flex-1 px-4 py-3 space-y-3">
+      <div className="flex-1 px-4 py-3 space-y-3 pb-28">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
@@ -476,6 +510,10 @@ export default function CommitteeApprovalsPage() {
           filtered.map((req: any) => {
             const cfg = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.pending;
             const isPending = tab === 'pending';
+
+            /* 총무 검토 의견 (step=3) */
+            const secretaryApproval = req.approvals?.find((a: any) => a.step === 3);
+
             return (
               <div key={req.id}
                 className={`bg-white rounded-2xl border overflow-hidden shadow-sm ${
@@ -548,6 +586,14 @@ export default function CommitteeApprovalsPage() {
                     )}
                   </div>
 
+                  {/* 총무 검토 의견 표시 (부위원장/위원장 화면에서 참고용) */}
+                  {secretaryApproval?.comment && (role === 'committee_vice' || role === 'committee_chair') && (
+                    <div className="bg-violet-50 border border-violet-100 rounded-xl px-3 py-2.5 mb-3">
+                      <p className="text-[10px] font-bold text-violet-500 mb-1">총무 검토 의견</p>
+                      <p className="text-xs text-violet-700 leading-relaxed">{secretaryApproval.comment}</p>
+                    </div>
+                  )}
+
                   {/* 처리 결과 이력 (처리완료 탭) */}
                   {tab === 'done' && req.approvals && req.approvals.length > 0 && (() => {
                     const last = [...req.approvals]
@@ -597,7 +643,131 @@ export default function CommitteeApprovalsPage() {
         )}
       </div>
 
-      {/* 반려 모달 */}
+      {/* ═══ 총무 검토 의견 모달 ═══ */}
+      {secretaryModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
+          onClick={e => { if (e.target === e.currentTarget) setSecretaryModal(null); }}>
+          <div className="bg-white rounded-t-3xl w-full max-w-lg shadow-2xl overflow-hidden pb-safe">
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
+              <div>
+                <h3 className="text-base font-bold text-gray-900">검토 의견 작성</h3>
+                <p className="text-xs text-gray-400 mt-0.5">부위원장 결재를 위한 검토 의견을 작성해주세요</p>
+              </div>
+              <button onClick={() => setSecretaryModal(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 text-lg">×</button>
+            </div>
+            <div className="px-5 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+              <div className="bg-violet-50 rounded-2xl px-4 py-3">
+                <p className="text-sm font-semibold text-gray-800">{secretaryModal.destination}</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {secretaryModal.requester?.name}
+                  {secretaryModal.department?.name && ` · ${secretaryModal.department.name}`}
+                  {' · '}{secretaryModal.request_no}
+                </p>
+                {secretaryModal.start_datetime && (
+                  <p className="text-xs text-violet-600 mt-1 font-medium">
+                    {format(new Date(secretaryModal.start_datetime), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko })} 출발
+                  </p>
+                )}
+              </div>
+              {secretaryError && (
+                <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-sm text-red-600">{secretaryError}</div>
+              )}
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-2">
+                  검토 의견 <span className="text-red-500">*</span>
+                  <span className="text-gray-400 font-normal ml-1">(필수 입력)</span>
+                </label>
+                <textarea
+                  value={secretaryComment}
+                  onChange={e => setSecretaryComment(e.target.value)}
+                  placeholder="예) 차량 중복으로 협의 필요, 대차 가능 차량 확인 완료, 일정 변경 요청 등 검토 의견을 상세히 작성해주세요"
+                  rows={5} autoFocus
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none" />
+                <p className="text-[10px] text-gray-400 mt-1.5">
+                  ※ 총무는 직접 승인/반려할 수 없습니다. 검토 의견을 작성하여 부위원장 결재를 요청합니다.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 px-5 py-4 border-t border-gray-100">
+              <button onClick={() => setSecretaryModal(null)}
+                className="flex-1 py-3 border border-gray-200 rounded-2xl text-sm text-gray-600 font-medium bg-gray-50">취소</button>
+              <button onClick={handleSecretarySubmit} disabled={actionId === secretaryModal.id || !secretaryComment.trim()}
+                className="flex-1 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl text-sm font-bold disabled:opacity-50 transition-colors">
+                {actionId === secretaryModal.id ? '제출 중...' : '검토 의견 제출'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ 부위원장 결재 모달 ═══ */}
+      {viceModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
+          onClick={e => { if (e.target === e.currentTarget) setViceModal(null); }}>
+          <div className="bg-white rounded-t-3xl w-full max-w-lg shadow-2xl overflow-hidden pb-safe">
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
+              <div>
+                <h3 className="text-base font-bold text-gray-900">부위원장 결재</h3>
+                <p className="text-xs text-gray-400 mt-0.5">검토 의견을 추가할 수 있습니다 (선택)</p>
+              </div>
+              <button onClick={() => setViceModal(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 text-lg">×</button>
+            </div>
+            <div className="px-5 py-4 space-y-4 max-h-[65vh] overflow-y-auto">
+              <div className="bg-fuchsia-50 rounded-2xl px-4 py-3">
+                <p className="text-sm font-semibold text-gray-800">{viceModal.destination}</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {viceModal.requester?.name}
+                  {viceModal.department?.name && ` · ${viceModal.department.name}`}
+                  {' · '}{viceModal.request_no}
+                </p>
+                {viceModal.start_datetime && (
+                  <p className="text-xs text-fuchsia-600 mt-1 font-medium">
+                    {format(new Date(viceModal.start_datetime), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko })} 출발
+                  </p>
+                )}
+              </div>
+
+              {/* 총무 검토 의견 참고 */}
+              {(() => {
+                const secApproval = viceModal.approvals?.find((a: any) => a.step === 3);
+                return secApproval?.comment ? (
+                  <div className="bg-violet-50 border border-violet-100 rounded-xl px-3 py-2.5">
+                    <p className="text-[10px] font-bold text-violet-500 mb-1">총무 검토 의견</p>
+                    <p className="text-xs text-violet-700 leading-relaxed">{secApproval.comment}</p>
+                  </div>
+                ) : null;
+              })()}
+
+              {viceError && (
+                <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-sm text-red-600">{viceError}</div>
+              )}
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-2">
+                  추가 검토 의견 <span className="text-gray-400 font-normal">(선택)</span>
+                </label>
+                <textarea
+                  value={viceComment}
+                  onChange={e => setViceComment(e.target.value)}
+                  placeholder="추가 검토 의견이 있으면 작성해주세요 (없으면 비워두세요)"
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-400 resize-none" />
+              </div>
+            </div>
+            <div className="flex gap-2 px-5 py-4 border-t border-gray-100">
+              <button onClick={() => setViceModal(null)}
+                className="flex-1 py-3 border border-gray-200 rounded-2xl text-sm text-gray-600 font-medium bg-gray-50">취소</button>
+              <button onClick={handleViceSubmit} disabled={actionId === viceModal.id}
+                className="flex-1 py-3 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-2xl text-sm font-bold disabled:opacity-50 transition-colors">
+                {actionId === viceModal.id ? '결재 중...' : '결재 확인'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ 반려 모달 (부위원장 / 위원장 / admin) ═══ */}
       {rejectModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4"
           onClick={e => { if (e.target === e.currentTarget) setRejectModal(null); }}>
@@ -635,7 +805,7 @@ export default function CommitteeApprovalsPage() {
         </div>
       )}
 
-      {/* 대기 모달 (위원장) */}
+      {/* ═══ 대기 모달 (위원장) ═══ */}
       {holdModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4"
           onClick={e => { if (e.target === e.currentTarget) setHoldModal(null); }}>

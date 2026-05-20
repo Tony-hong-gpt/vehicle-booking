@@ -71,7 +71,7 @@ export const USER_ROLE_LABELS: Record<string, string> = {
   manager: '부서관리자',
   employee: '일반직원',
   driver: '운전기사',
-  committee_secretary: '차량위원회 간사',
+  committee_secretary: '차량위원회 총무',
   committee_vice: '차량위원회 부위원장',
   committee_chair: '차량위원회 위원장',
 };
@@ -79,7 +79,7 @@ export const USER_ROLE_LABELS: Record<string, string> = {
 export const REQUEST_STATUS_LABELS: Record<string, string> = {
   pending: '상위승인대기',
   upper_approved: '차량위원회대기',
-  committee_reviewing: '간사검토중',
+  committee_reviewing: '총무검토중',
   committee_vice_reviewing: '부위원장검토중',
   on_hold: '대기',
   approved: '승인',
