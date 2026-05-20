@@ -11,10 +11,10 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_ICON_COLOR: Record<string, string> = {
-  committee_secretary: 'bg-violet-600',
-  committee_vice: 'bg-fuchsia-600',
-  committee_chair: 'bg-purple-700',
-  admin: 'bg-indigo-600',
+  committee_secretary: 'bg-white/20',
+  committee_vice: 'bg-white/20',
+  committee_chair: 'bg-white/20',
+  admin: 'bg-white/20',
 };
 
 export default function CommitteeProfilePage() {
