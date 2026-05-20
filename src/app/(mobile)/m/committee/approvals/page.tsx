@@ -12,10 +12,29 @@ const ROLE_PENDING_STATUSES: Record<string, string[]> = {
   admin:               ['upper_approved', 'committee_reviewing', 'committee_vice_reviewing', 'approved'],
 };
 
-const ROLE_DONE_STATUSES = [
-  'rejected', 'on_hold', 'dispatched', 'returned', 'in_use',
-  'committee_reviewing', 'committee_vice_reviewing',
-];
+/** 역할별 "처리완료" 탭에 표시할 상태 (pending 탭과 중복 없도록 역할별 분리) */
+const ROLE_DONE_STATUSES: Record<string, string[]> = {
+  // 총무: 상신한 건(committee_reviewing~) + 최종 처리 건. approved는 pending(배차대기)이므로 제외
+  committee_secretary: [
+    'committee_reviewing', 'committee_vice_reviewing',
+    'rejected', 'on_hold', 'dispatched', 'in_use', 'returned',
+  ],
+  // 부위원장: 결재 올린 건(committee_vice_reviewing) + 이후 처리 건
+  committee_vice: [
+    'committee_vice_reviewing', 'approved',
+    'rejected', 'on_hold', 'dispatched', 'in_use', 'returned',
+  ],
+  // 위원장: 본인 승인한 건(approved) + 반려/대기/이후
+  committee_chair: [
+    'approved',
+    'rejected', 'on_hold', 'dispatched', 'in_use', 'returned',
+  ],
+  // 관리자: 모든 처리 완료 상태
+  admin: [
+    'committee_reviewing', 'committee_vice_reviewing', 'approved',
+    'rejected', 'on_hold', 'dispatched', 'in_use', 'returned',
+  ],
+};
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
   pending:                  { label: '부서승인대기',   color: 'text-yellow-700',   bg: 'bg-yellow-50',   dot: 'bg-yellow-400' },
@@ -143,9 +162,11 @@ export default function CommitteeApprovalsPage() {
     [...new Set(requests.map((r: any) => r.department?.name).filter(Boolean))] as string[]
   , [requests]);
 
+  const doneStatuses = ROLE_DONE_STATUSES[role] ?? ROLE_DONE_STATUSES.committee_chair;
+
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    const targetStatuses = tab === 'pending' ? pendingStatuses : ROLE_DONE_STATUSES;
+    const targetStatuses = tab === 'pending' ? pendingStatuses : doneStatuses;
     const list = requests.filter((r: any) => {
       if (!targetStatuses.includes(r.status)) return false;
       if (filterDept && r.department?.name !== filterDept) return false;
@@ -168,7 +189,7 @@ export default function CommitteeApprovalsPage() {
       const bt = b.start_datetime ? new Date(b.start_datetime).getTime() : 0;
       return asc ? at - bt : bt - at;
     });
-  }, [requests, tab, pendingStatuses, searchQuery, filterDept, filterDateFrom, filterDateTo]);
+  }, [requests, tab, pendingStatuses, doneStatuses, searchQuery, filterDept, filterDateFrom, filterDateTo]);
 
   // 탭별 카운트
   const pendingCount = requests.filter((r: any) => pendingStatuses.includes(r.status)).length;
