@@ -16,9 +16,9 @@ const ROLE_CONFIG: Record<string, {
   bgTo: string;
 }> = {
   committee_secretary: {
-    label: '차량위원회 간사',
+    label: '차량위원회 총무',
     pendingStatuses: ['upper_approved'],
-    pendingLabel: '간사 검토 대기',
+    pendingLabel: '총무 검토 대기',
     color: '#7C3AED',
     bgFrom: 'from-violet-600',
     bgTo: 'to-violet-700',
@@ -52,7 +52,7 @@ const ROLE_CONFIG: Record<string, {
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   pending:                   { label: '상위승인대기',    color: 'bg-yellow-100 text-yellow-700' },
   upper_approved:            { label: '차량위원회대기',  color: 'bg-indigo-100 text-indigo-700' },
-  committee_reviewing:       { label: '간사검토중',      color: 'bg-violet-100 text-violet-700' },
+  committee_reviewing:       { label: '총무검토중',      color: 'bg-violet-100 text-violet-700' },
   committee_vice_reviewing:  { label: '부위원장검토중',  color: 'bg-fuchsia-100 text-fuchsia-700' },
   approved:                  { label: '승인',            color: 'bg-green-100 text-green-700' },
   rejected:                  { label: '반려',            color: 'bg-red-100 text-red-700' },
