@@ -22,7 +22,7 @@ const ROLE_LABELS: Record<string, string> = {
   manager: '상위승인자',
   employee: '신청자',
   driver: '운전기사',
-  committee_secretary: '차량위원회 간사',
+  committee_secretary: '차량위원회 총무',
   committee_vice: '차량위원회 부위원장',
   committee_chair: '차량위원회 위원장',
 };
@@ -555,7 +555,7 @@ export default function UsersPage() {
                 >
                   <option value="manager">상위승인자 (부서관리자)</option>
                   <option value="employee">신청자</option>
-                  <option value="committee_secretary">차량위원회 간사</option>
+                  <option value="committee_secretary">차량위원회 총무</option>
                   <option value="committee_vice">차량위원회 부위원장</option>
                   <option value="committee_chair">차량위원회 위원장</option>
                   <option value="driver">운전기사</option>
