@@ -372,11 +372,11 @@ export default function CommitteeApprovalsPage() {
         <button
           onClick={() => { setSecretaryModal(req); setSecretaryComment(''); setSecretaryError(''); }}
           disabled={isActing}
-          className={`${btnBase} bg-violet-600 hover:bg-violet-700 active:scale-95 text-white`}>
+          className="w-full py-3 rounded-xl text-sm font-semibold bg-violet-600 hover:bg-violet-700 active:scale-95 text-white disabled:opacity-60 transition-all flex items-center justify-center gap-2">
           {isActing
-            ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             : <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
@@ -392,11 +392,11 @@ export default function CommitteeApprovalsPage() {
         <button
           onClick={() => openDispatchModal(req)}
           disabled={isActing}
-          className={`${btnBase} bg-blue-600 hover:bg-blue-700 active:scale-95 text-white`}>
+          className="w-full py-3 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 active:scale-95 text-white disabled:opacity-60 transition-all flex items-center justify-center gap-2">
           {isActing
-            ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             : <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                 </svg>
@@ -732,9 +732,11 @@ export default function CommitteeApprovalsPage() {
       {secretaryModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
           onClick={e => { if (e.target === e.currentTarget) setSecretaryModal(null); }}>
-          <div className="bg-white rounded-t-3xl w-full max-w-lg shadow-2xl pb-safe">
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-0" />
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100">
+          <div className="bg-white rounded-t-3xl w-full shadow-2xl flex flex-col" style={{ maxHeight: '85vh' }}>
+            {/* 드래그 핸들 */}
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 flex-shrink-0" />
+            {/* 헤더 */}
+            <div className="flex items-center justify-between px-5 pt-3 pb-3 border-b border-gray-100 flex-shrink-0">
               <div>
                 <h3 className="text-base font-bold text-gray-900">검토 의견 작성</h3>
                 <p className="text-xs text-violet-500 font-medium mt-0.5">부위원장 결재 상신용 · 의견 필수 입력</p>
@@ -746,8 +748,8 @@ export default function CommitteeApprovalsPage() {
                 </svg>
               </button>
             </div>
-            <div className="px-5 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
-              {/* 신청 요약 */}
+            {/* 스크롤 영역 */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
               <div className="bg-violet-50 border border-violet-100 rounded-2xl px-4 py-3">
                 <p className="text-sm font-bold text-gray-800">{secretaryModal.destination}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -761,11 +763,9 @@ export default function CommitteeApprovalsPage() {
                   </p>
                 )}
               </div>
-              {/* 에러 */}
               {secretaryError && (
                 <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-sm text-red-600">{secretaryError}</div>
               )}
-              {/* 검토 의견 */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-2">
                   검토 의견 <span className="text-red-500">*</span>
@@ -781,7 +781,8 @@ export default function CommitteeApprovalsPage() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-2 px-5 py-4 border-t border-gray-100">
+            {/* 고정 푸터 */}
+            <div className="flex gap-2 px-5 py-4 border-t border-gray-100 flex-shrink-0 bg-white pb-safe-or-4">
               <button onClick={() => setSecretaryModal(null)}
                 className="flex-1 py-3 border border-gray-200 rounded-2xl text-sm text-gray-600 font-medium bg-gray-50">
                 취소
@@ -803,9 +804,9 @@ export default function CommitteeApprovalsPage() {
       {viceModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
           onClick={e => { if (e.target === e.currentTarget) setViceModal(null); }}>
-          <div className="bg-white rounded-t-3xl w-full max-w-lg shadow-2xl pb-safe">
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-0" />
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100">
+          <div className="bg-white rounded-t-3xl w-full shadow-2xl flex flex-col" style={{ maxHeight: '85vh' }}>
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 flex-shrink-0" />
+            <div className="flex items-center justify-between px-5 pt-3 pb-3 border-b border-gray-100 flex-shrink-0">
               <div>
                 <h3 className="text-base font-bold text-gray-900">부위원장 결재</h3>
                 <p className="text-xs text-fuchsia-500 font-medium mt-0.5">추가 의견 선택 입력 후 결재 확인</p>
@@ -817,8 +818,7 @@ export default function CommitteeApprovalsPage() {
                 </svg>
               </button>
             </div>
-            <div className="px-5 py-4 space-y-4 max-h-[65vh] overflow-y-auto">
-              {/* 신청 요약 */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
               <div className="bg-fuchsia-50 border border-fuchsia-100 rounded-2xl px-4 py-3">
                 <p className="text-sm font-bold text-gray-800">{viceModal.destination}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -831,7 +831,6 @@ export default function CommitteeApprovalsPage() {
                   </p>
                 )}
               </div>
-              {/* 총무 검토 의견 참고 */}
               {(() => {
                 const secApproval = viceModal.approvals?.find((a: any) => a.step === 3);
                 return secApproval?.comment ? (
@@ -846,11 +845,9 @@ export default function CommitteeApprovalsPage() {
                   </div>
                 ) : null;
               })()}
-              {/* 에러 */}
               {viceError && (
                 <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-sm text-red-600">{viceError}</div>
               )}
-              {/* 추가 의견 */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-2">
                   추가 의견 <span className="text-gray-400 font-normal">(선택)</span>
@@ -863,7 +860,7 @@ export default function CommitteeApprovalsPage() {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-400 resize-none" />
               </div>
             </div>
-            <div className="flex gap-2 px-5 py-4 border-t border-gray-100">
+            <div className="flex gap-2 px-5 py-4 border-t border-gray-100 flex-shrink-0 bg-white">
               <button onClick={() => setViceModal(null)}
                 className="flex-1 py-3 border border-gray-200 rounded-2xl text-sm text-gray-600 font-medium bg-gray-50">
                 취소
@@ -885,9 +882,9 @@ export default function CommitteeApprovalsPage() {
       {approveModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
           onClick={e => { if (e.target === e.currentTarget) setApproveModal(null); }}>
-          <div className="bg-white rounded-t-3xl w-full max-w-lg shadow-2xl pb-safe">
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-0" />
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100">
+          <div className="bg-white rounded-t-3xl w-full shadow-2xl flex flex-col" style={{ maxHeight: '85vh' }}>
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 flex-shrink-0" />
+            <div className="flex items-center justify-between px-5 pt-3 pb-3 border-b border-gray-100 flex-shrink-0">
               <div>
                 <h3 className="text-base font-bold text-gray-900">최종 승인</h3>
                 <p className="text-xs text-green-600 font-medium mt-0.5">위원장 최종 결재 · 배차 단계로 이동</p>
@@ -899,7 +896,7 @@ export default function CommitteeApprovalsPage() {
                 </svg>
               </button>
             </div>
-            <div className="px-5 py-4 space-y-4">
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
               <div className="bg-green-50 border border-green-100 rounded-2xl px-4 py-3">
                 <p className="text-sm font-bold text-gray-800">{approveModal.destination}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -934,7 +931,7 @@ export default function CommitteeApprovalsPage() {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400 resize-none" />
               </div>
             </div>
-            <div className="flex gap-2 px-5 py-4 border-t border-gray-100">
+            <div className="flex gap-2 px-5 py-4 border-t border-gray-100 flex-shrink-0 bg-white">
               <button onClick={() => setApproveModal(null)}
                 className="flex-1 py-3 border border-gray-200 rounded-2xl text-sm text-gray-600 font-medium bg-gray-50">
                 취소
@@ -1066,10 +1063,10 @@ export default function CommitteeApprovalsPage() {
       {dispatchModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
           onClick={e => { if (e.target === e.currentTarget) setDispatchModal(null); }}>
-          <div className="bg-white rounded-t-3xl w-full max-w-lg shadow-2xl pb-safe max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white rounded-t-3xl border-b border-gray-100 z-10">
+          <div className="bg-white rounded-t-3xl w-full shadow-2xl flex flex-col" style={{ maxHeight: '90vh' }}>
+            <div className="flex-shrink-0 border-b border-gray-100">
               <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-0" />
-              <div className="flex items-center justify-between px-5 pt-4 pb-3">
+              <div className="flex items-center justify-between px-5 pt-3 pb-3">
                 <div>
                   <h3 className="text-base font-bold text-gray-900">배차 등록</h3>
                   <p className="text-xs text-blue-500 font-medium mt-0.5">차량을 배정하고 배차를 완료합니다</p>
@@ -1083,7 +1080,7 @@ export default function CommitteeApprovalsPage() {
               </div>
             </div>
 
-            <div className="px-5 py-4 space-y-5">
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
               {/* 신청 요약 */}
               <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3">
                 <p className="text-sm font-bold text-gray-800">{dispatchModal.destination}</p>
@@ -1212,7 +1209,7 @@ export default function CommitteeApprovalsPage() {
               </div>
             </div>
 
-            <div className="flex gap-2 px-5 py-4 border-t border-gray-100">
+            <div className="flex gap-2 px-5 py-4 border-t border-gray-100 flex-shrink-0 bg-white">
               <button onClick={() => setDispatchModal(null)}
                 className="flex-1 py-3 border border-gray-200 rounded-2xl text-sm text-gray-600 font-medium bg-gray-50">
                 취소
