@@ -58,16 +58,6 @@ export default function LoginPage() {
 
       <div className="w-full max-w-sm px-6 relative z-10">
 
-        {/* 교회명 */}
-        <div className="flex items-center justify-center gap-1.5 mb-6">
-          <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
-          </svg>
-          <span className="text-xs font-semibold tracking-widest text-green-700 uppercase">
-            대구동신교회
-          </span>
-        </div>
-
         {/* 방패 로고 */}
         <div className="flex flex-col items-center mb-6">
           <div className="mb-4">
