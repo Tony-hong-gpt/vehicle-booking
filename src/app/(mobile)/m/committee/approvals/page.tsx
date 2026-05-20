@@ -113,7 +113,21 @@ export default function CommitteeApprovalsPage() {
         fetch('/api/requests?page_size=500').then(r => r.json()),
       ]);
       setUser(meRes.data);
-      setRequests(reqRes.data || []);
+      const allRequests = reqRes.data || [];
+      setRequests(allRequests);
+
+      // ── 결재 페이지 진입 시 현재 대기 건 전체를 읽음 처리 ──
+      const role        = meRes.data?.role ?? '';
+      const pendingSts  = ROLE_PENDING_STATUSES[role] ?? [];
+      const pendingIds  = allRequests
+        .filter((r: any) => pendingSts.includes(r.status))
+        .map((r: any) => r.id as string);
+      if (pendingIds.length > 0) {
+        const prev: string[] = JSON.parse(localStorage.getItem('committee_seen_requests') ?? '[]');
+        const merged = [...new Set([...prev, ...pendingIds])];
+        localStorage.setItem('committee_seen_requests', JSON.stringify(merged));
+        window.dispatchEvent(new Event('committee-notification-seen'));
+      }
     } finally {
       setLoading(false);
     }

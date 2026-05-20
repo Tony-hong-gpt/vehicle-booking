@@ -2,6 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
+
+/** 역할별 감시 상태 */
+const ROLE_WATCH: Record<string, string[]> = {
+  committee_secretary: ['upper_approved', 'approved'],
+  committee_vice:      ['committee_reviewing'],
+  committee_chair:     ['committee_vice_reviewing'],
+  admin:               ['upper_approved', 'committee_reviewing', 'committee_vice_reviewing', 'approved'],
+};
+
+const LS_KEY = 'committee_seen_requests';
 
 const navItems = [
   {
@@ -82,7 +93,37 @@ const navItems = [
 ];
 
 export default function CommitteeNav() {
-  const pathname = usePathname();
+  const pathname    = usePathname();
+  const [newCount, setNewCount] = useState(0);
+
+  useEffect(() => {
+    const refresh = async () => {
+      try {
+        const meRes = await fetch('/api/auth/me');
+        if (!meRes.ok) return;
+        const me   = await meRes.json();
+        const role = me.data?.role as string;
+        const statuses = ROLE_WATCH[role] ?? [];
+        if (!statuses.length) return;
+
+        // 역할별 대기 건 전체 수집
+        const results = await Promise.all(
+          statuses.map(s =>
+            fetch(`/api/requests?status=${s}&page_size=100`).then(r => r.json()).catch(() => ({ data: [] }))
+          )
+        );
+        const allIds: string[] = results.flatMap(r => (r.data ?? []).map((req: any) => req.id as string));
+
+        const seen: string[] = JSON.parse(localStorage.getItem(LS_KEY) ?? '[]');
+        setNewCount(allIds.filter(id => !seen.includes(id)).length);
+      } catch { /* silent */ }
+    };
+
+    refresh();
+    window.addEventListener('committee-notification-seen', refresh);
+    return () => window.removeEventListener('committee-notification-seen', refresh);
+  }, []);
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-sm border-t border-gray-100 z-50">
       <div className="grid grid-cols-5 px-1 pb-safe">
@@ -90,15 +131,24 @@ export default function CommitteeNav() {
           const isActive = item.exact
             ? pathname === item.href
             : pathname === item.href || pathname.startsWith(item.href + '/');
+          const isApprovals = item.href === '/m/committee/approvals';
           return (
             <Link key={item.href} href={item.href}
               className="flex flex-col items-center justify-center py-2 gap-0.5 relative">
               {isActive && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-purple-600 rounded-full" />
               )}
-              <span className={isActive ? 'text-purple-600' : 'text-gray-400'}>
-                {isActive ? item.activeIcon : item.inactiveIcon}
-              </span>
+              <div className="relative">
+                <span className={isActive ? 'text-purple-600' : 'text-gray-400'}>
+                  {isActive ? item.activeIcon : item.inactiveIcon}
+                </span>
+                {/* N 배지 */}
+                {isApprovals && newCount > 0 && (
+                  <span className="absolute -top-1 -right-2 min-w-[16px] h-4 bg-red-500 rounded-full flex items-center justify-center px-1">
+                    <span className="text-white text-[9px] font-black leading-none">N</span>
+                  </span>
+                )}
+              </div>
               <span className={`text-[9px] font-medium tracking-tight ${isActive ? 'text-purple-600' : 'text-gray-400'}`}>
                 {item.label}
               </span>
