@@ -660,60 +660,61 @@ export default function CommitteeApprovalsPage() {
                   </div>
                 </div>
 
-                <div className="px-4 py-4 space-y-3">
-                  {/* 목적지 + 탑승인원 */}
+                <div className="px-4 pt-3 pb-4 space-y-3">
+
+                  {/* ① 목적지 (가장 중요) */}
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-bold text-gray-900 text-base leading-tight">{req.destination}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {req.requester?.name}
-                        {req.department?.name && (
-                          <span className="text-gray-400"> · {req.department.name}</span>
-                        )}
-                      </p>
-                    </div>
+                    <p className="font-bold text-gray-900 text-[17px] leading-snug flex-1">{req.destination}</p>
                     {req.passengers != null && (
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full flex-shrink-0 font-medium">
+                      <span className="text-xs font-semibold text-gray-500 flex-shrink-0 mt-0.5">
                         {req.passengers}명
                       </span>
                     )}
                   </div>
 
-                  {/* 일정 정보 */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { label: '출발', val: req.start_datetime, icon: '🚀' },
-                      { label: '반납', val: req.end_datetime,   icon: '🏁' },
-                    ].map(({ label, val, icon }) => (
-                      <div key={label} className="bg-gray-50 rounded-xl px-3 py-2">
-                        <p className="text-[9px] text-gray-400 font-semibold mb-0.5">{icon} {label}</p>
-                        <p className="text-xs font-semibold text-gray-700">
-                          {val ? format(new Date(val), 'MM.dd(EEE) HH:mm', { locale: ko }) : '-'}
-                        </p>
-                      </div>
-                    ))}
+                  {/* ② 신청자 · 부서 */}
+                  <p className="text-sm text-gray-500">
+                    {req.requester?.name}
+                    {req.department?.name && <span className="text-gray-400"> · {req.department.name}</span>}
+                  </p>
+
+                  {/* ③ 일정 */}
+                  <div className="flex items-center gap-3 py-2.5 px-3 bg-gray-50 rounded-xl">
+                    <div className="flex-1">
+                      <p className="text-[10px] font-bold text-gray-400 mb-0.5">출발</p>
+                      <p className="text-sm font-bold text-gray-800">
+                        {req.start_datetime ? format(new Date(req.start_datetime), 'MM.dd(EEE) HH:mm', { locale: ko }) : '-'}
+                      </p>
+                    </div>
+                    <div className="w-px h-8 bg-gray-200 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-[10px] font-bold text-gray-400 mb-0.5">반납</p>
+                      <p className="text-sm font-bold text-gray-800">
+                        {req.end_datetime ? format(new Date(req.end_datetime), 'MM.dd(EEE) HH:mm', { locale: ko }) : '-'}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* 목적 + 차량군 */}
+                  {/* ④ 목적 · 차량군 */}
                   {(req.purpose?.name || req.vehicle_group?.name) && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       {req.purpose?.name && (
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
-                          📌 {req.purpose.name}
+                        <span className="text-xs font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-lg">
+                          {req.purpose.name}
                         </span>
                       )}
                       {req.vehicle_group?.name && (
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
-                          🚗 {req.vehicle_group.name}
+                        <span className="text-xs font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-lg">
+                          {req.vehicle_group.name}
                         </span>
                       )}
                     </div>
                   )}
 
-                  {/* 결재 현황 타임라인 */}
+                  {/* ⑤ 결재 현황 타임라인 */}
                   <ApprovalTimeline req={req} />
 
-                  {/* 액션 버튼 */}
+                  {/* ⑥ 액션 버튼 */}
                   {isPending && (
                     <div className="pt-1">
                       <ActionButtons req={req} />
@@ -759,7 +760,7 @@ export default function CommitteeApprovalsPage() {
                 </p>
                 {secretaryModal.start_datetime && (
                   <p className="text-xs text-violet-600 mt-1.5 font-medium">
-                    🚀 {format(new Date(secretaryModal.start_datetime), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko })} 출발
+                    출발 · {format(new Date(secretaryModal.start_datetime), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko })}
                   </p>
                 )}
               </div>
@@ -827,7 +828,7 @@ export default function CommitteeApprovalsPage() {
                 </p>
                 {viceModal.start_datetime && (
                   <p className="text-xs text-fuchsia-600 mt-1.5 font-medium">
-                    🚀 {format(new Date(viceModal.start_datetime), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko })} 출발
+                    출발 · {format(new Date(viceModal.start_datetime), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko })}
                   </p>
                 )}
               </div>
@@ -835,7 +836,7 @@ export default function CommitteeApprovalsPage() {
                 const secApproval = viceModal.approvals?.find((a: any) => a.step === 3);
                 return secApproval?.comment ? (
                   <div className="bg-violet-50 border border-violet-100 rounded-xl px-3 py-2.5">
-                    <p className="text-[10px] font-bold text-violet-500 mb-1">📋 총무 검토 의견</p>
+                    <p className="text-[10px] font-bold text-violet-500 mb-1">총무 검토 의견</p>
                     <p className="text-xs text-violet-700 leading-relaxed">{secApproval.comment}</p>
                     {secApproval.approver?.name && (
                       <p className="text-[10px] text-violet-400 mt-1">{secApproval.approver.name} · {
@@ -905,7 +906,7 @@ export default function CommitteeApprovalsPage() {
                 </p>
                 {approveModal.start_datetime && (
                   <p className="text-xs text-green-600 mt-1.5 font-medium">
-                    🚀 {format(new Date(approveModal.start_datetime), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko })} 출발
+                    출발 · {format(new Date(approveModal.start_datetime), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko })}
                   </p>
                 )}
               </div>
@@ -914,7 +915,7 @@ export default function CommitteeApprovalsPage() {
                 const viceApproval = approveModal.approvals?.find((a: any) => a.step === 4);
                 return viceApproval?.comment ? (
                   <div className="bg-fuchsia-50 border border-fuchsia-100 rounded-xl px-3 py-2.5">
-                    <p className="text-[10px] font-bold text-fuchsia-500 mb-1">✍️ 부위원장 의견</p>
+                    <p className="text-[10px] font-bold text-fuchsia-500 mb-1">부위원장 의견</p>
                     <p className="text-xs text-fuchsia-700 leading-relaxed">{viceApproval.comment}</p>
                   </div>
                 ) : null;
