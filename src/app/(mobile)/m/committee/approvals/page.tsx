@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
@@ -72,8 +73,11 @@ function getStepState(step: number, requestStatus: string, approvals: any[]): 'd
 }
 
 export default function CommitteeApprovalsPage() {
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get('tab') === 'done' ? 'done' : 'pending') as 'pending' | 'done';
+
   const [user, setUser]         = useState<any>(null);
-  const [tab, setTab]           = useState<'pending' | 'done'>('pending');
+  const [tab, setTab]           = useState<'pending' | 'done'>(initialTab);
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading]   = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);

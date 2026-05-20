@@ -6,6 +6,14 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import LogoutButton from '@/components/mobile/LogoutButton';
 
+/** 역할별 결재 대기 상태 (홈 → 결재탭 이동 시 탭 결정용) */
+const ROLE_PENDING_MAP: Record<string, string[]> = {
+  committee_secretary: ['upper_approved', 'approved'],
+  committee_vice:      ['committee_reviewing'],
+  committee_chair:     ['committee_vice_reviewing'],
+  admin:               ['upper_approved', 'committee_reviewing', 'committee_vice_reviewing', 'approved'],
+};
+
 /** 역할별 담당 상태 */
 const ROLE_CONFIG: Record<string, {
   label: string;
@@ -170,9 +178,11 @@ export default function CommitteeHomePage() {
           <div className="space-y-2">
             {requests.slice(0, 5).map((req: any) => {
               const badge = STATUS_BADGE[req.status] ?? { label: req.status, color: 'bg-gray-100 text-gray-600' };
+              const rolePending = ROLE_PENDING_MAP[user?.role] ?? ROLE_PENDING_MAP.committee_secretary;
+              const tabParam = rolePending.includes(req.status) ? 'pending' : 'done';
               return (
                 <div key={req.id}
-                  onClick={() => router.push('/m/committee/approvals')}
+                  onClick={() => router.push(`/m/committee/approvals?tab=${tabParam}`)}
                   className="bg-white rounded-2xl border border-gray-100 px-4 py-3.5 flex items-center justify-between shadow-sm active:bg-gray-50">
                   <div className="flex-1 min-w-0 mr-3">
                     <p className="text-sm font-semibold text-gray-900 truncate">{req.destination}</p>
