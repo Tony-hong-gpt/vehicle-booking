@@ -73,7 +73,7 @@ export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
     if (!user) return createUnauthorizedResponse();
-    if (!['admin', 'manager'].includes(user.role)) {
+    if (!['admin', 'manager', 'committee_secretary'].includes(user.role)) {
       return Response.json({ data: null, error: '배차 권한이 없습니다' }, { status: 403 });
     }
 

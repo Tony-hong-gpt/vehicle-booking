@@ -32,7 +32,8 @@ function getPrevRange(from: Date, to: Date) {
 export async function GET(request: Request) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return createUnauthorizedResponse();
+    const ALLOWED = ['admin', 'committee_secretary', 'committee_vice', 'committee_chair'];
+    if (!user || !ALLOWED.includes(user.role)) return createUnauthorizedResponse();
 
     const { searchParams } = new URL(request.url);
     const type        = searchParams.get('type') || 'overview';
