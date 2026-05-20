@@ -32,14 +32,14 @@ export const createUserSchema = z.object({
   password: z.string().min(6, '비밀번호는 최소 6자 이상이어야 합니다'),
   phone: z.string().optional(),
   department_id: z.string().min(1, '유효한 부서를 선택해주세요').optional(),
-  role: z.enum(['admin', 'manager', 'employee', 'driver']),
+  role: z.enum(['admin', 'manager', 'employee', 'driver', 'committee_secretary', 'committee_vice', 'committee_chair']),
 });
 
 export const updateUserSchema = z.object({
   name: z.string().min(1, '이름을 입력해주세요').optional(),
   phone: z.string().optional(),
   department_id: z.string().min(1).optional().nullable(),
-  role: z.enum(['admin', 'manager', 'employee', 'driver']).optional(),
+  role: z.enum(['admin', 'manager', 'employee', 'driver', 'committee_secretary', 'committee_vice', 'committee_chair']).optional(),
   is_active: z.boolean().optional(),
 });
 
@@ -99,7 +99,10 @@ export const updateRequestSchema = z.object({
   reason: z.string().optional(),
   driver_name: z.string().max(30).optional().nullable(),
   driver_phone: z.string().max(20).optional().nullable(),
-  status: z.enum(['pending','upper_approved','on_hold','approved','rejected','dispatched','in_use','returned','cancelled']).optional(),
+  status: z.enum([
+    'pending','upper_approved','committee_reviewing','committee_vice_reviewing',
+    'on_hold','approved','rejected','dispatched','in_use','returned','cancelled',
+  ]).optional(),
 });
 
 // 결재

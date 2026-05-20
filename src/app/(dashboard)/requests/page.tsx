@@ -54,16 +54,18 @@ export default async function RequestsPage({
   const totalPages = Math.ceil((count || 0) / pageSize);
 
   const statusOptions = [
-    { value: '',               label: '전체' },
-    { value: 'pending',        label: '상위승인대기' },
-    { value: 'upper_approved', label: '위원회대기' },
-    { value: 'on_hold',        label: '대기' },
-    { value: 'approved',       label: '승인' },
-    { value: 'rejected',       label: '반려' },
-    { value: 'dispatched',     label: '배차완료' },
-    { value: 'in_use',         label: '운행중' },
-    { value: 'returned',       label: '반납완료' },
-    { value: 'cancelled',      label: '취소' },
+    { value: '',                          label: '전체' },
+    { value: 'pending',                   label: '상위승인대기' },
+    { value: 'upper_approved',            label: '위원회대기' },
+    { value: 'committee_reviewing',       label: '간사검토중' },
+    { value: 'committee_vice_reviewing',  label: '부위원장검토중' },
+    { value: 'on_hold',                   label: '대기' },
+    { value: 'approved',                  label: '승인' },
+    { value: 'rejected',                  label: '반려' },
+    { value: 'dispatched',                label: '배차완료' },
+    { value: 'in_use',                    label: '운행중' },
+    { value: 'returned',                  label: '반납완료' },
+    { value: 'cancelled',                 label: '취소' },
   ];
 
   // 페이지 링크 생성 시 현재 필터 유지

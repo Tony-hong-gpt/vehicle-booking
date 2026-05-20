@@ -22,6 +22,9 @@ const ROLE_LABELS: Record<string, string> = {
   manager: '상위승인자',
   employee: '신청자',
   driver: '운전기사',
+  committee_secretary: '차량위원회 간사',
+  committee_vice: '차량위원회 부위원장',
+  committee_chair: '차량위원회 위원장',
 };
 
 const ROLE_COLORS: Record<string, string> = {
@@ -29,6 +32,9 @@ const ROLE_COLORS: Record<string, string> = {
   manager: 'bg-blue-50 text-blue-700',
   employee: 'bg-gray-50 text-gray-700',
   driver: 'bg-green-50 text-green-700',
+  committee_secretary: 'bg-violet-50 text-violet-700',
+  committee_vice: 'bg-fuchsia-50 text-fuchsia-700',
+  committee_chair: 'bg-indigo-50 text-indigo-700',
 };
 
 export default function UsersPage() {
@@ -547,8 +553,12 @@ export default function UsersPage() {
                     : setForm(p => ({ ...p, role: e.target.value as 'manager' | 'employee' }))}
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="manager">상위승인자 (부서장/위원장)</option>
+                  <option value="manager">상위승인자 (부서관리자)</option>
                   <option value="employee">신청자</option>
+                  <option value="committee_secretary">차량위원회 간사</option>
+                  <option value="committee_vice">차량위원회 부위원장</option>
+                  <option value="committee_chair">차량위원회 위원장</option>
+                  <option value="driver">운전기사</option>
                 </select>
               </div>
 

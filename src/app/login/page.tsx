@@ -33,6 +33,8 @@ export default function LoginPage() {
         return;
       } else if (role === 'manager') {
         window.location.href = '/m/manager';
+      } else if (['committee_secretary', 'committee_vice', 'committee_chair'].includes(role)) {
+        window.location.href = '/m/committee';
       } else {
         window.location.href = '/m';
       }

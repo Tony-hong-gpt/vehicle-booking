@@ -51,13 +51,20 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
   // 1단계: 상위 승인 (manager가 pending 상태 건에 서명)
   const canUpperApprove = user?.role === 'manager' && req.status === 'pending';
-  // 2단계: 차량위원회 처리 (admin이 upper_approved 또는 on_hold 건 처리)
-  const canCommitteeProcess = user?.role === 'admin' && ['upper_approved', 'on_hold'].includes(req.status);
+  // 간사: upper_approved → committee_reviewing
+  const canSecretaryReview = user?.role === 'committee_secretary' && req.status === 'upper_approved';
+  // 부위원장: committee_reviewing → committee_vice_reviewing
+  const canViceReview = user?.role === 'committee_vice' && req.status === 'committee_reviewing';
+  // 위원장: committee_vice_reviewing → approved / rejected / on_hold
+  const canChairProcess = user?.role === 'committee_chair' && req.status === 'committee_vice_reviewing';
+  // 2단계: 차량위원회 처리 (admin이 위원회 단계 전체 처리)
+  const canCommitteeProcess = user?.role === 'admin' &&
+    ['upper_approved', 'on_hold', 'committee_reviewing', 'committee_vice_reviewing'].includes(req.status);
   // 강제 처리: admin이 pending 건을 상위 승인 없이 처리
   const canForceProcess = user?.role === 'admin' && req.status === 'pending';
   // 취소: 본인 또는 admin, 확정 전 상태
   const canCancel = (req.requester_id === user?.id || user?.role === 'admin') &&
-    ['pending', 'upper_approved', 'on_hold'].includes(req.status);
+    ['pending', 'upper_approved', 'committee_reviewing', 'committee_vice_reviewing', 'on_hold'].includes(req.status);
   // 삭제: 취소 상태만
   const canDelete = req.status === 'cancelled' && (req.requester_id === user?.id || user?.role === 'admin');
   // 수정: admin은 모든 상태, 본인은 pending/rejected/on_hold만 가능
@@ -83,6 +90,9 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             requestId={id}
             status={req.status}
             canUpperApprove={canUpperApprove}
+            canSecretaryReview={canSecretaryReview}
+            canViceReview={canViceReview}
+            canChairProcess={canChairProcess}
             canCommitteeProcess={canCommitteeProcess}
             canForceProcess={canForceProcess}
             canCancel={canCancel}

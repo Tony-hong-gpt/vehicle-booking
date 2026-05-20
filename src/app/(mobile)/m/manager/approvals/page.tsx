@@ -6,16 +6,22 @@ import { ko } from 'date-fns/locale';
 
 const TAB_FILTERS = [
   { key: 'pending',   label: '대기',   status: ['pending'] },
-  { key: 'done',      label: '처리완료', status: ['upper_approved', 'approved', 'rejected', 'dispatched', 'returned'] },
+  { key: 'done',      label: '처리완료', status: [
+    'upper_approved', 'committee_reviewing', 'committee_vice_reviewing',
+    'approved', 'rejected', 'on_hold', 'dispatched', 'returned',
+  ]},
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
-  pending:        { label: '승인 대기',   color: 'bg-yellow-100 text-yellow-700', dot: 'bg-yellow-400' },
-  upper_approved: { label: '차량위원회 대기', color: 'bg-blue-100 text-blue-700',    dot: 'bg-blue-400' },
-  approved:       { label: '승인 완료',   color: 'bg-green-100 text-green-700',  dot: 'bg-green-400' },
-  rejected:       { label: '반려',        color: 'bg-red-100 text-red-700',      dot: 'bg-red-400' },
-  dispatched:     { label: '배차완료',    color: 'bg-indigo-100 text-indigo-700', dot: 'bg-indigo-400' },
-  returned:       { label: '반납완료',    color: 'bg-gray-100 text-gray-600',    dot: 'bg-gray-300' },
+  pending:                  { label: '승인 대기',      color: 'bg-yellow-100 text-yellow-700',   dot: 'bg-yellow-400' },
+  upper_approved:           { label: '차량위원회 대기', color: 'bg-indigo-100 text-indigo-700',  dot: 'bg-indigo-400' },
+  committee_reviewing:      { label: '간사 검토 중',   color: 'bg-violet-100 text-violet-700',   dot: 'bg-violet-400' },
+  committee_vice_reviewing: { label: '부위원장 검토 중', color: 'bg-fuchsia-100 text-fuchsia-700', dot: 'bg-fuchsia-400' },
+  approved:                 { label: '승인 완료',      color: 'bg-green-100 text-green-700',    dot: 'bg-green-400' },
+  rejected:                 { label: '반려',           color: 'bg-red-100 text-red-700',        dot: 'bg-red-400' },
+  on_hold:                  { label: '대기',           color: 'bg-orange-100 text-orange-700',  dot: 'bg-orange-400' },
+  dispatched:               { label: '배차완료',       color: 'bg-blue-100 text-blue-700',      dot: 'bg-blue-400' },
+  returned:                 { label: '반납완료',       color: 'bg-gray-100 text-gray-600',      dot: 'bg-gray-300' },
 };
 
 export default function ManagerApprovalsPage() {

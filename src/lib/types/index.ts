@@ -1,8 +1,27 @@
-export type UserRole = 'admin' | 'manager' | 'employee' | 'driver';
-export type RequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'dispatched' | 'in_use' | 'returned';
+export type UserRole =
+  | 'admin'
+  | 'manager'
+  | 'employee'
+  | 'driver'
+  | 'committee_secretary'
+  | 'committee_vice'
+  | 'committee_chair';
+
+export type RequestStatus =
+  | 'pending'
+  | 'upper_approved'
+  | 'committee_reviewing'
+  | 'committee_vice_reviewing'
+  | 'approved'
+  | 'rejected'
+  | 'cancelled'
+  | 'dispatched'
+  | 'in_use'
+  | 'returned'
+  | 'on_hold';
 export type VehicleStatus = 'available' | 'in_use' | 'maintenance' | 'inactive';
 export type DispatchStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'on_hold';
 export type FuelType = 'gasoline' | 'diesel' | 'electric' | 'hybrid';
 export type FuelLevel = 'empty' | 'quarter' | 'half' | 'three_quarter' | 'full';
 export type MaintenanceType = 'inspection' | 'repair' | 'wash' | 'tire' | 'oil' | 'other';

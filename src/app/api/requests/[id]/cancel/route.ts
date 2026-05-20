@@ -14,7 +14,10 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
     if (req.requester_id !== user.id && user.role !== 'admin') {
       return Response.json({ data: null, error: '권한이 없습니다' }, { status: 403 });
     }
-    if (!['pending', 'approved'].includes(req.status)) {
+    const cancellableStatuses = [
+      'pending', 'upper_approved', 'committee_reviewing', 'committee_vice_reviewing', 'on_hold',
+    ];
+    if (!cancellableStatuses.includes(req.status)) {
       return Response.json({ data: null, error: '취소할 수 없는 상태입니다' }, { status: 400 });
     }
 

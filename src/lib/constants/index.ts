@@ -3,16 +3,23 @@ export const USER_ROLES = {
   MANAGER: 'manager',
   EMPLOYEE: 'employee',
   DRIVER: 'driver',
+  COMMITTEE_SECRETARY: 'committee_secretary',
+  COMMITTEE_VICE: 'committee_vice',
+  COMMITTEE_CHAIR: 'committee_chair',
 } as const;
 
 export const REQUEST_STATUS = {
   PENDING: 'pending',
+  UPPER_APPROVED: 'upper_approved',
+  COMMITTEE_REVIEWING: 'committee_reviewing',
+  COMMITTEE_VICE_REVIEWING: 'committee_vice_reviewing',
   APPROVED: 'approved',
   REJECTED: 'rejected',
   CANCELLED: 'cancelled',
   DISPATCHED: 'dispatched',
   IN_USE: 'in_use',
   RETURNED: 'returned',
+  ON_HOLD: 'on_hold',
 } as const;
 
 export const VEHICLE_STATUS = {
@@ -64,11 +71,16 @@ export const USER_ROLE_LABELS: Record<string, string> = {
   manager: '부서관리자',
   employee: '일반직원',
   driver: '운전기사',
+  committee_secretary: '차량위원회 간사',
+  committee_vice: '차량위원회 부위원장',
+  committee_chair: '차량위원회 위원장',
 };
 
 export const REQUEST_STATUS_LABELS: Record<string, string> = {
   pending: '상위승인대기',
   upper_approved: '차량위원회대기',
+  committee_reviewing: '간사검토중',
+  committee_vice_reviewing: '부위원장검토중',
   on_hold: '대기',
   approved: '승인',
   rejected: '반려',
@@ -119,6 +131,8 @@ export const MAINTENANCE_TYPE_LABELS: Record<string, string> = {
 export const REQUEST_STATUS_COLORS: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
   upper_approved: 'bg-indigo-100 text-indigo-800',
+  committee_reviewing: 'bg-violet-100 text-violet-800',
+  committee_vice_reviewing: 'bg-fuchsia-100 text-fuchsia-800',
   on_hold: 'bg-orange-100 text-orange-800',
   approved: 'bg-green-100 text-green-800',
   rejected: 'bg-red-100 text-red-800',

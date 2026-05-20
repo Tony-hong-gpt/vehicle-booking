@@ -6,9 +6,12 @@ import { useRouter } from 'next/navigation';
 interface Props {
   requestId: string;
   status: string;
-  canUpperApprove: boolean;   // manager + pending
-  canCommitteeProcess: boolean; // admin + upper_approved | on_hold
-  canForceProcess: boolean;   // admin + pending
+  canUpperApprove: boolean;       // manager + pending
+  canCommitteeProcess: boolean;   // admin + upper_approved | on_hold | committee_*
+  canSecretaryReview: boolean;    // committee_secretary + upper_approved
+  canViceReview: boolean;         // committee_vice + committee_reviewing
+  canChairProcess: boolean;       // committee_chair + committee_vice_reviewing
+  canForceProcess: boolean;       // admin + pending
   canCancel: boolean;
   canEdit: boolean;
   canDelete: boolean;
@@ -19,7 +22,9 @@ type InputMode = 'reject-upper' | 'reject-committee' | 'hold' | 'force-approve' 
 
 export default function RequestActions({
   requestId, status,
-  canUpperApprove, canCommitteeProcess, canForceProcess,
+  canUpperApprove, canCommitteeProcess,
+  canSecretaryReview, canViceReview, canChairProcess,
+  canForceProcess,
   canCancel, canEdit, canDelete, userRole,
 }: Props) {
   const router = useRouter();
@@ -119,7 +124,53 @@ export default function RequestActions({
         </div>
       )}
 
-      {/* ── 2단계: 차량위원회 처리 (admin + upper_approved | on_hold) ── */}
+      {/* ── 간사 검토 시작 (committee_secretary + upper_approved) ── */}
+      {canSecretaryReview && !inputMode && (
+        <div className="flex gap-2">
+          <button onClick={() => handle('committee-review', {}, 'committee-review')} disabled={!!loading}
+            className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60">
+            {loading === 'committee-review' ? '처리중...' : '간사 검토 시작'}
+          </button>
+          <button onClick={() => setInputMode('reject-committee')} disabled={!!loading}
+            className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-sm font-medium">
+            반려
+          </button>
+        </div>
+      )}
+
+      {/* ── 부위원장 검토 완료 (committee_vice + committee_reviewing) ── */}
+      {canViceReview && !inputMode && (
+        <div className="flex gap-2">
+          <button onClick={() => handle('committee-vice-review', {}, 'committee-vice-review')} disabled={!!loading}
+            className="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60">
+            {loading === 'committee-vice-review' ? '처리중...' : '부위원장 검토 완료'}
+          </button>
+          <button onClick={() => setInputMode('reject-committee')} disabled={!!loading}
+            className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-sm font-medium">
+            반려
+          </button>
+        </div>
+      )}
+
+      {/* ── 위원장 최종 결재 (committee_chair + committee_vice_reviewing) ── */}
+      {canChairProcess && !inputMode && (
+        <div className="flex gap-2 flex-wrap justify-end">
+          <button onClick={() => handle('approve', {}, 'approve')} disabled={!!loading}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60">
+            {loading === 'approve' ? '처리중...' : '최종 승인'}
+          </button>
+          <button onClick={() => setInputMode('reject-committee')} disabled={!!loading}
+            className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-sm font-medium">
+            반려
+          </button>
+          <button onClick={() => setInputMode('hold')} disabled={!!loading}
+            className="px-4 py-2 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 rounded-lg text-sm font-medium">
+            대기
+          </button>
+        </div>
+      )}
+
+      {/* ── 2단계: 차량위원회 처리 (admin + upper_approved | on_hold | committee_*) ── */}
       {canCommitteeProcess && !inputMode && (
         <div className="flex gap-2 flex-wrap justify-end">
           <button onClick={() => handle('approve', {}, 'approve')} disabled={!!loading}

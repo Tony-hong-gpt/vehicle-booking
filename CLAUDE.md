@@ -9,20 +9,30 @@
 - date-fns (날짜 포맷, locale: ko)
 
 ## 사용자 역할
-- `admin` : 차량위원회 (관리자) — 최종 승인권자
+- `admin` : 시스템 관리자 — 모든 단계 처리 가능
 - `manager` : 부서관리자 — 1단계 상위 승인
-- `user` : 일반 신청자
+- `employee` : 일반 신청자
+- `driver` : 운전기사
+- `committee_secretary` : 차량위원회 간사 — upper_approved → committee_reviewing
+- `committee_vice` : 차량위원회 부위원장 — committee_reviewing → committee_vice_reviewing
+- `committee_chair` : 차량위원회 위원장 — committee_vice_reviewing → approved/rejected/on_hold
 
 ## 모바일 라우팅
 - `/m/*` : 일반 신청자 화면 (`src/app/(mobile)/m/`)
 - `/m/manager/*` : 부서관리자 화면
+- `/m/committee/*` : 차량위원회 화면 (간사/부위원장/위원장)
 
 ## 신청 상태 흐름
 ```
-pending → upper_approved → approved → dispatched → in_use → returned
-                ↓               ↓
-            rejected         on_hold
+pending → upper_approved → committee_reviewing → committee_vice_reviewing → approved → dispatched → in_use → returned
+   ↓            ↓                  ↓                       ↓                  ↓
+rejected     rejected           rejected                rejected/on_hold   on_hold
 ```
+- `pending` : 부서관리자(manager) 승인 대기
+- `upper_approved` : 차량위원회 대기 (간사 검토 전)
+- `committee_reviewing` : 간사(committee_secretary) 검토 중
+- `committee_vice_reviewing` : 부위원장(committee_vice) 검토 완료, 위원장 결재 대기
+- `approved` : 위원장(committee_chair) 또는 admin 최종 승인
 
 ## 배차(dispatch) 상태 흐름
 ```

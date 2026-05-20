@@ -11,6 +11,12 @@ export default async function MobileLayout({ children }: { children: React.React
     return <>{children}</>;
   }
 
+  // 위원회 역할은 /m/committee/* 하위 레이아웃이 별도로 처리
+  const COMMITTEE_ROLES = ['committee_secretary', 'committee_vice', 'committee_chair'];
+  if (COMMITTEE_ROLES.includes(user.role)) {
+    return <>{children}</>;
+  }
+
   if (user.role !== 'employee') redirect('/login');
 
   return (
