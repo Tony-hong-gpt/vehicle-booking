@@ -50,8 +50,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const approvalPayload = {
       approver_id: user.id,
-      status: 'on_hold',
-      comment: isForce ? `[강제처리] ${comment}` : comment,
+      status: 'approved',   // 결재 행위 자체는 approved, request.status가 on_hold로 변경됨
+      comment: isForce ? `[강제처리][대기] ${comment}` : `[대기] ${comment}`,
       approved_at: new Date().toISOString(),
     };
 
