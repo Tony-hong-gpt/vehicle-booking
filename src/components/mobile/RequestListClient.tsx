@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { REQUEST_STATUS_LABELS, REQUEST_STATUS_COLORS } from '@/lib/constants';
+import { EMPLOYEE_STATUS_LABELS, REQUEST_STATUS_COLORS } from '@/lib/constants';
 
 interface RequestItem {
   id: string;
@@ -69,7 +69,7 @@ export default function RequestListClient({ activeRequests, doneRequests }: Prop
             </span>
           )}
           <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${REQUEST_STATUS_COLORS[req.status]}`}>
-            {REQUEST_STATUS_LABELS[req.status]}
+            {EMPLOYEE_STATUS_LABELS[req.status]}
           </span>
           <svg
             className={`w-4 h-4 flex-shrink-0 ${dimmed ? 'text-gray-200' : 'text-gray-300'}`}

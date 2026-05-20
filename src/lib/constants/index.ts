@@ -76,6 +76,7 @@ export const USER_ROLE_LABELS: Record<string, string> = {
   committee_chair: '차량위원회 위원장',
 };
 
+/** 차량위원회 내부용 상세 레이블 */
 export const REQUEST_STATUS_LABELS: Record<string, string> = {
   pending: '상위승인대기',
   upper_approved: '차량위원회대기',
@@ -88,6 +89,13 @@ export const REQUEST_STATUS_LABELS: Record<string, string> = {
   dispatched: '배차완료',
   in_use: '운행중',
   returned: '반납완료',
+};
+
+/** 신청자·부서관리자용 레이블 (위원회 내부 단계 통합 표시) */
+export const EMPLOYEE_STATUS_LABELS: Record<string, string> = {
+  ...REQUEST_STATUS_LABELS,
+  committee_reviewing:      '차량위원회 검토중',
+  committee_vice_reviewing: '차량위원회 검토중',
 };
 
 export const VEHICLE_STATUS_LABELS: Record<string, string> = {

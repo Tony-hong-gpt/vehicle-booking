@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { REQUEST_STATUS_LABELS, REQUEST_STATUS_COLORS } from '@/lib/constants';
+import { EMPLOYEE_STATUS_LABELS, REQUEST_STATUS_COLORS } from '@/lib/constants';
 import { vehicleName } from '@/lib/vehicle-utils';
 
 const STEP_LABELS: Record<number, string> = {
@@ -119,7 +119,7 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
           <p className="text-xs text-gray-400 font-mono mt-0.5">{req.request_no}</p>
         </div>
         <span className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 ${REQUEST_STATUS_COLORS[req.status] || 'bg-gray-100 text-gray-500'}`}>
-          {REQUEST_STATUS_LABELS[req.status] || req.status}
+          {EMPLOYEE_STATUS_LABELS[req.status] || req.status}
         </span>
       </div>
 

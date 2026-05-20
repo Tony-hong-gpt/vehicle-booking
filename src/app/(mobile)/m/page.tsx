@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/server/supabase';
 import { getCurrentUser } from '@/lib/server/auth';
-import { REQUEST_STATUS_LABELS, REQUEST_STATUS_COLORS } from '@/lib/constants';
+import { EMPLOYEE_STATUS_LABELS, REQUEST_STATUS_COLORS } from '@/lib/constants';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -139,7 +139,7 @@ export default async function MobileHomePage() {
                 {/* 오른쪽: 상태 배지 + 화살표 */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${REQUEST_STATUS_COLORS[req.status]}`}>
-                    {REQUEST_STATUS_LABELS[req.status]}
+                    {EMPLOYEE_STATUS_LABELS[req.status]}
                   </span>
                   <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

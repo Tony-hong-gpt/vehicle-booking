@@ -7,12 +7,17 @@ import { ko } from 'date-fns/locale';
 import LogoutButton from '@/components/mobile/LogoutButton';
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
-  pending:        { label: '승인 대기',    color: 'bg-yellow-100 text-yellow-700' },
-  upper_approved: { label: '차량위원회 대기', color: 'bg-blue-100 text-blue-700' },
-  approved:       { label: '승인',         color: 'bg-green-100 text-green-700' },
-  rejected:       { label: '반려',         color: 'bg-red-100 text-red-700' },
-  dispatched:     { label: '배차완료',     color: 'bg-indigo-100 text-indigo-700' },
-  returned:       { label: '반납완료',     color: 'bg-gray-100 text-gray-600' },
+  pending:                   { label: '승인 대기',        color: 'bg-yellow-100 text-yellow-700' },
+  upper_approved:            { label: '차량위원회 대기',  color: 'bg-blue-100 text-blue-700' },
+  committee_reviewing:       { label: '차량위원회 검토중', color: 'bg-violet-100 text-violet-700' },
+  committee_vice_reviewing:  { label: '차량위원회 검토중', color: 'bg-violet-100 text-violet-700' },
+  on_hold:                   { label: '대기',             color: 'bg-orange-100 text-orange-700' },
+  approved:                  { label: '차량위원회 승인',  color: 'bg-green-100 text-green-700' },
+  rejected:                  { label: '반려',             color: 'bg-red-100 text-red-700' },
+  dispatched:                { label: '배차완료',         color: 'bg-indigo-100 text-indigo-700' },
+  in_use:                    { label: '운행중',           color: 'bg-purple-100 text-purple-700' },
+  returned:                  { label: '반납완료',         color: 'bg-gray-100 text-gray-600' },
+  cancelled:                 { label: '취소',             color: 'bg-gray-100 text-gray-500' },
 };
 
 export default function ManagerHomePage() {
