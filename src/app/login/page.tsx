@@ -13,6 +13,11 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+
+    // 키보드 내리기 → 화면이 원위치로 돌아온 뒤 로그인 처리
+    (document.activeElement as HTMLElement)?.blur();
+    await new Promise(resolve => setTimeout(resolve, 150));
+
     setLoading(true);
     try {
       const res  = await fetch('/api/auth/login', {
