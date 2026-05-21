@@ -205,7 +205,7 @@ export default function LoginPage() {
         {/* 하단 카피라이트 */}
         <div className="text-center mt-5 space-y-1">
           <p className="text-[11px] text-blue-300/60 font-medium">
-            © 2024 로드매니저 · 대구동신교회
+            © 2026 로드매니저 · 대구동신교회
           </p>
           <p className="text-[10px] text-blue-300/40">차량 사용 신청 관리 시스템</p>
         </div>
