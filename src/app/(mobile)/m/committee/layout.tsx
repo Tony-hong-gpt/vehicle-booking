@@ -10,7 +10,7 @@ export default async function CommitteeLayout({ children }: { children: React.Re
   if (!COMMITTEE_ROLES.includes(user.role)) redirect('/m');
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col max-w-md mx-auto relative">
+    <div className="min-h-screen bg-gray-100 md:bg-gray-100 flex flex-col max-w-md mx-auto relative md:shadow-2xl">
       <main className="flex-1 pb-20">
         {children}
       </main>

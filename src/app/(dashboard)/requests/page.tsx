@@ -137,7 +137,8 @@ export default async function RequestsPage({
 
       {/* 테이블 */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[860px]">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/70">
               <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">신청번호</th>
@@ -190,6 +191,7 @@ export default async function RequestsPage({
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* 페이지네이션 */}

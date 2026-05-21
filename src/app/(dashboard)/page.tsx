@@ -92,7 +92,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {stats.map(s => (
           <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
             <div className={`w-12 h-12 ${s.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
@@ -114,9 +114,9 @@ export default async function DashboardPage() {
       </div>
 
       {/* 최근 신청 + 차량 현황 */}
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         {/* 최근 신청 */}
-        <div className="col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="xl:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
             <h2 className="font-semibold text-gray-900">최근 신청</h2>
             <Link href="/requests" className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">

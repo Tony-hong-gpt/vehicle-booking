@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { User } from '@/lib/types';
@@ -75,6 +76,18 @@ const ROLE_BADGE: Record<string, string> = {
 export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // 페이지 이동 시 모바일 사이드바 자동 닫기
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
+
+  // ESC 키로 닫기
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const fn = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileOpen(false); };
+    document.addEventListener('keydown', fn);
+    return () => document.removeEventListener('keydown', fn);
+  }, [mobileOpen]);
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -106,81 +119,131 @@ export default function Sidebar({ user }: SidebarProps) {
   }
 
   return (
-    <aside className="w-60 bg-gray-950 flex flex-col h-screen fixed left-0 top-0 border-r border-white/5">
-      {/* 로고 */}
-      <div className="px-4 py-5 border-b border-white/5">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/40">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <>
+      {/* ── 모바일 상단 바 (lg 미만에서만 표시) ── */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-gray-950 border-b border-white/10 flex items-center px-4 gap-3 z-30">
+        <button
+          onClick={() => setMobileOpen(true)}
+          aria-label="메뉴 열기"
+          className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h2m6-12h3l3 4v4h-6V4z" />
             </svg>
           </div>
-          <div>
-            <div className="text-white text-sm font-bold leading-tight tracking-tight">차량 신청</div>
-            <div className="text-gray-500 text-xs mt-0.5">관리 시스템</div>
-          </div>
+          <span className="text-white text-sm font-bold tracking-tight">차량 신청 관리</span>
         </div>
-      </div>
-
-      {/* 네비게이션 */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {/* 주요 메뉴 */}
-        {mainNavItems.map(item => <NavItem key={item.href} item={item} />)}
-
-        {/* 통계 관리 */}
-        {isAdmin && (
-          <>
-            <div className="pt-5 pb-2 px-1 flex items-center gap-2">
-              <span className="flex-1 h-px bg-gray-700" />
-              <span className="text-[11px] font-bold text-gray-400 tracking-widest whitespace-nowrap">
-                통계 관리
-              </span>
-              <span className="flex-1 h-px bg-gray-700" />
-            </div>
-            {statsNavItems.map(item => <NavItem key={item.href} item={item} />)}
-          </>
-        )}
-
-        {/* 시스템 관리 */}
-        {isAdmin && (
-          <>
-            <div className="pt-5 pb-2 px-1 flex items-center gap-2">
-              <span className="flex-1 h-px bg-gray-700" />
-              <span className="text-[11px] font-bold text-gray-400 tracking-widest whitespace-nowrap">
-                시스템 관리
-              </span>
-              <span className="flex-1 h-px bg-gray-700" />
-            </div>
-            {adminNavItems.map(item => <NavItem key={item.href} item={item} />)}
-          </>
-        )}
-      </nav>
-
-      {/* 사용자 정보 */}
-      <div className="px-3 py-3 border-t border-white/5">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-white/5 transition-colors mb-1">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow">
+        <div className="ml-auto flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-sm font-bold shadow">
             {user.name.charAt(0)}
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-white text-sm font-medium truncate">{user.name}</div>
-            <div className={`text-xs px-1.5 py-0.5 rounded-md inline-block mt-0.5 font-medium ${ROLE_BADGE[user.role] ?? 'text-gray-500'}`}>
-              {USER_ROLE_LABELS[user.role]}
+        </div>
+      </header>
+
+      {/* ── 오버레이 배경 (모바일 열림 시) ── */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* ── 사이드바 패널 ── */}
+      <aside
+        className={`
+          w-60 bg-gray-950 flex flex-col h-screen fixed left-0 top-0
+          border-r border-white/5 z-50
+          transition-transform duration-300 ease-in-out
+          lg:translate-x-0
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        {/* 모바일 닫기 버튼 */}
+        <button
+          className="lg:hidden absolute top-3.5 right-3 w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+          onClick={() => setMobileOpen(false)}
+          aria-label="메뉴 닫기"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* 로고 */}
+        <div className="px-4 py-5 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/40">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h2m6-12h3l3 4v4h-6V4z" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-white text-sm font-bold leading-tight tracking-tight">차량 신청</div>
+              <div className="text-gray-500 text-xs mt-0.5">관리 시스템</div>
             </div>
           </div>
         </div>
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-gray-500 hover:bg-white/5 hover:text-gray-300 transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          로그아웃
-        </button>
-      </div>
-    </aside>
+
+        {/* 네비게이션 */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          {mainNavItems.map(item => <NavItem key={item.href} item={item} />)}
+
+          {isAdmin && (
+            <>
+              <div className="pt-5 pb-2 px-1 flex items-center gap-2">
+                <span className="flex-1 h-px bg-gray-700" />
+                <span className="text-[11px] font-bold text-gray-400 tracking-widest whitespace-nowrap">통계 관리</span>
+                <span className="flex-1 h-px bg-gray-700" />
+              </div>
+              {statsNavItems.map(item => <NavItem key={item.href} item={item} />)}
+            </>
+          )}
+
+          {isAdmin && (
+            <>
+              <div className="pt-5 pb-2 px-1 flex items-center gap-2">
+                <span className="flex-1 h-px bg-gray-700" />
+                <span className="text-[11px] font-bold text-gray-400 tracking-widest whitespace-nowrap">시스템 관리</span>
+                <span className="flex-1 h-px bg-gray-700" />
+              </div>
+              {adminNavItems.map(item => <NavItem key={item.href} item={item} />)}
+            </>
+          )}
+        </nav>
+
+        {/* 사용자 정보 */}
+        <div className="px-3 py-3 border-t border-white/5">
+          <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-white/5 transition-colors mb-1">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow">
+              {user.name.charAt(0)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-white text-sm font-medium truncate">{user.name}</div>
+              <div className={`text-xs px-1.5 py-0.5 rounded-md inline-block mt-0.5 font-medium ${ROLE_BADGE[user.role] ?? 'text-gray-500'}`}>
+                {USER_ROLE_LABELS[user.role]}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-gray-500 hover:bg-white/5 hover:text-gray-300 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            로그아웃
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }

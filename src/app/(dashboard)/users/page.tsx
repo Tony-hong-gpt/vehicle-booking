@@ -366,7 +366,8 @@ export default function UsersPage() {
         {loading ? (
           <div className="text-center py-14 text-gray-400 text-sm">불러오는 중...</div>
         ) : (
-          <table className="w-full">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px]">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/70">
                 <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">이름</th>
@@ -433,6 +434,7 @@ export default function UsersPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
