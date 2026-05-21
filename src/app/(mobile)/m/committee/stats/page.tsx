@@ -4,8 +4,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 type Period = 'month' | 'quarter' | 'year';
+type ProcessorTab = 'all' | 'secretary' | 'vice' | 'chair';
 
-function getPeriodRange(period: Period): { from: string; to: string; label: string } {
+function getPeriodRange(period: Period): { from: string; to: string; label: string; granularity: string; chartLabel: string } {
   const now = new Date();
   const y = now.getFullYear();
   const m = now.getMonth();
@@ -13,27 +14,18 @@ function getPeriodRange(period: Period): { from: string; to: string; label: stri
   if (period === 'month') {
     const from = new Date(y, m, 1);
     const to   = new Date(y, m + 1, 0);
-    return {
-      from: from.toISOString().slice(0, 10),
-      to:   to.toISOString().slice(0, 10),
-      label: `${y}년 ${m + 1}월`,
-    };
+    return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10),
+      label: `${y}년 ${m + 1}월`, granularity: 'week', chartLabel: '주차별 신청 추이' };
   }
   if (period === 'quarter') {
     const q = Math.floor(m / 3);
     const from = new Date(y, q * 3, 1);
     const to   = new Date(y, q * 3 + 3, 0);
-    return {
-      from: from.toISOString().slice(0, 10),
-      to:   to.toISOString().slice(0, 10),
-      label: `${y}년 ${q + 1}분기`,
-    };
+    return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10),
+      label: `${y}년 ${q + 1}분기`, granularity: 'month', chartLabel: '월별 신청 추이' };
   }
-  return {
-    from: `${y}-01-01`,
-    to:   `${y}-12-31`,
-    label: `${y}년`,
-  };
+  return { from: `${y}-01-01`, to: `${y}-12-31`,
+    label: `${y}년`, granularity: 'month', chartLabel: '월별 신청 추이' };
 }
 
 const PERIOD_TABS: { key: Period; label: string }[] = [
@@ -42,31 +34,72 @@ const PERIOD_TABS: { key: Period; label: string }[] = [
   { key: 'year',    label: '올해' },
 ];
 
+const PROC_TABS: { key: ProcessorTab; label: string }[] = [
+  { key: 'all',       label: '전체' },
+  { key: 'secretary', label: '총무' },
+  { key: 'vice',      label: '부위원장' },
+  { key: 'chair',     label: '위원장' },
+];
+
 const COLORS = ['#7C3AED', '#A78BFA', '#C4B5FD', '#DDD6FE', '#EDE9FE'];
 
+function DiffBadge({ diff }: { diff: number | null }) {
+  if (diff === null) return null;
+  if (diff === 0) return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">─</span>;
+  return (
+    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+      diff > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+    }`}>
+      {diff > 0 ? '▲' : '▼'}{Math.abs(diff)}%
+    </span>
+  );
+}
+
+function EmptyCard({ icon = '📭', message = '데이터 없음', sub = '' }: { icon?: string; message?: string; sub?: string }) {
+  return (
+    <div className="py-8 flex flex-col items-center justify-center text-center">
+      <p className="text-3xl mb-2">{icon}</p>
+      <p className="text-sm font-semibold text-gray-500 mb-0.5">{message}</p>
+      {sub && <p className="text-xs text-gray-400">{sub}</p>}
+    </div>
+  );
+}
+
+function formatHours(h: number): string {
+  if (h < 1) return `${Math.round(h * 60)}분`;
+  if (h < 24) return `${Math.round(h)}시간`;
+  const days = Math.floor(h / 24);
+  const hrs  = Math.round(h % 24);
+  return hrs > 0 ? `${days}일 ${hrs}시간` : `${days}일`;
+}
+
+const STEP_LABEL: Record<number, string> = { 3: '총무', 4: '부위원장', 5: '위원장' };
+
 export default function CommitteeStatsPage() {
-  const [period, setPeriod]         = useState<Period>('month');
-  const [overview, setOverview]     = useState<any>(null);
-  const [chartSeries, setChartSeries] = useState<any[]>([]);
+  const [period, setPeriod]           = useState<Period>('month');
+  const [procTab, setProcTab]         = useState<ProcessorTab>('all');
+  const [overview, setOverview]       = useState<any>(null);
+  const [vehicleGroups, setVehicleGroups] = useState<any>(null);
   const [deptRanking, setDeptRanking] = useState<any[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const [processors, setProcessors]   = useState<any[]>([]);
+  const [loading, setLoading]         = useState(true);
 
   const range = useMemo(() => getPeriodRange(period), [period]);
 
   useEffect(() => {
     setLoading(true);
-    const params = `from=${range.from}&to=${range.to}`;
-    const y = new Date().getFullYear();
-    const monthlyParams = `from=${y}-01-01&to=${y}-12-31`;
+    const p = `from=${range.from}&to=${range.to}`;
 
     Promise.all([
-      fetch(`/api/stats?type=overview&${params}`).then(r => r.json()),
-      fetch(`/api/stats?type=monthly&${monthlyParams}`).then(r => r.json()),
-      fetch(`/api/stats?type=departments&${params}`).then(r => r.json()),
-    ]).then(([ov, mo, dp]) => {
+      fetch(`/api/stats?type=overview&${p}&granularity=${range.granularity}`).then(r => r.json()),
+      fetch(`/api/stats?type=vehicle_groups&${p}`).then(r => r.json()),
+      fetch(`/api/stats?type=departments&${p}`).then(r => r.json()),
+      fetch(`/api/stats?type=processors&${p}`).then(r => r.json()),
+    ]).then(([ov, vg, dp, pr]) => {
       setOverview(ov.data ?? null);
-      setChartSeries((mo.data?.monthly ?? []).slice(-6));
+      setVehicleGroups(vg.data ?? null);
       setDeptRanking(dp.data?.ranking ?? []);
+      setProcessors(pr.data?.processors ?? []);
     }).finally(() => setLoading(false));
   }, [range]);
 
@@ -81,26 +114,39 @@ export default function CommitteeStatsPage() {
   const cancelledReqs = req?.cancelled ?? 0;
   const pendingReqs   = req?.pending   ?? 0;
   const dispTotal     = disp?.total    ?? 0;
-
-  const approvalRate = totalReqs > 0 ? Math.round((approvedReqs / totalReqs) * 100) : 0;
+  const approvalRate  = totalReqs > 0 ? Math.round((approvedReqs / totalReqs) * 100) : 0;
+  const avgProcessHours: number | null = overview?.avg_process_hours ?? null;
+  const procDist = overview?.process_distribution ?? null;
 
   const kpis = [
-    { label: '총 신청',   value: totalReqs,    color: 'text-purple-600', bg: 'bg-purple-50', icon: '📋' },
-    { label: '승인 완료', value: approvedReqs, color: 'text-green-600',  bg: 'bg-green-50',  icon: '✅' },
-    { label: '반려',      value: rejectedReqs, color: 'text-red-500',    bg: 'bg-red-50',    icon: '❌' },
-    { label: '배차 완료', value: dispTotal,    color: 'text-blue-600',   bg: 'bg-blue-50',   icon: '🚗' },
+    { label: '총 신청',   value: totalReqs,    color: 'text-purple-600', bg: 'bg-purple-50', diff: req?.diffs?.total     ?? null },
+    { label: '승인 완료', value: approvedReqs, color: 'text-green-600',  bg: 'bg-green-50',  diff: req?.diffs?.approved  ?? null },
+    { label: '반려',      value: rejectedReqs, color: 'text-red-500',    bg: 'bg-red-50',    diff: req?.diffs?.rejected  ?? null },
+    { label: '배차 완료', value: dispTotal,    color: 'text-blue-600',   bg: 'bg-blue-50',   diff: disp?.diffs?.total    ?? null },
   ];
 
-  // 월별 차트 데이터
-  const chartData = chartSeries.map((s: any) => ({
-    name: s.month,
+  // 차트 데이터 (time_series from overview)
+  const chartData = (overview?.time_series ?? []).map((s: any) => ({
+    name: s.label,
     신청: s.requests  ?? 0,
     배차: s.dispatches ?? 0,
   }));
 
-  // 부서 TOP 5
+  // 부서 TOP5
   const deptList = deptRanking.slice(0, 5);
   const maxDeptCount = deptList[0]?.count ?? 1;
+
+  // 차량군
+  const groupList = vehicleGroups?.groups ?? [];
+  const maxGroupCount = groupList[0]?.count ?? 1;
+
+  // 담당자별 필터
+  const ROLE_MAP: Record<ProcessorTab, string> = {
+    all: '', secretary: 'committee_secretary', vice: 'committee_vice', chair: 'committee_chair',
+  };
+  const filteredProcessors = procTab === 'all'
+    ? processors
+    : processors.filter((p: any) => p.role === ROLE_MAP[procTab]);
 
   if (loading) return (
     <div className="flex flex-col min-h-full pb-28">
@@ -118,16 +164,14 @@ export default function CommitteeStatsPage() {
 
   return (
     <div className="flex flex-col min-h-full pb-28 bg-gray-50">
-      {/* 헤더 */}
+      {/* 헤더 + 기간 탭 */}
       <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-0 sticky top-0 z-10">
         <h1 className="text-lg font-bold text-gray-900 mb-3">통계</h1>
         <div className="flex gap-1">
           {PERIOD_TABS.map(t => (
             <button key={t.key} onClick={() => setPeriod(t.key)}
               className={`flex-1 py-2 text-sm font-semibold border-b-2 transition-colors ${
-                period === t.key
-                  ? 'border-purple-600 text-purple-600'
-                  : 'border-transparent text-gray-400'
+                period === t.key ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-400'
               }`}>
               {t.label}
             </button>
@@ -142,93 +186,143 @@ export default function CommitteeStatsPage() {
           📅 {range.from} ~ {range.to} · {range.label}
         </p>
 
-        {/* KPI 카드 2×2 */}
+        {/* KPI 카드 2×2 (전기간 대비 증감) */}
         <div className="grid grid-cols-2 gap-3">
           {kpis.map(k => (
             <div key={k.label} className={`${k.bg} rounded-2xl p-4`}>
-              <span className="text-lg">{k.icon}</span>
-              <p className={`text-3xl font-bold mt-2 ${k.color}`}>{k.value.toLocaleString()}</p>
-              <p className="text-xs text-gray-500 mt-1 font-medium">{k.label}</p>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-xs text-gray-500 font-medium">{k.label}</p>
+                <DiffBadge diff={k.diff} />
+              </div>
+              <p className={`text-3xl font-bold ${k.color}`}>{k.value.toLocaleString()}</p>
             </div>
           ))}
         </div>
 
-        {/* 데이터 없음 안내 */}
-        {overview && totalReqs === 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
-            <p className="text-4xl mb-3">📭</p>
-            <p className="text-sm font-semibold text-gray-600 mb-1">{range.label} 신청 내역 없음</p>
-            <p className="text-xs text-gray-400">해당 기간에 차량 신청이 없습니다</p>
+        {/* 데이터 없음 */}
+        {totalReqs === 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <EmptyCard icon="📭" message={`${range.label} 신청 내역 없음`} sub="해당 기간에 차량 신청이 없습니다" />
           </div>
         )}
+
+        {/* 처리 소요시간 */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">처리 소요시간</p>
+          {avgProcessHours !== null ? (
+            <>
+              <div className="flex items-end gap-2 mb-3">
+                <p className="text-2xl font-bold text-purple-600">{formatHours(avgProcessHours)}</p>
+                <p className="text-xs text-gray-400 mb-1">평균 (신청 → 최종 승인)</p>
+              </div>
+              {procDist && (procDist.fast + procDist.mid + procDist.slow) > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: '빠름',  sub: '1일 미만', value: procDist.fast, color: 'text-green-600',  bg: 'bg-green-50' },
+                    { label: '보통',  sub: '1~3일',    value: procDist.mid,  color: 'text-blue-600',   bg: 'bg-blue-50' },
+                    { label: '느림',  sub: '3일 이상', value: procDist.slow, color: 'text-orange-600', bg: 'bg-orange-50' },
+                  ].map(s => (
+                    <div key={s.label} className={`${s.bg} rounded-xl p-2.5 text-center`}>
+                      <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
+                      <p className="text-[10px] text-gray-500 font-medium">{s.label}</p>
+                      <p className="text-[9px] text-gray-400">{s.sub}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <EmptyCard icon="⏱️" message="처리된 건수 없음" sub="최종 승인된 신청이 없습니다" />
+          )}
+        </div>
 
         {/* 승인률 */}
         {totalReqs > 0 && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">승인률</p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 mb-2">
               <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
-                <div
-                  className="h-3 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-700"
-                  style={{ width: `${approvalRate}%` }}
-                />
+                <div className="h-3 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-700"
+                  style={{ width: `${approvalRate}%` }} />
               </div>
               <span className="text-sm font-bold text-purple-600 w-12 text-right">{approvalRate}%</span>
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-purple-500" />
-                <span className="text-[10px] text-gray-500">승인 {approvedReqs}건</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-red-400" />
-                <span className="text-[10px] text-gray-500">반려 {rejectedReqs}건</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-orange-300" />
-                <span className="text-[10px] text-gray-500">취소 {cancelledReqs}건</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-gray-300" />
-                <span className="text-[10px] text-gray-500">대기 {pendingReqs}건</span>
-              </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              {[
+                { dot: 'bg-purple-500', text: `승인 ${approvedReqs}건` },
+                { dot: 'bg-red-400',    text: `반려 ${rejectedReqs}건` },
+                { dot: 'bg-orange-300', text: `취소 ${cancelledReqs}건` },
+                { dot: 'bg-gray-300',   text: `대기 ${pendingReqs}건` },
+              ].map(s => (
+                <div key={s.text} className="flex items-center gap-1.5">
+                  <div className={`w-2 h-2 rounded-full ${s.dot}`} />
+                  <span className="text-[10px] text-gray-500">{s.text}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* 월별 신청 추이 (최근 6개월, 올해 기준) */}
-        {chartData.length > 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-4">월별 신청 추이 (최근 6개월)</p>
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={chartData} barGap={4} barCategoryGap="30%">
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} width={24} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }}
-                  cursor={{ fill: '#F3F4F6' }}
-                />
-                <Bar dataKey="신청" fill="#7C3AED" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="배차" fill="#C4B5FD" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-            <div className="flex gap-4 justify-center mt-2">
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-2 rounded-sm bg-purple-600" />
-                <span className="text-[10px] text-gray-500">신청</span>
+        {/* 신청 추이 차트 (기간 연동) */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-4">{range.chartLabel}</p>
+          {chartData.length > 0 && chartData.some((d: any) => d.신청 > 0 || d.배차 > 0) ? (
+            <>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={chartData} barGap={4} barCategoryGap="30%">
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} width={24} allowDecimals={false} />
+                  <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} cursor={{ fill: '#F3F4F6' }} />
+                  <Bar dataKey="신청" fill="#7C3AED" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="배차" fill="#C4B5FD" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="flex gap-4 justify-center mt-2">
+                <div className="flex items-center gap-1.5"><div className="w-3 h-2 rounded-sm bg-purple-600" /><span className="text-[10px] text-gray-500">신청</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-2 rounded-sm bg-purple-300" /><span className="text-[10px] text-gray-500">배차</span></div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-2 rounded-sm bg-purple-300" />
-                <span className="text-[10px] text-gray-500">배차</span>
-              </div>
-            </div>
-          </div>
-        )}
+            </>
+          ) : (
+            <EmptyCard icon="📊" message="차트 데이터 없음" sub="해당 기간 신청 내역이 없습니다" />
+          )}
+        </div>
 
-        {/* 부서별 신청 현황 TOP 5 */}
-        {deptList.length > 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-4">부서별 신청 현황 TOP 5</p>
+        {/* 차량군별 배차 현황 */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-4">차량군별 배차 현황</p>
+          {groupList.length > 0 ? (
+            <div className="space-y-3">
+              {groupList.map((g: any, i: number) => (
+                <div key={g.name}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center text-white flex-shrink-0 ${
+                        i === 0 ? 'bg-purple-600' : i === 1 ? 'bg-purple-400' : 'bg-gray-300'
+                      }`}>{i + 1}</span>
+                      <span className="text-sm font-medium text-gray-800">{g.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-gray-400">{g.percent}%</span>
+                      <span className="text-sm font-bold text-gray-700">{g.count}회</span>
+                    </div>
+                  </div>
+                  <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                    <div className="h-1.5 rounded-full transition-all duration-700"
+                      style={{ width: `${Math.round((g.count / maxGroupCount) * 100)}%`, backgroundColor: COLORS[i] || COLORS[4] }} />
+                  </div>
+                </div>
+              ))}
+              <p className="text-[10px] text-gray-400 text-right pt-1">총 {vehicleGroups?.total ?? 0}회 배차</p>
+            </div>
+          ) : (
+            <EmptyCard icon="🚌" message="배차 내역 없음" sub="해당 기간 배차된 차량이 없습니다" />
+          )}
+        </div>
+
+        {/* 부서별 TOP5 */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-4">부서별 신청 현황 TOP 5</p>
+          {deptList.length > 0 ? (
             <div className="space-y-3">
               {deptList.map((dept: any, i: number) => (
                 <div key={dept.name ?? i}>
@@ -237,29 +331,86 @@ export default function CommitteeStatsPage() {
                       <span className={`text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center text-white flex-shrink-0 ${
                         i === 0 ? 'bg-purple-600' : i === 1 ? 'bg-purple-400' : 'bg-gray-300'
                       }`}>{i + 1}</span>
-                      <span className="text-sm font-medium text-gray-800 truncate max-w-[140px]">
-                        {dept.name || '미분류'}
-                      </span>
+                      <span className="text-sm font-medium text-gray-800 truncate max-w-[140px]">{dept.name || '미분류'}</span>
                     </div>
                     <span className="text-sm font-bold text-gray-700 flex-shrink-0">{dept.count}건</span>
                   </div>
                   <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="h-1.5 rounded-full transition-all duration-700"
-                      style={{
-                        width: `${Math.round((dept.count / maxDeptCount) * 100)}%`,
-                        backgroundColor: COLORS[i] || COLORS[4],
-                      }}
-                    />
+                    <div className="h-1.5 rounded-full transition-all duration-700"
+                      style={{ width: `${Math.round((dept.count / maxDeptCount) * 100)}%`, backgroundColor: COLORS[i] || COLORS[4] }} />
                   </div>
                 </div>
               ))}
             </div>
+          ) : (
+            <EmptyCard icon="🏢" message="부서 데이터 없음" sub="해당 기간 신청 내역이 없습니다" />
+          )}
+        </div>
+
+        {/* 담당자별 처리 현황 */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-4 pt-4 pb-0">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">담당자별 처리 현황</p>
+            {/* 담당자 탭 */}
+            <div className="flex gap-1 border-b border-gray-100">
+              {PROC_TABS.map(t => (
+                <button key={t.key} onClick={() => setProcTab(t.key)}
+                  className={`flex-1 py-2 text-xs font-semibold border-b-2 -mb-px transition-colors ${
+                    procTab === t.key ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-400'
+                  }`}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
-        )}
+
+          <div className="p-4">
+            {filteredProcessors.length > 0 ? (
+              <div className="space-y-3">
+                {filteredProcessors.map((p: any) => (
+                  <div key={p.id} className="flex items-center gap-3 py-2.5 px-3 bg-gray-50 rounded-xl">
+                    {/* 역할 배지 */}
+                    <div className={`flex-shrink-0 px-2 py-1 rounded-lg text-[10px] font-bold ${
+                      p.step === 3 ? 'bg-blue-100 text-blue-700' :
+                      p.step === 4 ? 'bg-violet-100 text-violet-700' :
+                      'bg-purple-100 text-purple-700'
+                    }`}>
+                      {STEP_LABEL[p.step] || '-'}
+                    </div>
+                    {/* 이름 */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
+                      {p.avg_hours !== null && (
+                        <p className="text-[10px] text-gray-400 mt-0.5">평균 {formatHours(p.avg_hours)}</p>
+                      )}
+                    </div>
+                    {/* 처리 건수 */}
+                    <div className="flex-shrink-0 text-right">
+                      <p className="text-lg font-bold text-gray-800">{p.count}</p>
+                      <p className="text-[10px] text-gray-400">건</p>
+                    </div>
+                  </div>
+                ))}
+
+                {/* 전체 탭에서만 합계 표시 */}
+                {procTab === 'all' && processors.length > 0 && (
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                    <span className="text-xs text-gray-500">총 처리 건수</span>
+                    <span className="text-sm font-bold text-purple-600">
+                      {processors.reduce((s: number, p: any) => s + p.count, 0)}건
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <EmptyCard icon="👤" message="처리 내역 없음"
+                sub={procTab === 'all' ? '해당 기간 위원회 처리 내역이 없습니다' : `해당 기간 ${PROC_TABS.find(t => t.key === procTab)?.label} 처리 내역이 없습니다`} />
+            )}
+          </div>
+        </div>
 
         {/* 차량 현재 상태 */}
-        {veh && (
+        {veh ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">차량 현재 상태</p>
             <div className="grid grid-cols-2 gap-3">
@@ -275,6 +426,11 @@ export default function CommitteeStatsPage() {
                 </div>
               ))}
             </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">차량 현재 상태</p>
+            <EmptyCard icon="🚗" message="차량 정보 없음" />
           </div>
         )}
 

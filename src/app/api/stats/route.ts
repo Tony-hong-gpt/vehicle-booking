@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 
     // ── 1. 개요 ────────────────────────────────────────────────────────
     if (type === 'overview') {
-      const [vehiclesRes, reqCurrRes, reqPrevRes, dispCurrRes, dispPrevRes, deptReqRes, purposeReqRes] = await Promise.all([
+      const [vehiclesRes, reqCurrRes, reqPrevRes, dispCurrRes, dispPrevRes, deptReqRes, purposeReqRes, step5AppRes] = await Promise.all([
         supabase.from('vehicles').select('id, status'),
         supabase.from('requests').select('id, status, created_at').gte('created_at', fromISO).lte('created_at', toISO),
         supabase.from('requests').select('id, status').gte('created_at', prevFromISO).lte('created_at', prevToISO),
@@ -67,6 +67,13 @@ export async function GET(request: Request) {
           .select('purpose:purposes(name)')
           .gte('created_at', fromISO).lte('created_at', toISO)
           .in('status', ['dispatched','in_use','returned']),
+        // 처리 소요시간 계산용 (최종 승인 step=5)
+        supabase.from('approvals')
+          .select('request_id, approved_at')
+          .eq('step', 5)
+          .eq('status', 'approved')
+          .gte('approved_at', fromISO)
+          .lte('approved_at', toISO),
       ]);
 
       const vehicles  = vehiclesRes.data  || [];
@@ -85,6 +92,32 @@ export async function GET(request: Request) {
       const pendingReqs   = reqCurr.filter(r => ['pending','upper_approved','committee_reviewing','committee_vice_reviewing'].includes(r.status)).length;
       const decidedReqs   = totalReqs - pendingReqs;
       const approvalRate  = decidedReqs > 0 ? Math.round((approvedReqs / decidedReqs) * 100) : 0;
+
+      // 이전 기간 비교용
+      const prevApprovedReqs  = reqPrev.filter(r => ['approved','dispatched','in_use','returned'].includes(r.status)).length;
+      const prevRejectedReqs  = reqPrev.filter(r => r.status === 'rejected').length;
+      const prevDispTotal     = dispPrev.length;
+
+      // 처리 소요시간 (신청 생성 → 최종 승인)
+      const step5Data = step5AppRes.data || [];
+      const step5ReqIds = [...new Set(step5Data.map((a: any) => a.request_id).filter(Boolean))];
+      let step5ReqCreatedMap: Record<string, string> = {};
+      if (step5ReqIds.length > 0) {
+        const { data: step5Reqs } = await supabase.from('requests').select('id, created_at').in('id', step5ReqIds);
+        step5ReqCreatedMap = Object.fromEntries((step5Reqs || []).map((r: any) => [r.id, r.created_at]));
+      }
+      const processTimes = step5Data.map((a: any) => {
+        const created = step5ReqCreatedMap[a.request_id];
+        if (!created || !a.approved_at) return null;
+        const h = (new Date(a.approved_at).getTime() - new Date(created).getTime()) / 3600000;
+        return h >= 0 ? h : null;
+      }).filter((t): t is number => t !== null);
+      const avgProcessHours = processTimes.length > 0
+        ? Math.round(processTimes.reduce((s, t) => s + t, 0) / processTimes.length * 10) / 10
+        : null;
+      const fastCount = processTimes.filter(t => t < 24).length;
+      const midCount  = processTimes.filter(t => t >= 24 && t < 72).length;
+      const slowCount = processTimes.filter(t => t >= 72).length;
 
       const completedDisp  = dispCurr.filter((d: any) => d.status === 'completed').length;
       const scheduledDisp  = dispCurr.filter((d: any) => d.status === 'scheduled').length;
@@ -161,8 +194,21 @@ export async function GET(request: Request) {
             completed_trips:  { value: completedDisp,   diff: diff(completedDisp, prevCompletedDisp) },
             utilization_rate: { value: utilizationRate,  unit: '%' },
           },
-          requests:   { total: totalReqs, approved: approvedReqs, rejected: rejectedReqs, cancelled: cancelledReqs, pending: pendingReqs },
-          dispatches: { total: totalDisp, completed: completedDisp, scheduled: scheduledDisp },
+          requests:   {
+            total: totalReqs, approved: approvedReqs, rejected: rejectedReqs,
+            cancelled: cancelledReqs, pending: pendingReqs,
+            diffs: {
+              total:    diff(totalReqs, prevTotalReqs),
+              approved: diff(approvedReqs, prevApprovedReqs),
+              rejected: diff(rejectedReqs, prevRejectedReqs),
+            },
+          },
+          dispatches: {
+            total: totalDisp, completed: completedDisp, scheduled: scheduledDisp,
+            diffs: { total: diff(totalDisp, prevDispTotal) },
+          },
+          avg_process_hours: avgProcessHours,
+          process_distribution: { fast: fastCount, mid: midCount, slow: slowCount },
           vehicles:   { total: activeVehicles, used: usedVehicleIds.size, unused: activeVehicles - usedVehicleIds.size, available: availableVehicles, maintenance: maintenanceVehicles, in_use: inUseVehicles },
           time_series: timeSeries,
           top_depts:    topDepts,
@@ -357,6 +403,90 @@ export async function GET(request: Request) {
         },
         error: null,
       });
+    }
+
+    // ── 6. 차량군별 배차 현황 ──────────────────────────────────────────
+    if (type === 'vehicle_groups') {
+      const dispRes = await supabase
+        .from('dispatches')
+        .select('vehicle_id')
+        .gte('scheduled_start', fromISO)
+        .lte('scheduled_start', toISO)
+        .neq('status', 'cancelled');
+
+      const vehicleIds = [...new Set((dispRes.data || []).map((d: any) => d.vehicle_id).filter(Boolean))];
+      let vehGroupMap: Record<string, string> = {};
+      if (vehicleIds.length > 0) {
+        const { data: vehs } = await supabase
+          .from('vehicles')
+          .select('id, vehicle_group:vehicle_groups!vehicle_group_id(name)')
+          .in('id', vehicleIds);
+        (vehs || []).forEach((v: any) => {
+          vehGroupMap[v.id] = (v.vehicle_group as any)?.name || '미분류';
+        });
+      }
+
+      const groupCounts: Record<string, number> = {};
+      (dispRes.data || []).forEach((d: any) => {
+        const gName = vehGroupMap[d.vehicle_id] || '미분류';
+        groupCounts[gName] = (groupCounts[gName] || 0) + 1;
+      });
+      const total = Object.values(groupCounts).reduce((s, c) => s + c, 0);
+      const groups = Object.entries(groupCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => ({
+          name, count,
+          percent: total > 0 ? Math.round((count / total) * 100) : 0,
+        }));
+
+      return Response.json({ data: { groups, total }, error: null });
+    }
+
+    // ── 7. 담당자별 처리 현황 ─────────────────────────────────────────
+    if (type === 'processors') {
+      const appRes = await supabase
+        .from('approvals')
+        .select('request_id, step, approver_id, status, approved_at, approver:users!approver_id(name, role)')
+        .gte('approved_at', fromISO)
+        .lte('approved_at', toISO)
+        .in('step', [3, 4, 5]);
+
+      const approvals = appRes.data || [];
+      const reqIds = [...new Set(approvals.map((a: any) => a.request_id).filter(Boolean))];
+      let reqCreatedMap: Record<string, string> = {};
+      if (reqIds.length > 0) {
+        const { data: reqs } = await supabase
+          .from('requests').select('id, created_at').in('id', reqIds);
+        reqCreatedMap = Object.fromEntries((reqs || []).map((r: any) => [r.id, r.created_at]));
+      }
+
+      const personMap: Record<string, { name: string; role: string; step: number; count: number; totalHours: number; timeCount: number }> = {};
+      approvals.forEach((a: any) => {
+        const pid = a.approver_id;
+        if (!pid) return;
+        if (!personMap[pid]) {
+          personMap[pid] = {
+            name: (a.approver as any)?.name || '알 수 없음',
+            role: (a.approver as any)?.role || '',
+            step: a.step,
+            count: 0, totalHours: 0, timeCount: 0,
+          };
+        }
+        personMap[pid].count++;
+        const created = reqCreatedMap[a.request_id];
+        if (created && a.approved_at) {
+          const h = (new Date(a.approved_at).getTime() - new Date(created).getTime()) / 3600000;
+          if (h >= 0) { personMap[pid].totalHours += h; personMap[pid].timeCount++; }
+        }
+      });
+
+      const processors = Object.entries(personMap).map(([id, p]) => ({
+        id, name: p.name, role: p.role, step: p.step,
+        count: p.count,
+        avg_hours: p.timeCount > 0 ? Math.round(p.totalHours / p.timeCount * 10) / 10 : null,
+      })).sort((a, b) => a.step - b.step || b.count - a.count);
+
+      return Response.json({ data: { processors, total: approvals.length }, error: null });
     }
 
     return Response.json({ data: null, error: '알 수 없는 type 파라미터입니다' }, { status: 400 });
