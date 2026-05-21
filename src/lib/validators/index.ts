@@ -123,7 +123,7 @@ export const createDispatchSchema = z.object({
   driver_phone: z.string().max(20).optional().nullable(),
   scheduled_start: z.string().optional().nullable(),
   scheduled_end: z.string().optional().nullable(),
-  notes: z.string().optional(),
+  notes: z.string().optional().nullable(),
   is_rental: z.boolean().optional().default(false),
 });
 
