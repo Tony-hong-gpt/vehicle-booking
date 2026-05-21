@@ -45,14 +45,14 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
-      style={{ background: 'linear-gradient(150deg, #052e16 0%, #14532d 40%, #166534 100%)' }}
+      style={{ background: 'linear-gradient(150deg, #0a1628 0%, #0f2a4a 40%, #1a3a5c 100%)' }}
     >
       {/* 배경 장식 */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(74,222,128,0.08), transparent 70%)' }} />
+          style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.10), transparent 70%)' }} />
         <div className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(34,197,94,0.07), transparent 70%)' }} />
+          style={{ background: 'radial-gradient(circle, rgba(96,165,250,0.08), transparent 70%)' }} />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.02), transparent 70%)' }} />
         {/* 도트 패턴 */}
@@ -71,38 +71,17 @@ export default function LoginPage() {
         {/* 로고 & 브랜드 */}
         <div className="flex flex-col items-center mb-8">
           <div className="mb-5">
-            <svg width="80" height="94" viewBox="0 0 96 112" fill="none" xmlns="http://www.w3.org/2000/svg"
-              style={{ filter: 'drop-shadow(0 12px 32px rgba(0,0,0,0.4))' }}>
-              <path d="M48 4 L88 18 L88 58 Q88 88 48 108 Q8 88 8 58 L8 18 Z"
-                fill="url(#shieldGold)" />
-              <path d="M48 11 L82 23 L82 58 Q82 84 48 102 Q14 84 14 58 L14 23 Z"
-                fill="url(#shieldGreen)" />
-              <rect x="45" y="24" width="6" height="50" rx="2" fill="url(#crossGold)" />
-              <rect x="26" y="44" width="44" height="6" rx="2" fill="url(#crossGold)" />
-              <text x="22" y="75" fill="white" fontSize="18" fontWeight="800"
-                fontFamily="Arial, sans-serif" letterSpacing="-0.5">R</text>
-              <text x="57" y="75" fill="white" fontSize="18" fontWeight="800"
-                fontFamily="Arial, sans-serif" letterSpacing="-0.5">L</text>
-              <defs>
-                <linearGradient id="shieldGold" x1="8" y1="4" x2="88" y2="108" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#fbbf24" />
-                  <stop offset="50%" stopColor="#d97706" />
-                  <stop offset="100%" stopColor="#92400e" />
-                </linearGradient>
-                <linearGradient id="shieldGreen" x1="14" y1="11" x2="82" y2="102" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#166534" />
-                  <stop offset="100%" stopColor="#052e16" />
-                </linearGradient>
-                <linearGradient id="crossGold" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
-                  <stop offset="0%" stopColor="#fde68a" />
-                  <stop offset="100%" stopColor="#d97706" />
-                </linearGradient>
-              </defs>
-            </svg>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/emblem.png"
+              alt="로드매니저 엠블럼"
+              width={110}
+              height={110}
+              style={{ filter: 'drop-shadow(0 12px 32px rgba(0,0,0,0.45))' }}
+            />
           </div>
-          <p className="text-xs font-bold tracking-[0.3em] text-amber-400 mb-1">ROAD MANAGER</p>
           <h1 className="text-3xl font-black text-white tracking-tight mb-2">로드매니저</h1>
-          <p className="text-sm text-green-300/80 text-center leading-relaxed">
+          <p className="text-sm text-blue-300/80 text-center leading-relaxed">
             스마트한 차량관리, 더 편리한 사역 지원
           </p>
         </div>
@@ -131,8 +110,8 @@ export default function LoginPage() {
                 전화번호
               </label>
               <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-green-50 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-blue-50 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
                 </div>
@@ -142,7 +121,7 @@ export default function LoginPage() {
                   onChange={e => setPhone(e.target.value)}
                   required
                   placeholder="010-0000-0000"
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                 />
               </div>
             </div>
@@ -153,8 +132,8 @@ export default function LoginPage() {
                 비밀번호
               </label>
               <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-green-50 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-blue-50 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
@@ -164,7 +143,7 @@ export default function LoginPage() {
                   onChange={e => setPassword(e.target.value)}
                   required
                   placeholder="비밀번호를 입력하세요"
-                  className="w-full pl-11 pr-11 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
+                  className="w-full pl-11 pr-11 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                 />
                 <button
                   type="button"
@@ -194,8 +173,8 @@ export default function LoginPage() {
                 style={{
                   background: loading
                     ? '#6b7280'
-                    : 'linear-gradient(135deg, #052e16 0%, #15803d 60%, #16a34a 100%)',
-                  boxShadow: loading ? 'none' : '0 4px 16px rgba(22,101,52,0.4)',
+                    : 'linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 60%, #2563eb 100%)',
+                  boxShadow: loading ? 'none' : '0 4px 16px rgba(29,78,216,0.45)',
                 }}
               >
                 {loading ? (
@@ -212,7 +191,7 @@ export default function LoginPage() {
           <div className="mt-5 pt-4 border-t border-gray-100 text-center">
             <p className="text-sm text-gray-400">
               처음 이용하시나요?{' '}
-              <Link href="/signup" className="text-green-700 hover:text-green-800 font-bold">
+              <Link href="/signup" className="text-blue-600 hover:text-blue-700 font-bold">
                 계정 만들기
               </Link>
             </p>
@@ -221,10 +200,10 @@ export default function LoginPage() {
 
         {/* 하단 카피라이트 */}
         <div className="text-center mt-6 space-y-1">
-          <p className="text-[11px] text-green-300/60 font-medium">
-            © 2024 ROAD MANAGER · 대구동신교회
+          <p className="text-[11px] text-blue-300/60 font-medium">
+            © 2024 로드매니저 · 대구동신교회
           </p>
-          <p className="text-[10px] text-green-300/40">차량 사용 신청 관리 시스템</p>
+          <p className="text-[10px] text-blue-300/40">차량 사용 신청 관리 시스템</p>
         </div>
 
       </div>
