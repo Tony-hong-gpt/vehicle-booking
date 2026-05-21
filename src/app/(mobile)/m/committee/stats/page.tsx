@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 type Period = 'month' | 'quarter' | 'year';
-type ProcessorTab = 'all' | 'secretary' | 'vice' | 'chair';
 
 function getPeriodRange(period: Period): { from: string; to: string; label: string; granularity: string; chartLabel: string } {
   const now = new Date();
@@ -32,13 +31,6 @@ const PERIOD_TABS: { key: Period; label: string }[] = [
   { key: 'month',   label: '이번달' },
   { key: 'quarter', label: '이번분기' },
   { key: 'year',    label: '올해' },
-];
-
-const PROC_TABS: { key: ProcessorTab; label: string }[] = [
-  { key: 'all',       label: '전체' },
-  { key: 'secretary', label: '총무' },
-  { key: 'vice',      label: '부위원장' },
-  { key: 'chair',     label: '위원장' },
 ];
 
 const COLORS = ['#7C3AED', '#A78BFA', '#C4B5FD', '#DDD6FE', '#EDE9FE'];
@@ -77,7 +69,6 @@ const STEP_LABEL: Record<number, string> = { 3: '총무', 4: '부위원장', 5: 
 
 export default function CommitteeStatsPage() {
   const [period, setPeriod]           = useState<Period>('month');
-  const [procTab, setProcTab]         = useState<ProcessorTab>('all');
   const [overview, setOverview]       = useState<any>(null);
   const [vehicleGroups, setVehicleGroups] = useState<any>(null);
   const [deptRanking, setDeptRanking] = useState<any[]>([]);
@@ -140,13 +131,8 @@ export default function CommitteeStatsPage() {
   const groupList = vehicleGroups?.groups ?? [];
   const maxGroupCount = groupList[0]?.count ?? 1;
 
-  // 담당자별 필터
-  const ROLE_MAP: Record<ProcessorTab, string> = {
-    all: '', secretary: 'committee_secretary', vice: 'committee_vice', chair: 'committee_chair',
-  };
-  const filteredProcessors = procTab === 'all'
-    ? processors
-    : processors.filter((p: any) => p.role === ROLE_MAP[procTab]);
+  // 담당자 정렬: 위원장(step5) → 부위원장(step4) → 총무(step3)
+  const sortedProcessors = [...processors].sort((a: any, b: any) => b.step - a.step || b.count - a.count);
 
   if (loading) return (
     <div className="flex flex-col min-h-full pb-28">
@@ -348,65 +334,44 @@ export default function CommitteeStatsPage() {
         </div>
 
         {/* 담당자별 처리 현황 */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 pt-4 pb-0">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">담당자별 처리 현황</p>
-            {/* 담당자 탭 */}
-            <div className="flex gap-1 border-b border-gray-100">
-              {PROC_TABS.map(t => (
-                <button key={t.key} onClick={() => setProcTab(t.key)}
-                  className={`flex-1 py-2 text-xs font-semibold border-b-2 -mb-px transition-colors ${
-                    procTab === t.key ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-400'
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-4">담당자별 처리 현황</p>
+          {sortedProcessors.length > 0 ? (
+            <div className="space-y-3">
+              {sortedProcessors.map((p: any) => (
+                <div key={p.id} className="flex items-center gap-3 py-2.5 px-3 bg-gray-50 rounded-xl">
+                  {/* 역할 배지 */}
+                  <div className={`flex-shrink-0 px-2 py-1 rounded-lg text-[10px] font-bold ${
+                    p.step === 3 ? 'bg-blue-100 text-blue-700' :
+                    p.step === 4 ? 'bg-violet-100 text-violet-700' :
+                    'bg-purple-100 text-purple-700'
                   }`}>
-                  {t.label}
-                </button>
+                    {STEP_LABEL[p.step] || '-'}
+                  </div>
+                  {/* 이름 */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
+                    {p.avg_hours !== null && (
+                      <p className="text-[10px] text-gray-400 mt-0.5">평균 {formatHours(p.avg_hours)}</p>
+                    )}
+                  </div>
+                  {/* 처리 건수 */}
+                  <div className="flex-shrink-0 text-right">
+                    <p className="text-lg font-bold text-gray-800">{p.count}</p>
+                    <p className="text-[10px] text-gray-400">건</p>
+                  </div>
+                </div>
               ))}
-            </div>
-          </div>
-
-          <div className="p-4">
-            {filteredProcessors.length > 0 ? (
-              <div className="space-y-3">
-                {filteredProcessors.map((p: any) => (
-                  <div key={p.id} className="flex items-center gap-3 py-2.5 px-3 bg-gray-50 rounded-xl">
-                    {/* 역할 배지 */}
-                    <div className={`flex-shrink-0 px-2 py-1 rounded-lg text-[10px] font-bold ${
-                      p.step === 3 ? 'bg-blue-100 text-blue-700' :
-                      p.step === 4 ? 'bg-violet-100 text-violet-700' :
-                      'bg-purple-100 text-purple-700'
-                    }`}>
-                      {STEP_LABEL[p.step] || '-'}
-                    </div>
-                    {/* 이름 */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
-                      {p.avg_hours !== null && (
-                        <p className="text-[10px] text-gray-400 mt-0.5">평균 {formatHours(p.avg_hours)}</p>
-                      )}
-                    </div>
-                    {/* 처리 건수 */}
-                    <div className="flex-shrink-0 text-right">
-                      <p className="text-lg font-bold text-gray-800">{p.count}</p>
-                      <p className="text-[10px] text-gray-400">건</p>
-                    </div>
-                  </div>
-                ))}
-
-                {/* 전체 탭에서만 합계 표시 */}
-                {procTab === 'all' && processors.length > 0 && (
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                    <span className="text-xs text-gray-500">총 처리 건수</span>
-                    <span className="text-sm font-bold text-purple-600">
-                      {processors.reduce((s: number, p: any) => s + p.count, 0)}건
-                    </span>
-                  </div>
-                )}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                <span className="text-xs text-gray-500">총 처리 건수</span>
+                <span className="text-sm font-bold text-purple-600">
+                  {sortedProcessors.reduce((s: number, p: any) => s + p.count, 0)}건
+                </span>
               </div>
-            ) : (
-              <EmptyCard icon="👤" message="처리 내역 없음"
-                sub={procTab === 'all' ? '해당 기간 위원회 처리 내역이 없습니다' : `해당 기간 ${PROC_TABS.find(t => t.key === procTab)?.label} 처리 내역이 없습니다`} />
-            )}
-          </div>
+            </div>
+          ) : (
+            <EmptyCard icon="👤" message="처리 내역 없음" sub="해당 기간 위원회 처리 내역이 없습니다" />
+          )}
         </div>
 
         {/* 차량 현재 상태 */}
@@ -416,7 +381,7 @@ export default function CommitteeStatsPage() {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: '사용 가능', value: veh.available   ?? 0, color: 'text-green-600',  bg: 'bg-green-50' },
-                { label: '운행 중',   value: veh.in_use      ?? 0, color: 'text-blue-600',   bg: 'bg-blue-50' },
+                { label: '배차중',    value: veh.in_use      ?? 0, color: 'text-blue-600',   bg: 'bg-blue-50' },
                 { label: '정비 중',   value: veh.maintenance ?? 0, color: 'text-orange-600', bg: 'bg-orange-50' },
                 { label: '전체',      value: veh.total       ?? 0, color: 'text-gray-700',   bg: 'bg-gray-50' },
               ].map(s => (
