@@ -121,8 +121,8 @@ export const createDispatchSchema = z.object({
   driver_id: z.string().min(1).optional().nullable(),
   driver_name: z.string().max(30).optional().nullable(),
   driver_phone: z.string().max(20).optional().nullable(),
-  scheduled_start: z.string().datetime().optional().nullable(),
-  scheduled_end: z.string().datetime().optional().nullable(),
+  scheduled_start: z.string().optional().nullable(),
+  scheduled_end: z.string().optional().nullable(),
   notes: z.string().optional(),
   is_rental: z.boolean().optional().default(false),
 });
