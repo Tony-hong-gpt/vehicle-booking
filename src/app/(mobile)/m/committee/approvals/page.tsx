@@ -134,15 +134,18 @@ export default function CommitteeApprovalsPage() {
   const [holdError,   setHoldError]   = useState('');
 
   /* 배차 모달 */
-  const [dispatchModal,     setDispatchModal]     = useState<any | null>(null);
-  const [dispatchVehicles,  setDispatchVehicles]  = useState<any[]>([]);
-  const [dispatchVehicleId, setDispatchVehicleId] = useState('');
-  const [dispatchIsRental,  setDispatchIsRental]  = useState(false);
-  const [dispatchDriverName,setDispatchDriverName]= useState('');
-  const [dispatchDriverPhone,setDispatchDriverPhone]= useState('');
-  const [dispatchNotes,     setDispatchNotes]     = useState('');
-  const [dispatchError,     setDispatchError]     = useState('');
-  const [loadingVehicles,   setLoadingVehicles]   = useState(false);
+  const [dispatchModal,       setDispatchModal]       = useState<any | null>(null);
+  const [dispatchVehicleGroups, setDispatchVehicleGroups] = useState<any[]>([]);
+  const [dispatchVehicleGroupId, setDispatchVehicleGroupId] = useState('');
+  const [allDispatchVehicles, setAllDispatchVehicles] = useState<any[]>([]);
+  const [dispatchVehicles,    setDispatchVehicles]    = useState<any[]>([]);
+  const [dispatchVehicleId,   setDispatchVehicleId]   = useState('');
+  const [dispatchIsRental,    setDispatchIsRental]    = useState(false);
+  const [dispatchDriverName,  setDispatchDriverName]  = useState('');
+  const [dispatchDriverPhone, setDispatchDriverPhone] = useState('');
+  const [dispatchNotes,       setDispatchNotes]       = useState('');
+  const [dispatchError,       setDispatchError]       = useState('');
+  const [loadingVehicles,     setLoadingVehicles]     = useState(false);
 
   /* 토스트 */
   const [toast, setToast] = useState('');
@@ -309,21 +312,43 @@ export default function CommitteeApprovalsPage() {
 
   /* ────────── 배차 모달 열기 ────────── */
   const openDispatchModal = async (req: any) => {
+    const initGroupId = req.vehicle_group_id || '';
     setDispatchModal(req);
+    setDispatchVehicleGroupId(initGroupId);
     setDispatchVehicleId(''); setDispatchIsRental(false);
     setDispatchDriverName(''); setDispatchDriverPhone('');
     setDispatchNotes(''); setDispatchError('');
-    if (req.start_datetime && req.end_datetime) {
-      setLoadingVehicles(true);
-      try {
+    setLoadingVehicles(true);
+    try {
+      const [vgRes] = await Promise.all([fetch('/api/vehicle-groups')]);
+      const vgData = await vgRes.json();
+      setDispatchVehicleGroups(vgData.data || []);
+
+      if (req.start_datetime && req.end_datetime) {
         const start = new Date(req.start_datetime).toISOString();
         const end   = new Date(req.end_datetime).toISOString();
         const res   = await fetch(`/api/vehicles/available?start_datetime=${start}&end_datetime=${end}`);
         const json  = await res.json();
-        setDispatchVehicles(json.data || []);
-      } catch { setDispatchVehicles([]); }
-      finally { setLoadingVehicles(false); }
+        const all   = json.data || [];
+        setAllDispatchVehicles(all);
+        setDispatchVehicles(initGroupId ? all.filter((v: any) => v.vehicle_group_id === initGroupId) : all);
+      }
+    } catch {
+      setAllDispatchVehicles([]);
+      setDispatchVehicles([]);
+    } finally {
+      setLoadingVehicles(false);
     }
+  };
+
+  /* ────────── 배차 차량군 변경 ────────── */
+  const handleDispatchGroupChange = (groupId: string) => {
+    setDispatchVehicleGroupId(groupId);
+    setDispatchVehicleId('');
+    setDispatchVehicles(groupId
+      ? allDispatchVehicles.filter((v: any) => v.vehicle_group_id === groupId)
+      : allDispatchVehicles
+    );
   };
 
   /* ────────── 배차 제출 ────────── */
@@ -1151,7 +1176,7 @@ export default function CommitteeApprovalsPage() {
                   {dispatchModal.department?.name && ` · ${dispatchModal.department.name}`}
                   {' · '}<span className="font-mono">{dispatchModal.request_no}</span>
                 </p>
-                <div className="flex gap-3 mt-2">
+                <div className="flex items-center gap-3 mt-2 flex-wrap">
                   {[
                     { label: '출발', val: dispatchModal.start_datetime },
                     { label: '반납', val: dispatchModal.end_datetime },
@@ -1163,6 +1188,11 @@ export default function CommitteeApprovalsPage() {
                       </p>
                     </div>
                   ))}
+                  {dispatchModal.vehicle_group?.name && (
+                    <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full ml-auto">
+                      신청: {dispatchModal.vehicle_group.name}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -1188,6 +1218,30 @@ export default function CommitteeApprovalsPage() {
                 </button>
               </div>
 
+              {/* 차량군 선택 */}
+              {!dispatchIsRental && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-2">차량군</label>
+                  <select
+                    value={dispatchVehicleGroupId}
+                    onChange={e => handleDispatchGroupChange(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="">전체 차량군</option>
+                    {dispatchVehicleGroups.map((g: any) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}{g.id === dispatchModal?.vehicle_group_id ? ' (신청 차량군)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {dispatchVehicleGroupId && dispatchVehicleGroupId !== dispatchModal?.vehicle_group_id && (
+                    <p className="mt-1.5 text-xs text-amber-600 flex items-center gap-1">
+                      <span>⚠</span> 신청자가 요청한 차량군과 다른 차량군입니다
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* 차량 선택 */}
               {!dispatchIsRental && (
                 <div>
@@ -1201,11 +1255,13 @@ export default function CommitteeApprovalsPage() {
                     </div>
                   ) : dispatchVehicles.length === 0 ? (
                     <div className="py-4 bg-orange-50 border border-orange-100 rounded-xl text-center">
-                      <p className="text-sm text-orange-600 font-medium">해당 기간 가용 차량이 없습니다</p>
-                      <p className="text-xs text-orange-400 mt-0.5">대차 사용을 선택하거나 일정을 확인해주세요</p>
+                      <p className="text-sm text-orange-600 font-medium">
+                        {dispatchVehicleGroupId ? '해당 차량군에 가용 차량이 없습니다' : '해당 기간 가용 차량이 없습니다'}
+                      </p>
+                      <p className="text-xs text-orange-400 mt-0.5">차량군을 변경하거나 대차 사용을 선택해주세요</p>
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
                       {dispatchVehicles.map((v: any) => (
                         <button
                           key={v.id}
@@ -1225,7 +1281,7 @@ export default function CommitteeApprovalsPage() {
                             <p className="text-xs text-gray-400">{v.license_plate}</p>
                           </div>
                           {v.vehicle_group?.name && (
-                            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full flex-shrink-0">
                               {v.vehicle_group.name}
                             </span>
                           )}
