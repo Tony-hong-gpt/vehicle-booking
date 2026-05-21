@@ -45,7 +45,11 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
-      style={{ background: 'linear-gradient(150deg, #0a1628 0%, #0f2a4a 40%, #1a3a5c 100%)' }}
+      style={{
+        background: 'linear-gradient(150deg, #0a1628 0%, #0f2a4a 40%, #1a3a5c 100%)',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 28px)',
+      }}
     >
       {/* 배경 장식 */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -69,18 +73,18 @@ export default function LoginPage() {
       <div className="w-full max-w-sm px-5 relative z-10">
 
         {/* 로고 & 브랜드 */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="mb-5">
+        <div className="flex flex-col items-center mb-6">
+          <div className="mb-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/emblem.png"
               alt="로드매니저 엠블럼"
-              width={110}
-              height={110}
-              style={{ filter: 'drop-shadow(0 12px 32px rgba(0,0,0,0.45))' }}
+              width={100}
+              height={100}
+              style={{ filter: 'drop-shadow(0 10px 28px rgba(0,0,0,0.45))' }}
             />
           </div>
-          <h1 className="text-3xl font-black text-white tracking-tight mb-2">로드매니저</h1>
+          <h1 className="text-3xl font-black text-white tracking-tight mb-1.5">로드매니저</h1>
           <p className="text-sm text-blue-300/80 text-center leading-relaxed">
             스마트한 차량관리, 더 편리한 사역 지원
           </p>
@@ -199,7 +203,7 @@ export default function LoginPage() {
         </div>
 
         {/* 하단 카피라이트 */}
-        <div className="text-center mt-6 space-y-1">
+        <div className="text-center mt-5 space-y-1">
           <p className="text-[11px] text-blue-300/60 font-medium">
             © 2024 로드매니저 · 대구동신교회
           </p>
