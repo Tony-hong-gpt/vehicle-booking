@@ -38,16 +38,36 @@ const ROLE_DONE_STATUSES: Record<string, string[]> = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  pending:                  { label: '부서승인대기',   color: 'text-yellow-700',   bg: 'bg-yellow-50',   dot: 'bg-yellow-400' },
-  upper_approved:           { label: '차량위원회대기', color: 'text-indigo-700',   bg: 'bg-indigo-50',   dot: 'bg-indigo-400' },
-  committee_reviewing:      { label: '총무검토중',     color: 'text-violet-700',   bg: 'bg-violet-50',   dot: 'bg-violet-400' },
-  committee_vice_reviewing: { label: '위원장 검토중',   color: 'text-fuchsia-700',  bg: 'bg-fuchsia-50',  dot: 'bg-fuchsia-400' },
-  approved:                 { label: '차량위원회 승인', color: 'text-green-700',    bg: 'bg-green-50',    dot: 'bg-green-500' },
-  rejected:                 { label: '반려',           color: 'text-red-700',      bg: 'bg-red-50',      dot: 'bg-red-400' },
-  on_hold:                  { label: '대기',           color: 'text-orange-700',   bg: 'bg-orange-50',   dot: 'bg-orange-400' },
-  dispatched:               { label: '배차완료',       color: 'text-blue-700',     bg: 'bg-blue-50',     dot: 'bg-blue-400' },
-  in_use:                   { label: '운행중',         color: 'text-purple-700',   bg: 'bg-purple-50',   dot: 'bg-purple-500' },
-  returned:                 { label: '반납완료',       color: 'text-gray-600',     bg: 'bg-gray-50',     dot: 'bg-gray-300' },
+  pending:                  { label: '부서승인대기',    color: 'text-yellow-700',  bg: 'bg-yellow-50',  dot: 'bg-yellow-400' },
+  upper_approved:           { label: '차량위원회대기',  color: 'text-indigo-700',  bg: 'bg-indigo-50',  dot: 'bg-indigo-400' },
+  committee_reviewing:      { label: '총무 검토완료',   color: 'text-violet-700',  bg: 'bg-violet-50',  dot: 'bg-violet-400' },
+  committee_vice_reviewing: { label: '부위원장 결재완료', color: 'text-fuchsia-700', bg: 'bg-fuchsia-50', dot: 'bg-fuchsia-400' },
+  approved:                 { label: '차량위원회 승인', color: 'text-green-700',   bg: 'bg-green-50',   dot: 'bg-green-500' },
+  rejected:                 { label: '반려',           color: 'text-red-700',     bg: 'bg-red-50',     dot: 'bg-red-400' },
+  on_hold:                  { label: '대기',           color: 'text-orange-700',  bg: 'bg-orange-50',  dot: 'bg-orange-400' },
+  dispatched:               { label: '배차완료',       color: 'text-blue-700',    bg: 'bg-blue-50',    dot: 'bg-blue-400' },
+  in_use:                   { label: '운행중',         color: 'text-purple-700',  bg: 'bg-purple-50',  dot: 'bg-purple-500' },
+  returned:                 { label: '반납완료',       color: 'text-gray-600',    bg: 'bg-gray-50',    dot: 'bg-gray-300' },
+};
+
+/** 역할별 상태 라벨 오버라이드 (결재 카드 헤더 표시용) */
+const ROLE_STATUS_LABEL_OVERRIDE: Record<string, Partial<Record<string, string>>> = {
+  committee_secretary: {
+    committee_reviewing:      '부위원장 검토중',
+    committee_vice_reviewing: '위원장 검토중',
+  },
+  committee_vice: {
+    committee_reviewing:      '총무 검토완료',
+    committee_vice_reviewing: '위원장 검토중',
+  },
+  committee_chair: {
+    committee_reviewing:      '총무 검토완료',
+    committee_vice_reviewing: '부위원장 결재완료',
+  },
+  admin: {
+    committee_reviewing:      '총무 검토완료',
+    committee_vice_reviewing: '부위원장 결재완료',
+  },
 };
 
 /** 결재 타임라인 단계 정의 */
@@ -673,7 +693,9 @@ export default function CommitteeApprovalsPage() {
           </div>
         ) : (
           filtered.map((req: any) => {
-            const cfg       = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.pending;
+            const baseCfg   = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.pending;
+            const labelOverride = ROLE_STATUS_LABEL_OVERRIDE[role]?.[req.status];
+            const cfg       = labelOverride ? { ...baseCfg, label: labelOverride } : baseCfg;
             const isPending = tab === 'pending';
 
             return (

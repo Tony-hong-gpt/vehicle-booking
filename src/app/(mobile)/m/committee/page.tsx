@@ -60,13 +60,33 @@ const ROLE_CONFIG: Record<string, {
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   pending:                   { label: '상위승인대기',    color: 'bg-yellow-100 text-yellow-700' },
   upper_approved:            { label: '차량위원회대기',  color: 'bg-indigo-100 text-indigo-700' },
-  committee_reviewing:       { label: '총무검토중',      color: 'bg-violet-100 text-violet-700' },
-  committee_vice_reviewing:  { label: '위원장 검토중',   color: 'bg-fuchsia-100 text-fuchsia-700' },
+  committee_reviewing:       { label: '총무 검토완료',   color: 'bg-violet-100 text-violet-700' },
+  committee_vice_reviewing:  { label: '위원장 검토중',   color: 'bg-purple-100 text-purple-700' },
   approved:                  { label: '차량위원회 승인', color: 'bg-green-100 text-green-700' },
   rejected:                  { label: '반려',            color: 'bg-red-100 text-red-700' },
   on_hold:                   { label: '대기',            color: 'bg-orange-100 text-orange-700' },
   dispatched:                { label: '배차완료',        color: 'bg-blue-100 text-blue-700' },
   returned:                  { label: '반납완료',        color: 'bg-gray-100 text-gray-600' },
+};
+
+/** 역할별 상태 라벨 오버라이드 (committee_reviewing / committee_vice_reviewing 한정) */
+const ROLE_STATUS_OVERRIDE: Record<string, Partial<Record<string, { label: string; color: string }>>> = {
+  committee_secretary: {
+    committee_reviewing:      { label: '부위원장 검토중',  color: 'bg-fuchsia-100 text-fuchsia-700' },
+    committee_vice_reviewing: { label: '위원장 검토중',    color: 'bg-purple-100 text-purple-700' },
+  },
+  committee_vice: {
+    committee_reviewing:      { label: '총무 검토완료',    color: 'bg-violet-100 text-violet-700' },
+    committee_vice_reviewing: { label: '위원장 검토중',    color: 'bg-purple-100 text-purple-700' },
+  },
+  committee_chair: {
+    committee_reviewing:      { label: '총무 검토완료',    color: 'bg-violet-100 text-violet-700' },
+    committee_vice_reviewing: { label: '부위원장 결재완료', color: 'bg-fuchsia-100 text-fuchsia-700' },
+  },
+  admin: {
+    committee_reviewing:      { label: '총무 검토완료',    color: 'bg-violet-100 text-violet-700' },
+    committee_vice_reviewing: { label: '부위원장 결재완료', color: 'bg-fuchsia-100 text-fuchsia-700' },
+  },
 };
 
 export default function CommitteeHomePage() {
@@ -177,7 +197,8 @@ export default function CommitteeHomePage() {
           </div>
           <div className="space-y-2">
             {requests.slice(0, 5).map((req: any) => {
-              const badge = STATUS_BADGE[req.status] ?? { label: req.status, color: 'bg-gray-100 text-gray-600' };
+              const roleBadge = ROLE_STATUS_OVERRIDE[user?.role]?.[req.status];
+              const badge = roleBadge ?? STATUS_BADGE[req.status] ?? { label: req.status, color: 'bg-gray-100 text-gray-600' };
               const rolePending = ROLE_PENDING_MAP[user?.role] ?? ROLE_PENDING_MAP.committee_secretary;
               const tabParam = rolePending.includes(req.status) ? 'pending' : 'done';
               return (
