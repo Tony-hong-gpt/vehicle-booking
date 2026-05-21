@@ -97,9 +97,18 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
   const approvals = req.approvals || [];
   const dispatch = Array.isArray(req.dispatch) ? req.dispatch[0] : req.dispatch;
 
+  // 반려/대기 approval 레코드
+  const rejectedApproval = approvals.find((a: any) => a.status === 'rejected');
+  const heldApproval     = approvals.find((a: any) => a.status === 'on_hold' || a.comment?.startsWith?.('[대기]'));
+
+  // 매니저 반려인지 위원회 반려인지 구분
+  const isManagerRejection   = req.status === 'rejected' && rejectedApproval && (rejectedApproval.step ?? 99) <= 2;
+  const isCommitteeRejection = req.status === 'rejected' && rejectedApproval && (rejectedApproval.step ?? 99) >= 3;
+
+  // 배너용 (manager 반려만 이름 표시, 위원회는 이름 숨김)
   const bannerApproval =
-    req.status === 'rejected' ? approvals.find((a: any) => a.status === 'rejected') :
-    req.status === 'on_hold'  ? approvals.find((a: any) => a.status === 'on_hold') : null;
+    req.status === 'rejected' ? rejectedApproval :
+    req.status === 'on_hold'  ? heldApproval : null;
 
   const canCancel = ['pending', 'upper_approved', 'on_hold', 'approved'].includes(req.status);
   const canEdit   = ['pending', 'on_hold', 'rejected'].includes(req.status);
@@ -129,52 +138,32 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
           <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
             <div className="flex items-start justify-between gap-3 mb-1.5">
               <p className="text-xs font-semibold text-orange-600">⏸ 대기 사유</p>
-              {bannerApproval.approver && (
-                <div className="text-right flex-shrink-0">
-                  <p className="text-xs text-orange-600 font-medium">
-                    {bannerApproval.approver.name}
-                    {' '}
-                    <span className="font-normal text-orange-400">
-                      ({[
-                        bannerApproval.approver.role === 'admin' ? '차량위원회' : bannerApproval.approver.role === 'manager' ? '상위 승인자' : bannerApproval.approver.role,
-                        bannerApproval.approver.department?.name
-                      ].filter(Boolean).join(' · ')})
-                    </span>
-                  </p>
-                  {bannerApproval.approved_at && (
-                    <p className="text-xs text-orange-400 mt-0.5">
-                      {format(new Date(bannerApproval.approved_at), 'MM.dd HH:mm')}
-                    </p>
-                  )}
-                </div>
+              {bannerApproval.approved_at && (
+                <p className="text-xs text-orange-400 flex-shrink-0">
+                  {format(new Date(bannerApproval.approved_at), 'MM.dd HH:mm')}
+                </p>
               )}
             </div>
-            <p className="text-sm text-orange-700">{bannerApproval.comment}</p>
+            <p className="text-sm text-orange-700">
+              {bannerApproval.comment?.replace(/^\[대기\]\s*/, '').replace(/^\[강제처리\]\[대기\]\s*/, '')}
+            </p>
           </div>
         )}
         {req.status === 'rejected' && bannerApproval && (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
             <div className="flex items-start justify-between gap-3 mb-1.5">
               <p className="text-xs font-semibold text-red-600">✗ 반려 사유</p>
-              {bannerApproval.approver && (
-                <div className="text-right flex-shrink-0">
-                  <p className="text-xs text-red-600 font-medium">
-                    {bannerApproval.approver.name}
-                    {' '}
-                    <span className="font-normal text-red-400">
-                      ({[
-                        bannerApproval.approver.role === 'admin' ? '차량위원회' : bannerApproval.approver.role === 'manager' ? '상위 승인자' : bannerApproval.approver.role,
-                        bannerApproval.approver.department?.name
-                      ].filter(Boolean).join(' · ')})
-                    </span>
+              <div className="text-right flex-shrink-0">
+                {/* 상위 반려만 이름 표시, 위원회 반려는 이름 숨김 */}
+                {isManagerRejection && bannerApproval.approver && (
+                  <p className="text-xs text-red-500 font-medium">{bannerApproval.approver.name}</p>
+                )}
+                {bannerApproval.approved_at && (
+                  <p className="text-xs text-red-400 mt-0.5">
+                    {format(new Date(bannerApproval.approved_at), 'MM.dd HH:mm')}
                   </p>
-                  {bannerApproval.approved_at && (
-                    <p className="text-xs text-red-400 mt-0.5">
-                      {format(new Date(bannerApproval.approved_at), 'MM.dd HH:mm')}
-                    </p>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
             <p className="text-sm text-red-700">{bannerApproval.comment}</p>
           </div>
@@ -206,77 +195,100 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        {/* 결재 현황 */}
-        {approvals.length > 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <p className="text-sm font-bold text-gray-800">결재 현황</p>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {approvals.map((approval: any) => {
-                const isApproved = approval.status === 'approved';
-                const isRejected = approval.status === 'rejected';
-                const isOnHold   = approval.status === 'on_hold';
-                const approverRole = approval.approver?.role;
-                const approverDept = approval.approver?.department?.name;
-                const isForced = approval.step === 1 && approverRole === 'admin';
+        {/* 결재 현황 — 신청자용 간소화 2블록 뷰 */}
+        {(() => {
+          const STATUS = req.status;
+          const managerApproval = approvals.find((a: any) => a.step <= 2 && a.status === 'approved');
 
-                const stepLabel = isForced
-                  ? '1단계 · 강제 처리 (차량위원회)'
-                  : STEP_LABELS[approval.step] || `${approval.step}단계`;
+          // ── 블록 1: 상위승인 ──
+          const block1 = (() => {
+            if (isManagerRejection) return {
+              icon: '✗', bg: 'bg-red-100 text-red-600',
+              label: '상위 반려',
+              date: rejectedApproval?.approved_at,
+            };
+            if (managerApproval) return {
+              icon: '✓', bg: 'bg-green-100 text-green-600',
+              label: '상위승인',
+              date: managerApproval.approved_at,
+            };
+            return {
+              icon: '…', bg: 'bg-gray-100 text-gray-400',
+              label: '상위승인 대기',
+              date: null,
+            };
+          })();
 
-                const roleLabel = approverRole === 'admin'
-                  ? '차량위원회'
-                  : approverRole === 'manager'
-                    ? '상위 승인자'
-                    : approverRole || '';
+          // ── 블록 2: 차량위원회 ──
+          const showCommittee = !isManagerRejection && STATUS !== 'pending' && STATUS !== 'cancelled';
+          const committeeApproval = approvals.find((a: any) => a.step === 5 && a.status === 'approved')
+            ?? approvals.find((a: any) => a.step >= 3 && a.status === 'approved');
 
-                const roleDeptLabel = [roleLabel, approverDept].filter(Boolean).join(' · ');
+          const block2 = (() => {
+            if (!showCommittee) return null;
+            if (STATUS === 'upper_approved') return {
+              icon: '…', bg: 'bg-blue-100 text-blue-600', label: '차량위원회 대기', date: null, pulse: false,
+            };
+            if (STATUS === 'committee_reviewing' || STATUS === 'committee_vice_reviewing') return {
+              icon: '◉', bg: 'bg-violet-100 text-violet-600', label: '차량위원회 검토중', date: null, pulse: true,
+            };
+            if (['approved', 'dispatched', 'in_use', 'returned'].includes(STATUS)) return {
+              icon: '✓', bg: 'bg-green-100 text-green-600', label: '차량위원회 승인',
+              date: committeeApproval?.approved_at ?? null, pulse: false,
+            };
+            if (isCommitteeRejection) return {
+              icon: '✗', bg: 'bg-red-100 text-red-600', label: '차량위원회 반려',
+              date: rejectedApproval?.approved_at ?? null, pulse: false,
+            };
+            if (STATUS === 'on_hold') return {
+              icon: '⏸', bg: 'bg-orange-100 text-orange-600', label: '차량위원회 대기',
+              date: heldApproval?.approved_at ?? null, pulse: false,
+            };
+            return null;
+          })();
 
-                return (
-                  <div key={approval.id} className={`px-4 py-3 flex items-start gap-3 ${isForced && isApproved ? 'bg-blue-50' : ''}`}>
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5 ${
-                      isApproved ? 'bg-green-100 text-green-600' :
-                      isRejected ? 'bg-red-100 text-red-600' :
-                      isOnHold   ? 'bg-orange-100 text-orange-600' :
-                      'bg-gray-100 text-gray-400'
-                    }`}>
-                      {isApproved ? '✓' : isRejected ? '✗' : isOnHold ? '⏸' : '?'}
+          return (
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+              <div className="px-4 py-3 border-b border-gray-100">
+                <p className="text-sm font-bold text-gray-800">결재 현황</p>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {/* 블록 1 */}
+                <div className="px-4 py-3.5 flex items-center gap-3">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${block1.bg}`}>
+                    {block1.icon}
+                  </div>
+                  <div className="flex-1 min-w-0 flex justify-between items-center gap-2">
+                    <p className="text-sm font-semibold text-gray-800">{block1.label}</p>
+                    {block1.date && (
+                      <span className="text-xs text-gray-400 flex-shrink-0">
+                        {format(new Date(block1.date), 'MM.dd HH:mm')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {/* 블록 2 */}
+                {block2 && (
+                  <div className="px-4 py-3.5 flex items-center gap-3">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${block2.bg}`}>
+                      {block2.pulse
+                        ? <span className="w-2.5 h-2.5 rounded-full bg-current animate-pulse" />
+                        : block2.icon}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="min-w-0">
-                          <p className={`text-xs ${isForced ? 'text-blue-500 font-medium' : 'text-gray-400'}`}>{stepLabel}</p>
-                          <p className="text-sm font-medium text-gray-800">
-                            {approval.approver?.name || '-'}
-                          </p>
-                          {roleDeptLabel && (
-                            <p className="text-xs text-gray-400">{roleDeptLabel}</p>
-                          )}
-                        </div>
-                        {approval.approved_at && (
-                          <span className="text-xs text-gray-400 flex-shrink-0">
-                            {format(new Date(approval.approved_at), 'MM.dd HH:mm')}
-                          </span>
-                        )}
-                      </div>
-                      {isForced && isApproved && (
-                        <p className="text-xs text-blue-500 font-medium mt-0.5">⚡ 강제 승인</p>
-                      )}
-                      {approval.comment && (
-                        <p className={`text-xs mt-1 ${
-                          isRejected ? 'text-red-600' :
-                          isOnHold   ? 'text-orange-600' :
-                          'text-gray-500'
-                        }`}>{approval.comment}</p>
+                    <div className="flex-1 min-w-0 flex justify-between items-center gap-2">
+                      <p className="text-sm font-semibold text-gray-800">{block2.label}</p>
+                      {block2.date && (
+                        <span className="text-xs text-gray-400 flex-shrink-0">
+                          {format(new Date(block2.date), 'MM.dd HH:mm')}
+                        </span>
                       )}
                     </div>
                   </div>
-                );
-              })}
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* 배차 정보 */}
         {dispatch && (dispatch.vehicle || dispatch.is_rental) && (
