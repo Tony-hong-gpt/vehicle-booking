@@ -274,15 +274,41 @@ export default function MobileRequestEditPage({ params }: { params: Promise<{ id
         {/* 출발 일시 */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">출발 일시 *</label>
-          <input name="start_datetime" type="datetime-local" value={form.start_datetime} onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <div className="relative">
+            <input name="start_datetime" type="datetime-local" value={form.start_datetime} onChange={handleChange}
+              className="w-full min-w-0 px-4 py-3 pr-11 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900" />
+            {!form.start_datetime && (
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none select-none">
+                날짜 및 시간을 선택하세요
+              </span>
+            )}
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
         </div>
 
         {/* 반납 일시 */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">반납 일시 *</label>
-          <input name="end_datetime" type="datetime-local" value={form.end_datetime} onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <div className="relative">
+            <input name="end_datetime" type="datetime-local" value={form.end_datetime} onChange={handleChange}
+              className="w-full min-w-0 px-4 py-3 pr-11 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900" />
+            {!form.end_datetime && (
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none select-none">
+                날짜 및 시간을 선택하세요
+              </span>
+            )}
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
         </div>
 
         {/* 차량군 */}

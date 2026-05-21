@@ -237,19 +237,33 @@ export default function ManagerApprovalsPage() {
             <div>
               <label className="block text-[10px] font-semibold text-gray-400 mb-1">출발일 범위</label>
               <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={filterDateFrom}
-                  onChange={e => setFilterDateFrom(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <div className="relative flex-1">
+                  <input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={e => setFilterDateFrom(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {!filterDateFrom && (
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none select-none">
+                      시작일
+                    </span>
+                  )}
+                </div>
                 <span className="text-gray-400 text-xs flex-shrink-0">~</span>
-                <input
-                  type="date"
-                  value={filterDateTo}
-                  onChange={e => setFilterDateTo(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <div className="relative flex-1">
+                  <input
+                    type="date"
+                    value={filterDateTo}
+                    onChange={e => setFilterDateTo(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {!filterDateTo && (
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none select-none">
+                      종료일
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             {hasFilter && (
