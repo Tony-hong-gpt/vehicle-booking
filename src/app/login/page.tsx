@@ -43,43 +43,46 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
-      style={{ background: 'linear-gradient(160deg, #f0fdf4 0%, #ffffff 50%, #f7fee7 100%)' }}>
-
+    <div
+      className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
+      style={{ background: 'linear-gradient(150deg, #052e16 0%, #14532d 40%, #166534 100%)' }}
+    >
       {/* 배경 장식 */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, #16a34a, transparent)' }} />
-        <div className="absolute -bottom-20 -right-20 w-64 h-64 rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, #15803d, transparent)' }} />
-        <div className="absolute top-1/3 right-4 w-2 h-2 rounded-full bg-green-300 opacity-40" />
-        <div className="absolute bottom-1/3 left-6 w-3 h-3 rounded-full bg-green-200 opacity-40" />
+        <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(74,222,128,0.08), transparent 70%)' }} />
+        <div className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(34,197,94,0.07), transparent 70%)' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.02), transparent 70%)' }} />
+        {/* 도트 패턴 */}
+        <svg className="absolute inset-0 w-full h-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="dots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1.5" fill="white" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#dots)" />
+        </svg>
       </div>
 
-      <div className="w-full max-w-sm px-6 relative z-10">
+      <div className="w-full max-w-sm px-5 relative z-10">
 
-        {/* 방패 로고 */}
-        <div className="flex flex-col items-center mb-6">
-          <div className="mb-4">
-            <svg width="96" height="112" viewBox="0 0 96 112" fill="none" xmlns="http://www.w3.org/2000/svg"
-              style={{ filter: 'drop-shadow(0 8px 24px rgba(21,128,61,0.25))' }}>
-              {/* 방패 외곽선 (금색) */}
+        {/* 로고 & 브랜드 */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="mb-5">
+            <svg width="80" height="94" viewBox="0 0 96 112" fill="none" xmlns="http://www.w3.org/2000/svg"
+              style={{ filter: 'drop-shadow(0 12px 32px rgba(0,0,0,0.4))' }}>
               <path d="M48 4 L88 18 L88 58 Q88 88 48 108 Q8 88 8 58 L8 18 Z"
                 fill="url(#shieldGold)" />
-              {/* 방패 내부 (진녹색) */}
               <path d="M48 11 L82 23 L82 58 Q82 84 48 102 Q14 84 14 58 L14 23 Z"
                 fill="url(#shieldGreen)" />
-              {/* 십자가 세로 */}
               <rect x="45" y="24" width="6" height="50" rx="2" fill="url(#crossGold)" />
-              {/* 십자가 가로 */}
               <rect x="26" y="44" width="44" height="6" rx="2" fill="url(#crossGold)" />
-              {/* R 텍스트 */}
               <text x="22" y="75" fill="white" fontSize="18" fontWeight="800"
                 fontFamily="Arial, sans-serif" letterSpacing="-0.5">R</text>
-              {/* L 텍스트 */}
               <text x="57" y="75" fill="white" fontSize="18" fontWeight="800"
                 fontFamily="Arial, sans-serif" letterSpacing="-0.5">L</text>
-
               <defs>
                 <linearGradient id="shieldGold" x1="8" y1="4" x2="88" y2="108" gradientUnits="userSpaceOnUse">
                   <stop offset="0%" stopColor="#fbbf24" />
@@ -97,68 +100,77 @@ export default function LoginPage() {
               </defs>
             </svg>
           </div>
-
-          {/* 브랜드명 */}
-          <p className="text-xs font-bold tracking-[0.25em] text-amber-600 mb-0.5">
-            ROAD MANAGER
-          </p>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">
-            로드매니저
-          </h1>
-          <p className="text-sm text-gray-500 text-center leading-relaxed">
+          <p className="text-xs font-bold tracking-[0.3em] text-amber-400 mb-1">ROAD MANAGER</p>
+          <h1 className="text-3xl font-black text-white tracking-tight mb-2">로드매니저</h1>
+          <p className="text-sm text-green-300/80 text-center leading-relaxed">
             스마트한 차량관리, 더 편리한 사역 지원
           </p>
         </div>
 
         {/* 로그인 카드 */}
-        <div className="bg-white rounded-3xl shadow-xl shadow-green-100/80 border border-green-50 p-7">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="bg-white rounded-3xl p-7"
+          style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.35), 0 4px 16px rgba(0,0,0,0.2)' }}>
+
+          <h2 className="text-lg font-bold text-gray-800 mb-5">로그인</h2>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
 
             {/* 에러 메시지 */}
             {error && (
-              <div className="flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
-                <svg className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <svg className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
                 <p className="text-sm text-red-600 leading-relaxed">{error}</p>
               </div>
             )}
 
             {/* 전화번호 */}
-            <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-gray-700">전화번호</label>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                전화번호
+              </label>
               <div className="relative">
-                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-green-50 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
                 <input
                   type="text"
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   required
-                  placeholder="010-0000-0000 또는 01000000000"
-                  className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition bg-gray-50 focus:bg-white placeholder:text-gray-300"
+                  placeholder="010-0000-0000"
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
                 />
               </div>
             </div>
 
             {/* 비밀번호 */}
-            <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-gray-700">비밀번호</label>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                비밀번호
+              </label>
               <div className="relative">
-                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-green-50 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
                 <input
                   type={showPw ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
                   placeholder="비밀번호를 입력하세요"
-                  className="w-full pl-10 pr-11 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition bg-gray-50 focus:bg-white placeholder:text-gray-300"
+                  className="w-full pl-11 pr-11 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
                 />
-                <button type="button" onClick={() => setShowPw(v => !v)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setShowPw(v => !v)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-0.5"
+                >
                   {showPw ? (
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
@@ -174,30 +186,33 @@ export default function LoginPage() {
             </div>
 
             {/* 로그인 버튼 */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-2xl text-white text-sm font-bold tracking-wide transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98]"
-              style={{
-                background: loading
-                  ? '#6b7280'
-                  : 'linear-gradient(135deg, #166534 0%, #15803d 50%, #16a34a 100%)',
-                boxShadow: loading ? 'none' : '0 4px 20px rgba(22,101,52,0.35)',
-              }}>
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  로그인 중...
-                </span>
-              ) : '로그인'}
-            </button>
+            <div className="pt-1">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 rounded-xl text-white text-sm font-bold tracking-wide transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98]"
+                style={{
+                  background: loading
+                    ? '#6b7280'
+                    : 'linear-gradient(135deg, #052e16 0%, #15803d 60%, #16a34a 100%)',
+                  boxShadow: loading ? 'none' : '0 4px 16px rgba(22,101,52,0.4)',
+                }}
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    로그인 중...
+                  </span>
+                ) : '로그인'}
+              </button>
+            </div>
           </form>
 
           {/* 계정 만들기 */}
-          <div className="mt-5 pt-5 border-t border-gray-100 text-center">
+          <div className="mt-5 pt-4 border-t border-gray-100 text-center">
             <p className="text-sm text-gray-400">
               처음 이용하시나요?{' '}
-              <Link href="/signup" className="text-green-700 hover:text-green-800 font-bold underline underline-offset-2">
+              <Link href="/signup" className="text-green-700 hover:text-green-800 font-bold">
                 계정 만들기
               </Link>
             </p>
@@ -206,10 +221,10 @@ export default function LoginPage() {
 
         {/* 하단 카피라이트 */}
         <div className="text-center mt-6 space-y-1">
-          <p className="text-[11px] text-gray-400 font-medium">
+          <p className="text-[11px] text-green-300/60 font-medium">
             © 2024 ROAD MANAGER · 대구동신교회
           </p>
-          <p className="text-[10px] text-gray-300">차량 사용 신청 관리 시스템</p>
+          <p className="text-[10px] text-green-300/40">차량 사용 신청 관리 시스템</p>
         </div>
 
       </div>
