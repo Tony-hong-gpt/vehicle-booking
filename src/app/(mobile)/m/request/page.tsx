@@ -223,7 +223,7 @@ export default function MobileRequestPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col min-h-full w-full overflow-x-hidden">
       {/* 헤더 */}
       <div className="bg-white border-b border-gray-100 px-4 py-4 flex items-center gap-3 sticky top-0 z-10">
         <button onClick={() => step > 1 ? setStep(step - 1) : router.back()} className="p-1">
@@ -239,7 +239,7 @@ export default function MobileRequestPage() {
         </div>
       </div>
 
-      <div className="flex-1 px-4 py-5 space-y-4">
+      <div className="flex-1 px-4 py-5 space-y-4 w-full min-w-0">
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600">{error}</div>
         )}
@@ -303,7 +303,8 @@ export default function MobileRequestPage() {
                   type="button"
                   onClick={() => changePassengers(-1)}
                   disabled={form.passengers <= 1}
-                  className="w-14 h-12 flex items-center justify-center text-xl font-bold text-gray-500 active:bg-gray-100 disabled:text-gray-200 transition-colors flex-shrink-0"
+                  style={{ touchAction: 'manipulation' }}
+                  className="w-14 h-12 flex items-center justify-center text-xl font-bold text-gray-500 active:bg-gray-100 disabled:text-gray-200 transition-colors flex-shrink-0 select-none"
                 >
                   −
                 </button>
@@ -327,7 +328,8 @@ export default function MobileRequestPage() {
                   type="button"
                   onClick={() => changePassengers(1)}
                   disabled={form.passengers >= 50}
-                  className="w-14 h-12 flex items-center justify-center text-xl font-bold text-gray-500 active:bg-gray-100 disabled:text-gray-200 transition-colors flex-shrink-0"
+                  style={{ touchAction: 'manipulation' }}
+                  className="w-14 h-12 flex items-center justify-center text-xl font-bold text-gray-500 active:bg-gray-100 disabled:text-gray-200 transition-colors flex-shrink-0 select-none"
                 >
                   +
                 </button>
@@ -344,7 +346,7 @@ export default function MobileRequestPage() {
                   type="datetime-local"
                   value={form.start_datetime}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 pr-11 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                  className="w-full min-w-0 px-4 py-3 pr-11 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 />
                 {!form.start_datetime && (
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none select-none">
@@ -369,7 +371,7 @@ export default function MobileRequestPage() {
                   type="datetime-local"
                   value={form.end_datetime}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 pr-11 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                  className="w-full min-w-0 px-4 py-3 pr-11 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 />
                 {!form.end_datetime && (
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none select-none">
