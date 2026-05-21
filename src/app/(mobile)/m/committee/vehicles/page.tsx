@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
 import { vehicleName } from '@/lib/vehicle-utils';
 
 interface VehicleGroup { id: string; name: string; }
@@ -89,7 +91,7 @@ export default function CommitteeVehiclesPage() {
         <h1 className="text-lg font-bold text-gray-900">차량 현황</h1>
         <p className="text-xs text-gray-400 mt-0.5">
           {filterDate
-            ? `${filterDate} 기준 · 사용 가능 ${availableCount} / 전체 ${total}대`
+            ? `${format(new Date(filterDate), 'yyyy년 MM월 dd일')} 기준 · 사용 가능 ${availableCount} / 전체 ${total}대`
             : `현재 기준 · 사용 가능 ${availableCount} / 전체 ${total}대`}
         </p>
       </div>
@@ -99,27 +101,36 @@ export default function CommitteeVehiclesPage() {
         {/* 날짜 필터 */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">날짜별 가용 확인</p>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
+          <div className="flex gap-2 items-center">
+            {/* 커스텀 날짜 선택 — 네이티브 input은 숨기고 표시 UI 오버레이 */}
+            <div className="relative flex-1 min-w-0">
               <input type="date" value={filterDate}
                 onChange={e => setFilterDate(e.target.value)}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white" />
-              {!filterDate && (
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none select-none">
-                  날짜를 선택하세요
-                </span>
-              )}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+              <div className="flex items-center justify-between px-3 py-2.5 border border-gray-200 rounded-xl bg-white pointer-events-none">
+                {filterDate ? (
+                  <span className="text-sm text-gray-900 truncate">
+                    {format(new Date(filterDate), 'yyyy년 MM월 dd일 (EEE)', { locale: ko })}
+                  </span>
+                ) : (
+                  <span className="text-sm text-gray-400">날짜를 선택하세요</span>
+                )}
+                <svg className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
             </div>
             {filterDate && (
               <button onClick={() => setFilterDate('')}
-                className="px-3 py-2.5 text-sm text-gray-500 border border-gray-200 rounded-xl bg-gray-50">
+                className="flex-shrink-0 px-3 py-2.5 text-sm text-gray-500 border border-gray-200 rounded-xl bg-gray-50 whitespace-nowrap">
                 초기화
               </button>
             )}
           </div>
           <p className="text-xs text-gray-400 mt-2">
             {checking ? '🔍 확인 중...'
-              : filterDate ? `${filterDate} 00:00 ~ 23:59 기준 예약 현황`
+              : filterDate ? `${format(new Date(filterDate), 'yyyy-MM-dd')} 00:00 ~ 23:59 기준 예약 현황`
               : '날짜를 선택하면 예약 가능 여부를 확인할 수 있습니다'}
           </p>
         </div>
