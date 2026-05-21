@@ -79,9 +79,10 @@ export async function GET(request: Request) {
 
       // KPI
       const totalReqs     = reqCurr.length;
-      const approvedReqs  = reqCurr.filter(r => ['dispatched','in_use','returned'].includes(r.status)).length;
+      const approvedReqs  = reqCurr.filter(r => ['approved','dispatched','in_use','returned'].includes(r.status)).length;
+      const rejectedReqs  = reqCurr.filter(r => r.status === 'rejected').length;
       const cancelledReqs = reqCurr.filter(r => r.status === 'cancelled').length;
-      const pendingReqs   = reqCurr.filter(r => ['pending','upper_approved','approved'].includes(r.status)).length;
+      const pendingReqs   = reqCurr.filter(r => ['pending','upper_approved','committee_reviewing','committee_vice_reviewing'].includes(r.status)).length;
       const decidedReqs   = totalReqs - pendingReqs;
       const approvalRate  = decidedReqs > 0 ? Math.round((approvedReqs / decidedReqs) * 100) : 0;
 
@@ -147,6 +148,11 @@ export async function GET(request: Request) {
       });
       const topPurposes = Object.entries(purposeMap).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({ name, count }));
 
+      // 차량 현재 상태 분류
+      const availableVehicles   = vehicles.filter((v: any) => v.status === 'available').length;
+      const maintenanceVehicles = vehicles.filter((v: any) => v.status === 'maintenance').length;
+      const inUseVehicles       = vehicles.filter((v: any) => ['in_use', 'booked', 'dispatched'].includes(v.status)).length;
+
       return Response.json({
         data: {
           kpi: {
@@ -155,9 +161,9 @@ export async function GET(request: Request) {
             completed_trips:  { value: completedDisp,   diff: diff(completedDisp, prevCompletedDisp) },
             utilization_rate: { value: utilizationRate,  unit: '%' },
           },
-          requests:   { total: totalReqs, approved: approvedReqs, cancelled: cancelledReqs, pending: pendingReqs },
+          requests:   { total: totalReqs, approved: approvedReqs, rejected: rejectedReqs, cancelled: cancelledReqs, pending: pendingReqs },
           dispatches: { total: totalDisp, completed: completedDisp, scheduled: scheduledDisp },
-          vehicles:   { total: activeVehicles, used: usedVehicleIds.size, unused: activeVehicles - usedVehicleIds.size },
+          vehicles:   { total: activeVehicles, used: usedVehicleIds.size, unused: activeVehicles - usedVehicleIds.size, available: availableVehicles, maintenance: maintenanceVehicles, in_use: inUseVehicles },
           time_series: timeSeries,
           top_depts:    topDepts,
           top_purposes: topPurposes,
@@ -267,8 +273,7 @@ export async function GET(request: Request) {
         .from('requests')
         .select('department:departments(name), start_datetime, status')
         .gte('created_at', fromISO)
-        .lte('created_at', toISO)
-        .in('status', ['dispatched','in_use','returned']);
+        .lte('created_at', toISO);
 
       const requests = requestsRes.data || [];
 
