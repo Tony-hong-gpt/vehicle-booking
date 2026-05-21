@@ -12,6 +12,7 @@ export default function MobileRequestPage() {
   const [purposes, setPurposes] = useState<SelectOption[]>([]);
   const [vehicleGroups, setVehicleGroups] = useState<SelectOption[]>([]);
   const [departments, setDepartments] = useState<SelectOption[]>([]);
+  const [dataLoading, setDataLoading] = useState(true); // 초기 데이터 로딩
 
   // 차량군별 가용 여부 { groupId: boolean }
   const [groupAvailability, setGroupAvailability] = useState<Record<string, boolean | null>>({});
@@ -23,7 +24,7 @@ export default function MobileRequestPage() {
 
   const [purposeMode, setPurposeMode] = useState<'select' | 'direct'>('select');
   const [purposeId, setPurposeId] = useState('');
-  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]); // 다중 선택
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [departmentId, setDepartmentId] = useState('');
 
   const [form, setForm] = useState({
@@ -37,6 +38,7 @@ export default function MobileRequestPage() {
     driver_phone: '',
   });
 
+  // 초기 데이터 한 번에 로드 → 완료 후 렌더링
   useEffect(() => {
     Promise.all([
       fetch('/api/purposes').then(r => r.json()),
@@ -47,7 +49,7 @@ export default function MobileRequestPage() {
       setVehicleGroups(g.data || []);
       setDepartments(d.data || []);
       if (d.data?.length === 1) setDepartmentId(d.data[0].id);
-    });
+    }).finally(() => setDataLoading(false));
   }, []);
 
   // 날짜가 바뀌면 각 차량군별 가용 차량 여부 확인
@@ -77,7 +79,7 @@ export default function MobileRequestPage() {
           const json = await res.json();
           return { id: g.id, available: (json.data || []).length > 0 };
         } catch {
-          return { id: g.id, available: true }; // 오류 시 선택 허용
+          return { id: g.id, available: true };
         }
       })
     );
@@ -85,8 +87,6 @@ export default function MobileRequestPage() {
     const map: Record<string, boolean> = {};
     results.forEach(r => { map[r.id] = r.available; });
     setGroupAvailability(map);
-
-    // 불가능해진 그룹은 선택 해제
     setSelectedGroupIds(prev => prev.filter(id => map[id] !== false));
     setCheckingAvailability(false);
   }, [form.start_datetime, form.end_datetime, vehicleGroups]);
@@ -96,7 +96,6 @@ export default function MobileRequestPage() {
   }, [checkGroupAvailability]);
 
   function toggleGroup(id: string) {
-    // 가용 차량이 없는 그룹은 선택 불가
     if (groupAvailability[id] === false) return;
     setSelectedGroupIds(prev =>
       prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]
@@ -108,7 +107,14 @@ export default function MobileRequestPage() {
     setForm(prev => ({ ...prev, [name]: name === 'passengers' ? Number(value) : value }));
   }
 
-  // 선택된 그룹 중 비버스 그룹이 있는지
+  // 탑승 인원 증감
+  function changePassengers(delta: number) {
+    setForm(prev => ({
+      ...prev,
+      passengers: Math.min(50, Math.max(1, prev.passengers + delta)),
+    }));
+  }
+
   const hasNonBusGroup = selectedGroupIds.some(id => {
     const g = vehicleGroups.find((x: SelectOption) => x.id === id);
     return g && !g.name.includes('버스');
@@ -123,7 +129,6 @@ export default function MobileRequestPage() {
     if (!form.start_datetime || !form.end_datetime) { setError('출발/반납 일시를 입력해주세요'); return false; }
     if (new Date(form.end_datetime) <= new Date(form.start_datetime)) { setError('반납 일시는 출발 일시보다 이후여야 합니다'); return false; }
     if (selectedGroupIds.length === 0) { setError('차량군을 하나 이상 선택해주세요'); return false; }
-    // 비버스 차량군이 선택된 경우 운전기사 이름 필수
     if (hasNonBusGroup && !form.driver_name.trim()) { setError('운전기사 이름을 입력해주세요'); return false; }
     return true;
   }
@@ -138,7 +143,6 @@ export default function MobileRequestPage() {
     setError('');
     setLoading(true);
     try {
-      // 선택된 차량군마다 신청 1건씩 생성
       const results = await Promise.all(
         selectedGroupIds.map(async groupId => {
           const g = vehicleGroups.find((x: SelectOption) => x.id === groupId);
@@ -191,6 +195,32 @@ export default function MobileRequestPage() {
 
   const datesValid = form.start_datetime && form.end_datetime &&
     new Date(form.end_datetime) > new Date(form.start_datetime);
+
+  // 초기 데이터 로딩 중 — 레이아웃 고정 스켈레톤
+  if (dataLoading) {
+    return (
+      <div className="flex flex-col min-h-full">
+        <div className="bg-white border-b border-gray-100 px-4 py-4 flex items-center gap-3 sticky top-0 z-10">
+          <button onClick={() => router.back()} className="p-1">
+            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-lg font-bold text-gray-900">차량 신청</h1>
+          <div className="ml-auto flex gap-1">
+            <div className="w-2 h-2 rounded-full bg-blue-600" />
+            <div className="w-2 h-2 rounded-full bg-gray-200" />
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-gray-400">불러오는 중...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-full">
@@ -265,25 +295,94 @@ export default function MobileRequestPage() {
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
 
-            {/* 탑승 인원 */}
+            {/* 탑승 인원 — 커스텀 증감 버튼 */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">탑승 인원 *</label>
-              <input name="passengers" type="number" value={form.passengers} onChange={handleChange} min={1} max={50}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white">
+                <button
+                  type="button"
+                  onClick={() => changePassengers(-1)}
+                  disabled={form.passengers <= 1}
+                  className="w-14 h-12 flex items-center justify-center text-xl font-bold text-gray-500 active:bg-gray-100 disabled:text-gray-200 transition-colors flex-shrink-0"
+                >
+                  −
+                </button>
+                <div className="flex-1 h-12 flex items-center justify-center border-x border-gray-200">
+                  <input
+                    name="passengers"
+                    type="number"
+                    inputMode="numeric"
+                    value={form.passengers}
+                    onChange={e => {
+                      const v = parseInt(e.target.value, 10);
+                      if (!isNaN(v)) setForm(prev => ({ ...prev, passengers: Math.min(50, Math.max(1, v)) }));
+                    }}
+                    onFocus={e => e.target.select()}
+                    min={1}
+                    max={50}
+                    className="w-full text-center text-base font-bold text-gray-900 focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => changePassengers(1)}
+                  disabled={form.passengers >= 50}
+                  className="w-14 h-12 flex items-center justify-center text-xl font-bold text-gray-500 active:bg-gray-100 disabled:text-gray-200 transition-colors flex-shrink-0"
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1 px-1">최대 50명</p>
             </div>
 
             {/* 출발 일시 */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">출발 일시 *</label>
-              <input name="start_datetime" type="datetime-local" value={form.start_datetime} onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <div className="relative">
+                <input
+                  name="start_datetime"
+                  type="datetime-local"
+                  value={form.start_datetime}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 pr-11 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                />
+                {!form.start_datetime && (
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none select-none">
+                    날짜 및 시간을 선택하세요
+                  </span>
+                )}
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {/* 반납 일시 */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">반납 일시 *</label>
-              <input name="end_datetime" type="datetime-local" value={form.end_datetime} onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <div className="relative">
+                <input
+                  name="end_datetime"
+                  type="datetime-local"
+                  value={form.end_datetime}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 pr-11 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                />
+                {!form.end_datetime && (
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none select-none">
+                    날짜 및 시간을 선택하세요
+                  </span>
+                )}
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {/* 차량군 (다중 선택) */}
@@ -295,42 +394,37 @@ export default function MobileRequestPage() {
                 )}
               </div>
 
-              {vehicleGroups.length === 0 ? (
-                <div className="text-center py-4 text-gray-400 text-sm">불러오는 중...</div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {vehicleGroups.map(g => {
-                    const isSelected = selectedGroupIds.includes(g.id);
-                    // null = 미확인(날짜 미입력), false = 불가, true = 가능
-                    const avail = datesValid ? groupAvailability[g.id] : null;
-                    const isDisabled = avail === false;
+              <div className="grid grid-cols-2 gap-2">
+                {vehicleGroups.map(g => {
+                  const isSelected = selectedGroupIds.includes(g.id);
+                  const avail = datesValid ? groupAvailability[g.id] : null;
+                  const isDisabled = avail === false;
 
-                    return (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => toggleGroup(g.id)}
-                        disabled={isDisabled}
-                        className={`relative px-4 py-3 rounded-xl text-sm font-medium border transition-colors ${
-                          isDisabled
-                            ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
-                            : isSelected
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-gray-700 border-gray-200 active:bg-gray-50'
-                        }`}
-                      >
-                        <span>{g.name}</span>
-                        {isDisabled && (
-                          <span className="block text-xs mt-0.5 text-gray-300">배차 불가</span>
-                        )}
-                        {isSelected && !isDisabled && (
-                          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full opacity-80" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => toggleGroup(g.id)}
+                      disabled={isDisabled}
+                      className={`relative px-4 py-3 rounded-xl text-sm font-medium border transition-colors ${
+                        isDisabled
+                          ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
+                          : isSelected
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-200 active:bg-gray-50'
+                      }`}
+                    >
+                      <span>{g.name}</span>
+                      {isDisabled && (
+                        <span className="block text-xs mt-0.5 text-gray-300">배차 불가</span>
+                      )}
+                      {isSelected && !isDisabled && (
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full opacity-80" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
               {datesValid && !checkingAvailability && Object.keys(groupAvailability).length > 0 && (
                 <p className="text-xs text-gray-400 mt-2">
