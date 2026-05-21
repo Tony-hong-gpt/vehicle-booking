@@ -67,6 +67,7 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   on_hold:                   { label: '대기',            color: 'bg-orange-100 text-orange-700' },
   dispatched:                { label: '배차완료',        color: 'bg-blue-100 text-blue-700' },
   returned:                  { label: '반납완료',        color: 'bg-gray-100 text-gray-600' },
+  cancelled:                 { label: '취소',            color: 'bg-gray-100 text-gray-500' },
 };
 
 /** 역할별 상태 라벨 오버라이드 (committee_reviewing / committee_vice_reviewing 한정) */

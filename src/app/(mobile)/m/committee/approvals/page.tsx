@@ -18,22 +18,22 @@ const ROLE_DONE_STATUSES: Record<string, string[]> = {
   // 총무: 상신한 건(committee_reviewing~) + 최종 처리 건. approved는 pending(배차대기)이므로 제외
   committee_secretary: [
     'committee_reviewing', 'committee_vice_reviewing',
-    'rejected', 'on_hold', 'dispatched', 'in_use', 'returned',
+    'rejected', 'on_hold', 'dispatched', 'in_use', 'returned', 'cancelled',
   ],
   // 부위원장: 결재 올린 건(committee_vice_reviewing) + 이후 처리 건
   committee_vice: [
     'committee_vice_reviewing', 'approved',
-    'rejected', 'on_hold', 'dispatched', 'in_use', 'returned',
+    'rejected', 'on_hold', 'dispatched', 'in_use', 'returned', 'cancelled',
   ],
   // 위원장: 본인 승인한 건(approved) + 반려/대기/이후
   committee_chair: [
     'approved',
-    'rejected', 'on_hold', 'dispatched', 'in_use', 'returned',
+    'rejected', 'on_hold', 'dispatched', 'in_use', 'returned', 'cancelled',
   ],
   // 관리자: 모든 처리 완료 상태
   admin: [
     'committee_reviewing', 'committee_vice_reviewing', 'approved',
-    'rejected', 'on_hold', 'dispatched', 'in_use', 'returned',
+    'rejected', 'on_hold', 'dispatched', 'in_use', 'returned', 'cancelled',
   ],
 };
 
@@ -48,6 +48,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   dispatched:               { label: '배차완료',       color: 'text-blue-700',    bg: 'bg-blue-50',    dot: 'bg-blue-400' },
   in_use:                   { label: '운행중',         color: 'text-purple-700',  bg: 'bg-purple-50',  dot: 'bg-purple-500' },
   returned:                 { label: '반납완료',       color: 'text-gray-600',    bg: 'bg-gray-50',    dot: 'bg-gray-300' },
+  cancelled:                { label: '취소',           color: 'text-gray-500',    bg: 'bg-gray-50',    dot: 'bg-gray-300' },
 };
 
 /** 역할별 상태 라벨 오버라이드 (결재 카드 헤더 표시용) */
@@ -804,7 +805,17 @@ export default function CommitteeApprovalsPage() {
                   {/* ⑤ 결재 현황 타임라인 */}
                   <ApprovalTimeline req={req} />
 
-                  {/* ⑥ 액션 버튼 */}
+                  {/* ⑥ 취소 표시 (cancelled 건) */}
+                  {req.status === 'cancelled' && (
+                    <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
+                      <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span className="text-xs font-semibold text-gray-500">취소된 신청입니다</span>
+                    </div>
+                  )}
+
+                  {/* ⑦ 액션 버튼 */}
                   {isPending && (
                     <div className="pt-1">
                       <ActionButtons req={req} />

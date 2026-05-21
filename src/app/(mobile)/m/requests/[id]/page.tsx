@@ -220,7 +220,7 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
           })();
 
           // ── 블록 2: 차량위원회 ──
-          const showCommittee = !isManagerRejection && STATUS !== 'pending' && STATUS !== 'cancelled';
+          const showCommittee = !isManagerRejection && STATUS !== 'pending';
           const committeeApproval = approvals.find((a: any) => a.step === 5 && a.status === 'approved')
             ?? approvals.find((a: any) => a.step >= 3 && a.status === 'approved');
 
@@ -234,15 +234,20 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
             };
             if (['approved', 'dispatched', 'in_use', 'returned'].includes(STATUS)) return {
               icon: '✓', bg: 'bg-green-100 text-green-600', label: '차량위원회 승인',
+              date: committeeApproval?.approved_at ?? null, pulse: false, extra: null,
+            };
+            if (STATUS === 'cancelled') return {
+              icon: '✓', bg: 'bg-green-100 text-green-600', label: '차량위원회 승인',
               date: committeeApproval?.approved_at ?? null, pulse: false,
+              extra: { icon: '✗', bg: 'bg-gray-100 text-gray-500', label: '차량위원회 취소', date: null },
             };
             if (isCommitteeRejection) return {
               icon: '✗', bg: 'bg-red-100 text-red-600', label: '차량위원회 반려',
-              date: rejectedApproval?.approved_at ?? null, pulse: false,
+              date: rejectedApproval?.approved_at ?? null, pulse: false, extra: null,
             };
             if (STATUS === 'on_hold') return {
               icon: '⏸', bg: 'bg-orange-100 text-orange-600', label: '차량위원회 대기',
-              date: heldApproval?.approved_at ?? null, pulse: false,
+              date: heldApproval?.approved_at ?? null, pulse: false, extra: null,
             };
             return null;
           })();
@@ -282,6 +287,17 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
                           {format(new Date(block2.date), 'MM.dd HH:mm')}
                         </span>
                       )}
+                    </div>
+                  </div>
+                )}
+                {/* 블록 3: 취소 (cancelled 시 차량위원회 승인 다음에 추가) */}
+                {block2?.extra && (
+                  <div className="px-4 py-3.5 flex items-center gap-3">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${block2.extra.bg}`}>
+                      {block2.extra.icon}
+                    </div>
+                    <div className="flex-1 min-w-0 flex justify-between items-center gap-2">
+                      <p className="text-sm font-semibold text-gray-800">{block2.extra.label}</p>
                     </div>
                   </div>
                 )}
