@@ -20,7 +20,8 @@ interface Props {
 }
 
 export default function RequestListClient({ activeRequests, doneRequests }: Props) {
-  const [seenIds, setSeenIds] = useState<string[]>([]);
+  const [seenIds,   setSeenIds]   = useState<string[]>([]);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
 
   useEffect(() => {
     const load = () => {
@@ -30,6 +31,11 @@ export default function RequestListClient({ activeRequests, doneRequests }: Prop
     load();
     window.addEventListener('notification-seen', load);
     return () => window.removeEventListener('notification-seen', load);
+  }, []);
+
+  useEffect(() => {
+    const hidden: string[] = JSON.parse(localStorage.getItem('hidden_request_ids') || '[]');
+    setHiddenIds(hidden);
   }, []);
 
   const isNew = (req: RequestItem) =>
@@ -82,16 +88,19 @@ export default function RequestListClient({ activeRequests, doneRequests }: Prop
     );
   }
 
+  const visibleActive = activeRequests.filter(r => !hiddenIds.includes(r.id));
+  const visibleDone   = doneRequests.filter(r => !hiddenIds.includes(r.id));
+
   return (
     <div className="space-y-6">
       {/* 진행 중 */}
-      {activeRequests.length > 0 && (
+      {visibleActive.length > 0 && (
         <div>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            진행 중 · {activeRequests.length}건
+            진행 중 · {visibleActive.length}건
           </p>
           <div className="space-y-2.5">
-            {activeRequests.map(req => (
+            {visibleActive.map(req => (
               <RequestCard key={req.id} req={req} />
             ))}
           </div>
@@ -99,13 +108,13 @@ export default function RequestListClient({ activeRequests, doneRequests }: Prop
       )}
 
       {/* 완료 / 취소 */}
-      {doneRequests.length > 0 && (
+      {visibleDone.length > 0 && (
         <div>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            완료 · 취소 · {doneRequests.length}건
+            완료 · 취소 · {visibleDone.length}건
           </p>
           <div className="space-y-2.5">
-            {doneRequests.map(req => (
+            {visibleDone.map(req => (
               <RequestCard key={req.id} req={req} dimmed />
             ))}
           </div>

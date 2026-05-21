@@ -19,7 +19,6 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
   const [req, setReq] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -51,17 +50,14 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
     }
   }, [req, id]);
 
-  async function handleDelete() {
-    if (!confirm('신청을 완전히 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.')) return;
-    setDeleting(true);
-    const res = await fetch(`/api/requests/${id}`, { method: 'DELETE' });
-    const json = await res.json();
-    if (json.error) {
-      alert(json.error);
-      setDeleting(false);
-    } else {
-      router.push('/m/requests');
+  function handleDelete() {
+    if (!confirm('신청 목록에서 삭제하시겠습니까?')) return;
+    const hidden: string[] = JSON.parse(localStorage.getItem('hidden_request_ids') || '[]');
+    if (!hidden.includes(id)) {
+      hidden.push(id);
+      localStorage.setItem('hidden_request_ids', JSON.stringify(hidden));
     }
+    router.push('/m/requests');
   }
 
   async function handleCancel() {
@@ -239,7 +235,7 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
             if (STATUS === 'cancelled') return {
               icon: '✓', bg: 'bg-green-100 text-green-600', label: '차량위원회 승인',
               date: committeeApproval?.approved_at ?? null, pulse: false,
-              extra: { icon: '✗', bg: 'bg-gray-100 text-gray-500', label: '차량위원회 취소', date: null },
+              extra: { icon: '✗', bg: 'bg-gray-100 text-gray-500', label: '차량위원회 취소', date: req.updated_at ?? null },
             };
             if (isCommitteeRejection) return {
               icon: '✗', bg: 'bg-red-100 text-red-600', label: '차량위원회 반려',
@@ -298,6 +294,11 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
                     </div>
                     <div className="flex-1 min-w-0 flex justify-between items-center gap-2">
                       <p className="text-sm font-semibold text-gray-800">{block2.extra.label}</p>
+                      {block2.extra.date && (
+                        <span className="text-xs text-gray-400 flex-shrink-0">
+                          {format(new Date(block2.extra.date), 'MM.dd HH:mm')}
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -356,9 +357,9 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
             </button>
           )}
           {canDelete && (
-            <button onClick={handleDelete} disabled={deleting}
-              className="w-full border border-red-300 text-red-500 py-3.5 rounded-2xl text-sm font-medium disabled:opacity-60">
-              {deleting ? '삭제 중...' : '신청 삭제'}
+            <button onClick={handleDelete}
+              className="w-full border border-red-300 text-red-500 py-3.5 rounded-2xl text-sm font-medium">
+              신청 삭제
             </button>
           )}
         </div>
