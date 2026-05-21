@@ -276,10 +276,10 @@ export default function MobileRequestEditPage({ params }: { params: Promise<{ id
         {/* 출발 일시 */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">출발 일시 *</label>
-          <div className="relative">
+          <div className="relative h-12 cursor-pointer">
             <input name="start_datetime" type="datetime-local" value={form.start_datetime} onChange={handleChange}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-            <div className="flex items-center justify-between px-4 py-3 border border-gray-200 rounded-xl bg-white pointer-events-none min-h-[48px]">
+            <div className="absolute inset-0 flex items-center justify-between px-4 border border-gray-200 rounded-xl bg-white pointer-events-none">
               {form.start_datetime ? (
                 <span className="text-sm text-gray-900">
                   {format(new Date(form.start_datetime), 'yyyy년 MM월 dd일 (EEE) HH:mm', { locale: ko })}
@@ -298,10 +298,10 @@ export default function MobileRequestEditPage({ params }: { params: Promise<{ id
         {/* 반납 일시 */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">반납 일시 *</label>
-          <div className="relative">
+          <div className="relative h-12 cursor-pointer">
             <input name="end_datetime" type="datetime-local" value={form.end_datetime} onChange={handleChange}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-            <div className="flex items-center justify-between px-4 py-3 border border-gray-200 rounded-xl bg-white pointer-events-none min-h-[48px]">
+            <div className="absolute inset-0 flex items-center justify-between px-4 border border-gray-200 rounded-xl bg-white pointer-events-none">
               {form.end_datetime ? (
                 <span className="text-sm text-gray-900">
                   {format(new Date(form.end_datetime), 'yyyy년 MM월 dd일 (EEE) HH:mm', { locale: ko })}

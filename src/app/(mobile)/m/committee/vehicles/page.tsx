@@ -103,11 +103,11 @@ export default function CommitteeVehiclesPage() {
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">날짜별 가용 확인</p>
           <div className="flex gap-2 items-center">
             {/* 커스텀 날짜 선택 — 네이티브 input은 숨기고 표시 UI 오버레이 */}
-            <div className="relative flex-1 min-w-0">
+            <div className="relative flex-1 min-w-0 h-11 cursor-pointer">
               <input type="date" value={filterDate}
                 onChange={e => setFilterDate(e.target.value)}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-              <div className="flex items-center justify-between px-3 py-2.5 border border-gray-200 rounded-xl bg-white pointer-events-none">
+              <div className="absolute inset-0 flex items-center justify-between px-3 border border-gray-200 rounded-xl bg-white pointer-events-none">
                 {filterDate ? (
                   <span className="text-sm text-gray-900 truncate">
                     {format(new Date(filterDate), 'yyyy년 MM월 dd일 (EEE)', { locale: ko })}
