@@ -359,15 +359,19 @@ export default function CommitteeApprovalsPage() {
     }
     setActionId(dispatchModal.id); setDispatchError('');
     try {
+      const toIso = (dt: string | null | undefined) => {
+        if (!dt) return null;
+        try { return new Date(dt).toISOString(); } catch { return null; }
+      };
       await apiCall('/api/dispatches', {
-        request_id:     dispatchModal.id,
-        vehicle_id:     dispatchIsRental ? null : dispatchVehicleId,
-        scheduled_start: dispatchModal.start_datetime,
-        scheduled_end:   dispatchModal.end_datetime,
-        driver_name:    dispatchDriverName.trim() || null,
-        driver_phone:   dispatchDriverPhone.trim() || null,
-        notes:          dispatchNotes.trim() || null,
-        is_rental:      dispatchIsRental,
+        request_id:      dispatchModal.id,
+        vehicle_id:      dispatchIsRental ? null : dispatchVehicleId,
+        scheduled_start: toIso(dispatchModal.start_datetime),
+        scheduled_end:   toIso(dispatchModal.end_datetime),
+        driver_name:     dispatchDriverName.trim() || null,
+        driver_phone:    dispatchDriverPhone.trim() || null,
+        notes:           dispatchNotes.trim() || null,
+        is_rental:       dispatchIsRental,
       });
       setDispatchModal(null);
       showToast('🚗 배차가 완료되었습니다');
