@@ -138,6 +138,7 @@ export const updateDispatchSchema = z.object({
   actual_end: z.string().datetime().optional().nullable(),
   notes: z.string().optional(),
   is_rental: z.boolean().optional(),
+  status: z.enum(['scheduled', 'in_progress', 'completed', 'cancelled']).optional(),
 });
 
 export const completeDispatchSchema = z.object({
