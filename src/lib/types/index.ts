@@ -19,7 +19,7 @@ export type RequestStatus =
   | 'in_use'
   | 'returned'
   | 'on_hold';
-export type VehicleStatus = 'available' | 'in_use' | 'maintenance' | 'inactive';
+export type VehicleStatus = 'available' | 'booked' | 'in_use' | 'maintenance' | 'inactive';
 export type DispatchStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'on_hold';
 export type FuelType = 'gasoline' | 'diesel' | 'electric' | 'hybrid';
