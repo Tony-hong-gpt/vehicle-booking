@@ -130,9 +130,10 @@ export default function ManagerHomePage() {
           <div className="space-y-2">
             {requests.slice(0, 5).map((req: any) => {
               const badge = STATUS_BADGE[req.status] ?? { label: req.status, color: 'bg-gray-100 text-gray-600' };
+              const targetTab = req.status === 'pending' ? '' : '?tab=done';
               return (
                 <div key={req.id}
-                  onClick={() => router.push('/m/manager/approvals')}
+                  onClick={() => router.push(`/m/manager/approvals${targetTab}`)}
                   className="bg-white rounded-2xl border border-gray-100 px-4 py-3.5 flex items-center justify-between shadow-sm active:bg-gray-50">
                   <div className="flex-1 min-w-0 mr-3">
                     <p className="text-sm font-semibold text-gray-900 truncate">{req.destination}</p>

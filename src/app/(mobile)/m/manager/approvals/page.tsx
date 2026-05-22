@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
@@ -25,7 +26,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string 
 };
 
 export default function ManagerApprovalsPage() {
-  const [tab, setTab]             = useState<'pending' | 'done'>('pending');
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState<'pending' | 'done'>(
+    () => searchParams.get('tab') === 'done' ? 'done' : 'pending'
+  );
   const [requests, setRequests]   = useState<any[]>([]);
   const [loading, setLoading]     = useState(true);
   const [actionId, setActionId]   = useState<string | null>(null);
