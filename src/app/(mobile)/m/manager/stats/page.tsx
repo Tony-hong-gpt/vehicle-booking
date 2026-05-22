@@ -49,20 +49,24 @@ export default function ManagerStatsPage() {
     }, {})
   ).sort((a, b) => b[1] - a[1]);
 
-  /* 목적지 TOP 5 */
-  const destCount = monthReqs.reduce((acc: Record<string, number>, r) => {
-    if (r.destination) acc[r.destination] = (acc[r.destination] || 0) + 1;
-    return acc;
-  }, {});
+  /* 목적지 TOP 5 — 취소 건 제외 */
+  const destCount = monthReqs
+    .filter(r => r.status !== 'cancelled')
+    .reduce((acc: Record<string, number>, r) => {
+      if (r.destination) acc[r.destination] = (acc[r.destination] || 0) + 1;
+      return acc;
+    }, {});
   const topDests = Object.entries(destCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const maxDest  = Math.max(1, ...topDests.map(d => d[1]));
 
-  /* 목적별 분포 */
-  const purposeCount = monthReqs.reduce((acc: Record<string, number>, r) => {
-    const p = r.purpose?.name || '기타';
-    acc[p] = (acc[p] || 0) + 1;
-    return acc;
-  }, {});
+  /* 목적별 분포 — 취소 건 제외 */
+  const purposeCount = monthReqs
+    .filter(r => r.status !== 'cancelled')
+    .reduce((acc: Record<string, number>, r) => {
+      const p = r.purpose?.name || '기타';
+      acc[p] = (acc[p] || 0) + 1;
+      return acc;
+    }, {});
   const topPurposes = Object.entries(purposeCount).sort((a, b) => b[1] - a[1]).slice(0, 4);
 
   if (loading) return (
