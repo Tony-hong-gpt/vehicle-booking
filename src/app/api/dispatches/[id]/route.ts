@@ -74,3 +74,30 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return createErrorResponse('서버 오류가 발생했습니다');
   }
 }
+
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return createUnauthorizedResponse();
+    if (user.role !== 'admin') {
+      return Response.json({ data: null, error: '권한이 없습니다' }, { status: 403 });
+    }
+
+    const { id } = await params;
+    const adminSupabase = createAdminClient();
+
+    const { data: existing } = await adminSupabase
+      .from('dispatches').select('status').eq('id', id).single();
+    if (!existing) return createErrorResponse('배차를 찾을 수 없습니다', 404);
+    if (existing.status !== 'cancelled') {
+      return Response.json({ data: null, error: '취소된 배차만 삭제할 수 있습니다' }, { status: 400 });
+    }
+
+    const { error } = await adminSupabase.from('dispatches').delete().eq('id', id);
+    if (error) return createErrorResponse(error.message);
+
+    return Response.json({ data: null, error: null, message: '삭제되었습니다' });
+  } catch {
+    return createErrorResponse('서버 오류가 발생했습니다');
+  }
+}

@@ -165,6 +165,19 @@ export default function DispatchesPage() {
     setShowModal(true);
   };
 
+  const handleDeleteDispatch = async (dispatchId: string, requestNo?: string) => {
+    const label = requestNo ? `${requestNo} 배차 이력` : '이 배차 이력';
+    if (!confirm(`${label}을 삭제하시겠습니까?\n삭제 후 복구할 수 없습니다.`)) return;
+    try {
+      const res = await fetch(`/api/dispatches/${dispatchId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || '삭제에 실패했습니다'); return; }
+      fetchData();
+    } catch {
+      alert('삭제 중 오류가 발생했습니다');
+    }
+  };
+
   const closeModal = () => {
     setShowModal(false);
     setSelectedRequest(null);
@@ -395,6 +408,14 @@ export default function DispatchesPage() {
                       className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition-colors"
                     >
                       차량 변경
+                    </button>
+                  )}
+                  {d.status === 'cancelled' && (
+                    <button
+                      onClick={() => handleDeleteDispatch(d.id, d.request?.request_no)}
+                      className="text-xs text-red-500 hover:text-red-600 font-medium hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors"
+                    >
+                      삭제
                     </button>
                   )}
                 </td>
