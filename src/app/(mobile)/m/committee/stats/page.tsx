@@ -120,11 +120,11 @@ export default function CommitteeStatsPage() {
   const avgProcessHours: number | null = overview?.avg_process_hours ?? null;
   const procDist = overview?.process_distribution ?? null;
 
-  const kpis = [
-    { label: '총 신청',   value: totalReqs,    color: 'text-purple-600', bg: 'bg-purple-50', diff: req?.diffs?.total     ?? null },
-    { label: '승인 완료', value: approvedReqs, color: 'text-green-600',  bg: 'bg-green-50',  diff: req?.diffs?.approved  ?? null },
-    { label: '반려',      value: rejectedReqs, color: 'text-red-500',    bg: 'bg-red-50',    diff: req?.diffs?.rejected  ?? null },
-    { label: '배차 완료', value: dispTotal,    color: 'text-blue-600',   bg: 'bg-blue-50',   diff: disp?.diffs?.total    ?? null },
+  const bottomKpis = [
+    { label: '배차 완료', value: dispTotal,    color: 'text-blue-600',   bg: 'bg-blue-50',   diff: disp?.diffs?.total   ?? null },
+    { label: '승인 완료', value: approvedReqs, color: 'text-green-600',  bg: 'bg-green-50',  diff: req?.diffs?.approved ?? null },
+    { label: '취소',      value: cancelledReqs,color: 'text-orange-500', bg: 'bg-orange-50', diff: null },
+    { label: '반려',      value: rejectedReqs, color: 'text-red-500',    bg: 'bg-red-50',    diff: req?.diffs?.rejected ?? null },
   ];
 
   // 차트 데이터 (time_series from overview)
@@ -188,15 +188,30 @@ export default function CommitteeStatsPage() {
           📅 {range.from} ~ {range.to} · {range.label}
         </p>
 
-        {/* KPI 카드 2×2 (전기간 대비 증감) */}
+        {/* KPI 카드 — 상단 2개 (전체 요약) */}
         <div className="grid grid-cols-2 gap-3">
-          {kpis.map(k => (
+          <div className="bg-purple-50 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-xs text-gray-500 font-medium">총 신청</p>
+              <DiffBadge diff={req?.diffs?.total ?? null} />
+            </div>
+            <p className="text-3xl font-bold text-purple-600">{totalReqs.toLocaleString()}</p>
+          </div>
+          <div className="bg-indigo-50 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 font-medium mb-1.5">승인률</p>
+            <p className="text-3xl font-bold text-indigo-600">{approvalRate}<span className="text-base font-medium ml-0.5">%</span></p>
+          </div>
+        </div>
+
+        {/* KPI 카드 — 하단 2×2 (상세 내역) */}
+        <div className="grid grid-cols-2 gap-3">
+          {bottomKpis.map(k => (
             <div key={k.label} className={`${k.bg} rounded-2xl p-4`}>
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-xs text-gray-500 font-medium">{k.label}</p>
                 <DiffBadge diff={k.diff} />
               </div>
-              <p className={`text-3xl font-bold ${k.color}`}>{k.value.toLocaleString()}</p>
+              <p className={`text-2xl font-bold ${k.color}`}>{k.value.toLocaleString()}</p>
             </div>
           ))}
         </div>
