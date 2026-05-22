@@ -755,7 +755,23 @@ function MonthlyTab({ period }: { period: PeriodState }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
-              <Tooltip />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const ORDER = ['requests', 'approved', 'cancelled'];
+                  const sorted = ORDER.map(k => payload.find((p: any) => p.dataKey === k)).filter(Boolean);
+                  return (
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm min-w-[120px]">
+                      <p className="font-semibold text-gray-700 mb-2">{label}</p>
+                      {sorted.map((p: any) => (
+                        <p key={p.dataKey} className="text-xs mb-0.5" style={{ color: p.fill }}>
+                          {p.name} : {p.value}
+                        </p>
+                      ))}
+                    </div>
+                  );
+                }}
+              />
               <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="requests"  name="총 신청"  fill="#3b82f6" radius={[4,4,0,0]} />
               <Bar dataKey="approved"  name="승인완료" fill="#10b981" radius={[4,4,0,0]} />
