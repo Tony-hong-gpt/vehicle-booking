@@ -783,22 +783,35 @@ function MonthlyTab({ period }: { period: PeriodState }) {
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <SectionTitle>월별 상세 데이터</SectionTitle>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
+            <colgroup>
+              <col className="w-24" />
+              <col />
+              <col />
+              <col />
+              <col />
+            </colgroup>
             <thead>
               <tr className="border-b border-gray-100">
-                {['월','총 신청','승인완료','취소','배차'].map(h => (
-                  <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
+                {[
+                  { label: '월',     color: 'text-gray-500' },
+                  { label: '총 신청', color: 'text-gray-500' },
+                  { label: '승인완료', color: 'text-gray-500' },
+                  { label: '취소',    color: 'text-gray-500' },
+                  { label: '배차',    color: 'text-gray-500' },
+                ].map(h => (
+                  <th key={h.label} className={`text-left py-2.5 px-4 text-xs font-semibold ${h.color}`}>{h.label}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {monthly.map((row: any) => (
                 <tr key={row.month} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-2 px-3 font-medium whitespace-nowrap">{row.month}</td>
-                  <td className="py-2 px-3 text-blue-600 font-semibold whitespace-nowrap">{row.requests}</td>
-                  <td className="py-2 px-3 text-green-600 whitespace-nowrap">{row.approved}</td>
-                  <td className="py-2 px-3 text-red-400 whitespace-nowrap">{row.cancelled}</td>
-                  <td className="py-2 px-3 text-purple-600 whitespace-nowrap">{row.dispatches}</td>
+                  <td className="py-2.5 px-4 font-medium text-gray-700">{row.month}</td>
+                  <td className="py-2.5 px-4 text-blue-600 font-semibold">{row.requests}</td>
+                  <td className="py-2.5 px-4 text-green-600">{row.approved}</td>
+                  <td className="py-2.5 px-4 text-red-400">{row.cancelled}</td>
+                  <td className="py-2.5 px-4 text-purple-600">{row.dispatches}</td>
                 </tr>
               ))}
             </tbody>
