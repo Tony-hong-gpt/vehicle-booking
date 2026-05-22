@@ -5,6 +5,15 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 
 type Period = 'month' | 'quarter' | 'year';
 
+// toISOString()은 UTC 변환으로 KST(+9)에서 날짜가 하루 밀리는 문제가 있으므로
+// 로컬 날짜를 직접 포맷하는 함수를 사용한다
+function fmtDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function getPeriodRange(period: Period): { from: string; to: string; label: string; granularity: string; chartLabel: string } {
   const now = new Date();
   const y = now.getFullYear();
@@ -13,14 +22,14 @@ function getPeriodRange(period: Period): { from: string; to: string; label: stri
   if (period === 'month') {
     const from = new Date(y, m, 1);
     const to   = new Date(y, m + 1, 0);
-    return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10),
+    return { from: fmtDate(from), to: fmtDate(to),
       label: `${y}년 ${m + 1}월`, granularity: 'week', chartLabel: '주차별 신청 추이' };
   }
   if (period === 'quarter') {
     const q = Math.floor(m / 3);
     const from = new Date(y, q * 3, 1);
     const to   = new Date(y, q * 3 + 3, 0);
-    return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10),
+    return { from: fmtDate(from), to: fmtDate(to),
       label: `${y}년 ${q + 1}분기`, granularity: 'month', chartLabel: '월별 신청 추이' };
   }
   return { from: `${y}-01-01`, to: `${y}-12-31`,
