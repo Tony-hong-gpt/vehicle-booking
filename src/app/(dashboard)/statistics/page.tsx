@@ -289,6 +289,55 @@ function PeriodSelector({ period, onChange }: { period: PeriodState; onChange: (
   );
 }
 
+// ── 차량 현황 스냅샷 바 ───────────────────────────────────────────────
+interface VehicleSnapshot {
+  total: number; available: number; booked: number; in_use: number; maintenance: number;
+}
+function VehicleSnapshotBar({ vehicles, loadedAtStr }: { vehicles: VehicleSnapshot; loadedAtStr: string }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-3 flex items-center gap-5 flex-wrap">
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <span className="text-sm font-bold text-gray-700">🚗 차량 현황</span>
+        <span className="flex items-center gap-1 text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+          LIVE
+        </span>
+        {loadedAtStr && <span className="text-[10px] text-gray-400">{loadedAtStr} 기준</span>}
+      </div>
+      <div className="flex items-center gap-4 flex-1 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-gray-400">전체</span>
+          <span className="text-sm font-bold text-gray-900">{vehicles.total}</span>
+        </div>
+        <div className="w-px h-3 bg-gray-200 flex-shrink-0" />
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+          <span className="text-xs text-gray-500">사용가능</span>
+          <span className="text-sm font-bold text-green-600">{vehicles.available ?? 0}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
+          <span className="text-xs text-gray-500">배차완료</span>
+          <span className="text-sm font-bold text-blue-600">{vehicles.booked ?? 0}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="relative flex-shrink-0 w-2 h-2">
+            <span className="absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-60" />
+            <span className="relative block w-2 h-2 rounded-full bg-indigo-500" />
+          </span>
+          <span className="text-xs text-gray-500">운행중</span>
+          <span className="text-sm font-bold text-indigo-600">{vehicles.in_use ?? 0}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />
+          <span className="text-xs text-gray-500">정비중</span>
+          <span className="text-sm font-bold text-orange-600">{vehicles.maintenance ?? 0}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── 개요 탭 ───────────────────────────────────────────────────────────
 function OverviewTab({ period }: { period: PeriodState }) {
   const [data, setData]         = useState<any>(null);
@@ -335,13 +384,16 @@ function OverviewTab({ period }: { period: PeriodState }) {
 
   return (
     <div className="space-y-4">
+      {/* ── 차량 현황 스냅샷 바 ── */}
+      <VehicleSnapshotBar vehicles={vehicles} loadedAtStr={loadedAtStr} />
+
       {/* ── Row 1: KPI 4개 ── */}
       <div className="grid grid-cols-4 gap-3">
         {[
           { label: '총 신청 건수', value: kpi.total_requests.value,   unit: '건', diff: kpi.total_requests.diff,  color: 'text-blue-600' },
           { label: '신청 승인율',  value: kpi.approval_rate.value,    unit: '%',  diff: undefined,                color: kpi.approval_rate.value >= 80 ? 'text-green-600' : 'text-orange-500', sub: '취소·반려 제외' },
           { label: '운행 완료',    value: kpi.completed_trips.value,  unit: '건', diff: kpi.completed_trips.diff, color: 'text-purple-600' },
-          { label: '차량 가동률',  value: kpi.utilization_rate.value, unit: '%',  diff: undefined,                color: kpi.utilization_rate.value >= 60 ? 'text-green-600' : 'text-orange-500', sub: `${vehicles.used}/${vehicles.total}대 운행` },
+          { label: '차량 가동률',  value: kpi.utilization_rate.value, unit: '%',  diff: undefined,                color: kpi.utilization_rate.value >= 60 ? 'text-green-600' : 'text-orange-500', sub: '운행일수 기준' },
         ].map(card => (
           <div key={card.label} className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 flex items-center justify-between">
             <div>
@@ -445,33 +497,25 @@ function OverviewTab({ period }: { period: PeriodState }) {
       <div className="grid grid-cols-5 gap-3">
         {/* 차량 운용 */}
         <div className="col-span-1 bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col items-center justify-center">
-          <p className="text-xs font-bold text-gray-500 mb-3 self-start">차량 운용</p>
-          <div className="relative w-24 h-24">
+          <p className="text-xs font-bold text-gray-500 mb-4 self-start">차량 운용 (가동률)</p>
+          <div className="relative w-28 h-28">
             <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f3f4f6" strokeWidth="3.5" />
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3b82f6" strokeWidth="3.5"
+              <circle cx="18" cy="18" r="15.9" fill="none"
+                stroke={kpi.utilization_rate.value >= 60 ? '#10b981' : '#f59e0b'} strokeWidth="3.5"
                 strokeDasharray={`${kpi.utilization_rate.value} ${100 - kpi.utilization_rate.value}`}
                 strokeLinecap="round" />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-bold text-gray-900">{kpi.utilization_rate.value}%</span>
+              <span className={`text-2xl font-bold ${kpi.utilization_rate.value >= 60 ? 'text-green-600' : 'text-orange-500'}`}>
+                {kpi.utilization_rate.value}%
+              </span>
               <span className="text-[11px] text-gray-400">가동률</span>
             </div>
           </div>
-          <div className="mt-3 w-full space-y-2">
-            {[
-              { label: '전체',   value: `${vehicles.total}대`, color: 'bg-gray-300' },
-              { label: '운행',   value: `${vehicles.used}대`,  color: 'bg-blue-500' },
-              { label: '미운행', value: `${vehicles.unused}대`, color: 'bg-gray-100' },
-            ].map(row => (
-              <div key={row.label} className="flex justify-between items-center">
-                <div className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${row.color}`} />
-                  <span className="text-sm text-gray-500">{row.label}</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-700">{row.value}</span>
-              </div>
-            ))}
+          <div className="mt-3 text-center space-y-0.5">
+            <p className="text-[11px] text-gray-400">운행일수 기준</p>
+            <p className="text-[11px] text-gray-400">전체 {vehicles.total}대 대상</p>
           </div>
         </div>
 
@@ -537,76 +581,8 @@ function OverviewTab({ period }: { period: PeriodState }) {
           )}
         </div>
       </div>
-      {/* ── Row 4: 차량현재상태 + 처리소요시간 + 차량군별배차 + 담당자별처리 ── */}
-      <div className="grid grid-cols-4 gap-3">
-
-        {/* 차량 현재 상태 (실시간) */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-bold text-gray-500">차량 현재 상태</p>
-            <div className="flex items-center gap-2">
-              {loadedAtStr && <span className="text-[10px] text-gray-400">{loadedAtStr} 기준</span>}
-              <span className="flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                실시간
-              </span>
-            </div>
-          </div>
-          {/* 전체 풀너비 */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-500">전체</span>
-              <span className="text-2xl font-bold text-gray-900">{vehicles.total}대</span>
-            </div>
-            {vehicles.total > 0 && (
-              <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex">
-                <div className="h-full bg-green-400"
-                  style={{ width: `${((vehicles.available ?? 0) / vehicles.total) * 100}%` }} />
-                <div className="h-full bg-blue-400"
-                  style={{ width: `${((vehicles.booked ?? 0) / vehicles.total) * 100}%` }} />
-                <div className="h-full bg-indigo-500"
-                  style={{ width: `${((vehicles.in_use ?? 0) / vehicles.total) * 100}%` }} />
-                <div className="h-full bg-orange-400"
-                  style={{ width: `${((vehicles.maintenance ?? 0) / vehicles.total) * 100}%` }} />
-              </div>
-            )}
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-              {[
-                { color: 'bg-green-400',  label: '사용가능' },
-                { color: 'bg-blue-400',   label: '배차완료' },
-                { color: 'bg-indigo-500', label: '운행중' },
-                { color: 'bg-orange-400', label: '정비중' },
-              ].map(l => (
-                <div key={l.label} className="flex items-center gap-1">
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${l.color}`} />
-                  <span className="text-[10px] text-gray-400">{l.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          {/* 2×2 그리드 */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-green-50 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-green-600">{vehicles.available ?? 0}</p>
-              <p className="text-xs text-gray-500 mt-0.5">사용 가능</p>
-            </div>
-            <div className="bg-blue-50 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-blue-600">{vehicles.booked ?? 0}</p>
-              <p className="text-xs text-gray-500 mt-0.5">배차 완료</p>
-            </div>
-            <div className="bg-indigo-50 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-indigo-600">{vehicles.in_use ?? 0}</p>
-              <div className="flex items-center justify-center gap-1 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                <p className="text-xs text-gray-500">운행 중</p>
-              </div>
-            </div>
-            <div className="bg-orange-50 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-orange-600">{vehicles.maintenance ?? 0}</p>
-              <p className="text-xs text-gray-500 mt-0.5">정비 중</p>
-            </div>
-          </div>
-        </div>
+      {/* ── Row 4: 처리소요시간 + 차량군별배차 + 담당자별처리 ── */}
+      <div className="grid grid-cols-3 gap-3">
 
         {/* 처리 소요시간 */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -846,15 +822,16 @@ function MonthlyTab({ period }: { period: PeriodState }) {
 
 // ── 차량 가동률 탭 ────────────────────────────────────────────────────
 function UtilizationTab({ period }: { period: PeriodState }) {
-  const [data, setData]     = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData]       = useState<any>(null);
+  const [loadedAt, setLoadedAt] = useState<Date | null>(null);
+  const [loading, setLoading]   = useState(true);
 
   const { from, to } = periodToRange(period);
 
   useEffect(() => {
     setLoading(true);
     fetch(`/api/stats?type=utilization&from=${from}&to=${to}`)
-      .then(r => r.json()).then(j => { setData(j.data); setLoading(false); });
+      .then(r => r.json()).then(j => { setData(j.data); setLoadedAt(new Date()); setLoading(false); });
   }, [from, to]);
 
   function handleDownload() {
@@ -869,31 +846,44 @@ function UtilizationTab({ period }: { period: PeriodState }) {
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(monthRows), '월별가동률');
 
     const vehicleRows = [
-      ['순위', '차량명', '번호판', '차량군', '운행건수'],
-      ...data.vehicles.map((v: any, i: number) => [i + 1, v.name, v.license_plate, v.group, v.count]),
+      ['순위', '차량명', '번호판', '차량군', '가동률(%)', '운행일수', '배차건수'],
+      ...data.vehicles.map((v: any, i: number) => [i + 1, v.name, v.license_plate, v.group, v.rate, v.operating_days, v.count]),
     ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(vehicleRows), '차량별운행건수');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(vehicleRows), '차량별가동률');
     XLSX.writeFile(wb, `차량가동률_${label}.xlsx`);
   }
 
   if (loading) return <Loader />;
   if (!data)   return null;
 
-  const { monthly, vehicles } = data;
-  const avgRate = monthly.length > 0 ? Math.round(monthly.reduce((s: number, m: any) => s + m.rate, 0) / monthly.length) : 0;
-  const maxUsed = Math.max(...vehicles.map((v: any) => v.count), 1);
+  const { monthly, vehicles, period_days, snapshot } = data;
+  const periodDays: number = period_days ?? 1;
 
-  const usedCount   = vehicles.filter((v: any) => v.count > 0).length;
-  const unusedCount = vehicles.filter((v: any) => v.count === 0).length;
+  // 평균 가동률 = 차량별 가동률의 평균
+  const avgRate = vehicles.length > 0
+    ? Math.round(vehicles.reduce((s: number, v: any) => s + v.rate, 0) / vehicles.length)
+    : 0;
+  const maxRate = Math.max(...vehicles.map((v: any) => v.rate), 1);
+
+  const usedCount   = vehicles.filter((v: any) => v.operating_days > 0).length;
+  const unusedCount = vehicles.filter((v: any) => v.operating_days === 0).length;
+
+  const loadedAtStr = loadedAt
+    ? `${String(loadedAt.getHours()).padStart(2, '0')}:${String(loadedAt.getMinutes()).padStart(2, '0')}`
+    : '';
 
   return (
     <div className="space-y-4">
+      {/* ── 차량 현황 스냅샷 바 ── */}
+      {snapshot && <VehicleSnapshotBar vehicles={snapshot} loadedAtStr={loadedAtStr} />}
+
       {/* 요약 + 다운로드 한 줄 */}
       <div className="flex items-center gap-3">
         {[
-          { label: '평균 가동률',  value: `${avgRate}%`, color: avgRate >= 60 ? 'text-green-600' : 'text-orange-500', dot: avgRate >= 60 ? 'bg-green-500' : 'bg-orange-400' },
-          { label: '운행 차량',    value: `${usedCount}대`,   color: 'text-blue-600',  dot: 'bg-blue-500',  sub: `전체 ${vehicles.length}대` },
-          { label: '미사용 차량',  value: `${unusedCount}대`, color: 'text-gray-400',  dot: 'bg-gray-300',  sub: '기간 내 운행 없음' },
+          { label: '평균 가동률',   value: `${avgRate}%`,       color: avgRate >= 60 ? 'text-green-600' : 'text-orange-500', dot: avgRate >= 60 ? 'bg-green-500' : 'bg-orange-400', sub: '운행일수 기준' },
+          { label: '운행 차량',     value: `${usedCount}대`,    color: 'text-blue-600',  dot: 'bg-blue-500',  sub: `전체 ${vehicles.length}대` },
+          { label: '미운행 차량',   value: `${unusedCount}대`,  color: 'text-gray-400',  dot: 'bg-gray-300',  sub: '기간 내 운행 없음' },
+          { label: '기간 총 일수',  value: `${periodDays}일`,   color: 'text-gray-700',  dot: 'bg-gray-400',  sub: '가동률 분모 기준' },
         ].map(c => (
           <div key={c.label} className="flex-1 flex items-center justify-between bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
             <div className="flex items-center gap-2">
@@ -909,10 +899,10 @@ function UtilizationTab({ period }: { period: PeriodState }) {
         <DownloadBtn onClick={handleDownload} />
       </div>
 
-      {/* 차트(좌) + 차량별 바 리스트(우) */}
+      {/* 차트(좌) + 차량별 가동률 바 리스트(우) */}
       <div className="grid grid-cols-5 gap-4">
         <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <SectionTitle>월별 가동률 추이</SectionTitle>
+          <SectionTitle>월별 가동 차량 추이</SectionTitle>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={monthly}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
@@ -920,14 +910,14 @@ function UtilizationTab({ period }: { period: PeriodState }) {
               <YAxis unit="%" domain={[0, 100]} tick={{ fontSize: 12 }} width={36} />
               <Tooltip formatter={(v: any) => `${v}%`} />
               <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-              <Line type="monotone" dataKey="rate" name="가동률" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="rate" name="가동 차량 비율" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
         <div className="col-span-3 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <SectionTitle>차량별 운행 건수 (기간 합계)</SectionTitle>
-          <div className="space-y-1.5 overflow-y-auto pr-1" style={{ maxHeight: 300 }}>
+          <SectionTitle>차량별 가동률 (운행일수 / 기간일수)</SectionTitle>
+          <div className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 300 }}>
             {vehicles.map((v: any, i: number) => (
               <div key={v.id} className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 w-4 text-right flex-shrink-0">{i + 1}</span>
@@ -936,12 +926,18 @@ function UtilizationTab({ period }: { period: PeriodState }) {
                     <span className="text-xs font-medium text-gray-700 truncate">{v.name}</span>
                     <div className="flex items-center gap-2 ml-2 flex-shrink-0">
                       <span className="text-[11px] text-gray-400 font-mono">{v.license_plate}</span>
-                      <span className="text-xs font-semibold text-blue-600 w-8 text-right">{v.count}건</span>
+                      <span className="text-[11px] text-gray-400">{v.operating_days}일</span>
+                      <span className={`text-xs font-bold w-10 text-right ${v.rate >= 60 ? 'text-green-600' : v.rate > 0 ? 'text-blue-600' : 'text-gray-300'}`}>
+                        {v.rate}%
+                      </span>
                     </div>
                   </div>
                   <div className="bg-gray-100 rounded-full h-1.5">
-                    <div className="h-1.5 rounded-full"
-                      style={{ width: `${(v.count / maxUsed) * 100}%`, backgroundColor: v.count === 0 ? '#e5e7eb' : COLORS[i % COLORS.length] }} />
+                    <div className="h-1.5 rounded-full transition-all"
+                      style={{
+                        width: `${maxRate > 0 ? (v.rate / maxRate) * 100 : 0}%`,
+                        backgroundColor: v.rate === 0 ? '#e5e7eb' : v.rate >= 60 ? '#10b981' : COLORS[i % COLORS.length],
+                      }} />
                   </div>
                 </div>
               </div>
@@ -950,14 +946,14 @@ function UtilizationTab({ period }: { period: PeriodState }) {
         </div>
       </div>
 
-      {/* 상세 테이블 (스크롤) */}
+      {/* 상세 테이블 */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-        <SectionTitle>차량별 상세 운행 현황</SectionTitle>
+        <SectionTitle>차량별 상세 가동 현황</SectionTitle>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[500px]">
+          <table className="w-full text-sm min-w-[580px]">
             <thead>
               <tr className="border-b border-gray-100">
-                {['순위','차량명','번호판','차량군','운행건수'].map(h => (
+                {['순위','차량명','번호판','차량군','가동률','운행일수','배차건수'].map(h => (
                   <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -969,7 +965,13 @@ function UtilizationTab({ period }: { period: PeriodState }) {
                   <td className="py-2 px-3 font-medium whitespace-nowrap">{v.name}</td>
                   <td className="py-2 px-3 font-mono text-gray-500 whitespace-nowrap">{v.license_plate}</td>
                   <td className="py-2 px-3 text-gray-600 whitespace-nowrap">{v.group}</td>
-                  <td className="py-2 px-3 font-bold text-blue-600 whitespace-nowrap">{v.count}건</td>
+                  <td className="py-2 px-3 whitespace-nowrap">
+                    <span className={`font-bold ${v.rate >= 60 ? 'text-green-600' : v.rate > 0 ? 'text-blue-600' : 'text-gray-300'}`}>
+                      {v.rate}%
+                    </span>
+                  </td>
+                  <td className="py-2 px-3 text-gray-600 whitespace-nowrap">{v.operating_days}일</td>
+                  <td className="py-2 px-3 text-gray-500 whitespace-nowrap">{v.count}건</td>
                 </tr>
               ))}
             </tbody>

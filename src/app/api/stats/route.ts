@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 
     // ── 1. 개요 ────────────────────────────────────────────────────────
     if (type === 'overview') {
-      const [vehiclesRes, reqCurrRes, reqPrevRes, dispCurrRes, dispPrevRes, deptReqRes, purposeReqRes, step5AppRes] = await Promise.all([
+      const [vehiclesRes, reqCurrRes, reqPrevRes, dispCurrRes, dispPrevRes, deptReqRes, purposeReqRes, step5AppRes, actualDispsRes] = await Promise.all([
         supabase.from('vehicles').select('id, status'),
         supabase.from('requests').select('id, status, created_at').gte('created_at', fromISO).lte('created_at', toISO),
         supabase.from('requests').select('id, status').gte('created_at', prevFromISO).lte('created_at', prevToISO),
@@ -74,15 +74,23 @@ export async function GET(request: Request) {
           .eq('status', 'approved')
           .gte('approved_at', fromISO)
           .lte('approved_at', toISO),
+        // 운행일수 기반 가동률 계산용 (실제 운행 시간 기준)
+        supabase.from('dispatches')
+          .select('vehicle_id, actual_start, actual_end')
+          .not('actual_start', 'is', null)
+          .neq('status', 'cancelled')
+          .lte('actual_start', toISO)
+          .or(`actual_end.gte.${fromISO},actual_end.is.null`),
       ]);
 
-      const vehicles  = vehiclesRes.data  || [];
-      const reqCurr   = reqCurrRes.data   || [];
-      const reqPrev   = reqPrevRes.data   || [];
-      const dispCurr  = dispCurrRes.data  || [];
-      const dispPrev  = dispPrevRes.data  || [];
-      const deptReqs  = deptReqRes.data   || [];
-      const purposeReqs = purposeReqRes.data || [];
+      const vehicles    = vehiclesRes.data    || [];
+      const reqCurr     = reqCurrRes.data     || [];
+      const reqPrev     = reqPrevRes.data     || [];
+      const dispCurr    = dispCurrRes.data    || [];
+      const dispPrev    = dispPrevRes.data    || [];
+      const deptReqs    = deptReqRes.data     || [];
+      const purposeReqs = purposeReqRes.data  || [];
+      const actualDisps = actualDispsRes.data || [];
 
       // KPI
       const totalReqs     = reqCurr.length;
@@ -124,7 +132,30 @@ export async function GET(request: Request) {
       const totalDisp      = dispCurr.length;
       const usedVehicleIds = new Set(dispCurr.map((d: any) => d.vehicle_id).filter(Boolean));
       const activeVehicles = vehicles.filter((v: any) => v.status !== 'inactive').length;
-      const utilizationRate = activeVehicles > 0 ? Math.round((usedVehicleIds.size / activeVehicles) * 100) : 0;
+
+      // 운행일수 기반 가동률 계산
+      const periodDays = eachDayOfInterval({ start: from, end: to }).length;
+      const vehicleOpDays: Record<string, Set<string>> = {};
+      actualDisps.forEach((d: any) => {
+        if (!d.vehicle_id || !d.actual_start) return;
+        const dStartMs = Math.max(new Date(d.actual_start).getTime(), from.getTime());
+        const rawEnd   = d.actual_end ? new Date(d.actual_end).getTime() : now.getTime();
+        const dEndMs   = Math.min(rawEnd, to.getTime());
+        if (dStartMs > dEndMs) return;
+        if (!vehicleOpDays[d.vehicle_id]) vehicleOpDays[d.vehicle_id] = new Set();
+        const cur = new Date(dStartMs);
+        cur.setHours(0, 0, 0, 0);
+        const endDate = new Date(dEndMs);
+        while (cur <= endDate) {
+          vehicleOpDays[d.vehicle_id].add(format(cur, 'yyyy-MM-dd'));
+          cur.setDate(cur.getDate() + 1);
+        }
+      });
+      const activeVehicleIds = vehicles.filter((v: any) => v.status !== 'inactive').map((v: any) => v.id);
+      const totalOpVehicleDays = activeVehicleIds.reduce((sum: number, vid: string) => sum + (vehicleOpDays[vid]?.size ?? 0), 0);
+      const utilizationRate = (activeVehicles > 0 && periodDays > 0)
+        ? Math.min(Math.round((totalOpVehicleDays / (activeVehicles * periodDays)) * 100), 100)
+        : 0;
 
       const prevTotalReqs     = reqPrev.length;
       const prevCompletedDisp = dispPrev.filter((d: any) => d.status === 'completed').length;
@@ -267,19 +298,47 @@ export async function GET(request: Request) {
 
     // ── 3. 차량 가동률 ────────────────────────────────────────────────
     if (type === 'utilization') {
-      const [vehiclesRes, dispatchesRes] = await Promise.all([
+      const [vehiclesRes, dispatchesRes, actualDispsRes] = await Promise.all([
         supabase.from('vehicles')
-          .select('id, name, model, license_plate, vehicle_group:vehicle_groups(name)')
-          .neq('status', 'inactive'),
+          .select('id, name, model, license_plate, status, vehicle_group:vehicle_groups(name)'),
         supabase.from('dispatches')
           .select('vehicle_id, scheduled_start, status')
           .gte('scheduled_start', fromISO)
           .lte('scheduled_start', toISO)
           .neq('status', 'cancelled'),
+        // 운행일수 기반 가동률 계산용
+        supabase.from('dispatches')
+          .select('vehicle_id, actual_start, actual_end')
+          .not('actual_start', 'is', null)
+          .neq('status', 'cancelled')
+          .lte('actual_start', toISO)
+          .or(`actual_end.gte.${fromISO},actual_end.is.null`),
       ]);
 
-      const vehicles   = vehiclesRes.data   || [];
-      const dispatches = dispatchesRes.data || [];
+      const allVehicles = vehiclesRes.data   || [];
+      const vehicles    = allVehicles.filter((v: any) => v.status !== 'inactive');
+      const dispatches  = dispatchesRes.data  || [];
+      const actualDisps = actualDispsRes.data || [];
+
+      const periodDays = eachDayOfInterval({ start: from, end: to }).length;
+
+      // 차량별 운행일수 계산
+      const vehicleOpDays: Record<string, Set<string>> = {};
+      actualDisps.forEach((d: any) => {
+        if (!d.vehicle_id || !d.actual_start) return;
+        const dStartMs = Math.max(new Date(d.actual_start).getTime(), from.getTime());
+        const rawEnd   = d.actual_end ? new Date(d.actual_end).getTime() : now.getTime();
+        const dEndMs   = Math.min(rawEnd, to.getTime());
+        if (dStartMs > dEndMs) return;
+        if (!vehicleOpDays[d.vehicle_id]) vehicleOpDays[d.vehicle_id] = new Set();
+        const cur = new Date(dStartMs);
+        cur.setHours(0, 0, 0, 0);
+        const endDate = new Date(dEndMs);
+        while (cur <= endDate) {
+          vehicleOpDays[d.vehicle_id].add(format(cur, 'yyyy-MM-dd'));
+          cur.setDate(cur.getDate() + 1);
+        }
+      });
 
       const usageMap: Record<string, number> = {};
       dispatches.forEach((d: any) => {
@@ -302,16 +361,31 @@ export async function GET(request: Request) {
       });
 
       const vehicleUsage = vehicles
-        .map((v: any) => ({
-          id: v.id,
-          name: [v.name, v.model].filter(Boolean).join(' '),
-          license_plate: v.license_plate,
-          group: (v.vehicle_group as any)?.name || '-',
-          count: usageMap[v.id] || 0,
-        }))
-        .sort((a: any, b: any) => b.count - a.count);
+        .map((v: any) => {
+          const opDays = vehicleOpDays[v.id]?.size ?? 0;
+          const rate   = periodDays > 0 ? Math.min(Math.round((opDays / periodDays) * 100), 100) : 0;
+          return {
+            id: v.id,
+            name: [v.name, v.model].filter(Boolean).join(' '),
+            license_plate: v.license_plate,
+            group: (v.vehicle_group as any)?.name || '-',
+            count: usageMap[v.id] || 0,
+            operating_days: opDays,
+            rate,
+          };
+        })
+        .sort((a: any, b: any) => b.rate - a.rate || b.count - a.count);
 
-      return Response.json({ data: { monthly: Object.values(monthlyUtil), vehicles: vehicleUsage }, error: null });
+      // 실시간 차량 현황 스냅샷
+      const snapshot = {
+        total:       allVehicles.filter((v: any) => v.status !== 'inactive').length,
+        available:   allVehicles.filter((v: any) => v.status === 'available').length,
+        booked:      allVehicles.filter((v: any) => v.status === 'booked').length,
+        in_use:      allVehicles.filter((v: any) => v.status === 'in_use').length,
+        maintenance: allVehicles.filter((v: any) => v.status === 'maintenance').length,
+      };
+
+      return Response.json({ data: { monthly: Object.values(monthlyUtil), vehicles: vehicleUsage, period_days: periodDays, snapshot }, error: null });
     }
 
     // ── 4. 부서별 사용 현황 ───────────────────────────────────────────
