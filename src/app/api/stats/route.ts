@@ -181,10 +181,11 @@ export async function GET(request: Request) {
       });
       const topPurposes = Object.entries(purposeMap).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({ name, count }));
 
-      // 차량 현재 상태 분류
+      // 차량 현재 상태 분류 (실시간 status 기준)
       const availableVehicles   = vehicles.filter((v: any) => v.status === 'available').length;
+      const bookedVehicles      = vehicles.filter((v: any) => v.status === 'booked').length;
+      const inUseVehicles       = vehicles.filter((v: any) => v.status === 'in_use').length;
       const maintenanceVehicles = vehicles.filter((v: any) => v.status === 'maintenance').length;
-      const inUseVehicles       = vehicles.filter((v: any) => ['in_use', 'booked', 'dispatched'].includes(v.status)).length;
 
       return Response.json({
         data: {
@@ -209,7 +210,7 @@ export async function GET(request: Request) {
           },
           avg_process_hours: avgProcessHours,
           process_distribution: { fast: fastCount, mid: midCount, slow: slowCount },
-          vehicles:   { total: activeVehicles, used: usedVehicleIds.size, unused: activeVehicles - usedVehicleIds.size, available: availableVehicles, maintenance: maintenanceVehicles, in_use: inUseVehicles },
+          vehicles:   { total: activeVehicles, available: availableVehicles, booked: bookedVehicles, in_use: inUseVehicles, maintenance: maintenanceVehicles, used: usedVehicleIds.size, unused: activeVehicles - usedVehicleIds.size },
           time_series: timeSeries,
           top_depts:    topDepts,
           top_purposes: topPurposes,

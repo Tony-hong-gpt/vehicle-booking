@@ -63,6 +63,16 @@ function formatDate(d: Date): string {
 
 const DAY_KO = ['일','월','화','수','목','금','토'];
 
+function formatHours(h: number): string {
+  if (h < 1) return `${Math.round(h * 60)}분`;
+  if (h < 24) return `${Math.round(h)}시간`;
+  const days = Math.floor(h / 24);
+  const hrs  = Math.round(h % 24);
+  return hrs > 0 ? `${days}일 ${hrs}시간` : `${days}일`;
+}
+
+const STEP_LABEL: Record<number, string> = { 3: '총무', 4: '부위원장', 5: '위원장' };
+
 function getWeekDates(weekValue: string): { from: Date; to: Date } {
   const [yearStr, weekStr] = weekValue.split('-W');
   const year = parseInt(yearStr);
@@ -281,22 +291,47 @@ function PeriodSelector({ period, onChange }: { period: PeriodState; onChange: (
 
 // ── 개요 탭 ───────────────────────────────────────────────────────────
 function OverviewTab({ period }: { period: PeriodState }) {
-  const [data, setData]     = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData]         = useState<any>(null);
+  const [vgData, setVgData]     = useState<any>(null);
+  const [procData, setProcData] = useState<any>(null);
+  const [loadedAt, setLoadedAt] = useState<Date | null>(null);
+  const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
     setLoading(true);
     const { from, to, granularity } = periodToRange(period);
-    fetch(`/api/stats?type=overview&from=${from}&to=${to}&granularity=${granularity}`)
-      .then(r => r.json()).then(j => { setData(j.data); setLoading(false); });
+    const p = `from=${from}&to=${to}`;
+    Promise.all([
+      fetch(`/api/stats?type=overview&${p}&granularity=${granularity}`).then(r => r.json()),
+      fetch(`/api/stats?type=vehicle_groups&${p}`).then(r => r.json()),
+      fetch(`/api/stats?type=processors&${p}`).then(r => r.json()),
+    ]).then(([ov, vg, pr]) => {
+      setData(ov.data ?? null);
+      setVgData(vg.data ?? null);
+      setProcData(pr.data ?? null);
+      setLoadedAt(new Date());
+      setLoading(false);
+    });
   }, [period]);
 
   if (loading) return <Loader />;
   if (!data)   return null;
 
   const { kpi, requests, dispatches, vehicles, time_series, top_depts, top_purposes } = data;
-  const totalDept = top_depts.reduce((s: number, d: any) => s + d.count, 0);
+  const totalDept    = top_depts.reduce((s: number, d: any) => s + d.count, 0);
   const totalPurpose = top_purposes.reduce((s: number, d: any) => s + d.count, 0);
+
+  // Row 4 데이터
+  const avgProcessHours: number | null = data.avg_process_hours ?? null;
+  const procDist    = data.process_distribution ?? null;
+  const vgGroups    = vgData?.groups ?? [];
+  const vgTotal     = vgData?.total  ?? 0;
+  const maxVgCount  = vgGroups[0]?.count ?? 1;
+  const sortedProcs = ((procData?.processors ?? []) as any[])
+    .slice().sort((a, b) => b.step - a.step || b.count - a.count);
+  const loadedAtStr = loadedAt
+    ? `${String(loadedAt.getHours()).padStart(2, '0')}:${String(loadedAt.getMinutes()).padStart(2, '0')}`
+    : '';
 
   return (
     <div className="space-y-4">
@@ -355,6 +390,7 @@ function OverviewTab({ period }: { period: PeriodState }) {
               {[
                 { label: '총 신청',   value: requests.total,     color: 'bg-blue-500' },
                 { label: '승인완료',  value: requests.approved,  color: 'bg-green-500' },
+                { label: '반려',      value: requests.rejected,  color: 'bg-rose-500' },
                 { label: '처리 대기', value: requests.pending,   color: 'bg-orange-400' },
                 { label: '취소',      value: requests.cancelled, color: 'bg-red-400' },
               ].map(row => (
@@ -370,6 +406,7 @@ function OverviewTab({ period }: { period: PeriodState }) {
             {requests.total > 0 && (
               <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden flex">
                 <div className="bg-green-400 h-full" style={{ width: `${(requests.approved / requests.total) * 100}%` }} />
+                <div className="bg-rose-400 h-full" style={{ width: `${((requests.rejected ?? 0) / requests.total) * 100}%` }} />
                 <div className="bg-orange-300 h-full" style={{ width: `${(requests.pending / requests.total) * 100}%` }} />
                 <div className="bg-red-300 h-full" style={{ width: `${(requests.cancelled / requests.total) * 100}%` }} />
               </div>
@@ -499,6 +536,194 @@ function OverviewTab({ period }: { period: PeriodState }) {
             </div>
           )}
         </div>
+      </div>
+      {/* ── Row 4: 차량현재상태 + 처리소요시간 + 차량군별배차 + 담당자별처리 ── */}
+      <div className="grid grid-cols-4 gap-3">
+
+        {/* 차량 현재 상태 (실시간) */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs font-bold text-gray-500">차량 현재 상태</p>
+            <div className="flex items-center gap-2">
+              {loadedAtStr && <span className="text-[10px] text-gray-400">{loadedAtStr} 기준</span>}
+              <span className="flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                실시간
+              </span>
+            </div>
+          </div>
+          {/* 전체 풀너비 */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-500">전체</span>
+              <span className="text-2xl font-bold text-gray-900">{vehicles.total}대</span>
+            </div>
+            {vehicles.total > 0 && (
+              <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex">
+                <div className="h-full bg-green-400"
+                  style={{ width: `${((vehicles.available ?? 0) / vehicles.total) * 100}%` }} />
+                <div className="h-full bg-blue-400"
+                  style={{ width: `${((vehicles.booked ?? 0) / vehicles.total) * 100}%` }} />
+                <div className="h-full bg-indigo-500"
+                  style={{ width: `${((vehicles.in_use ?? 0) / vehicles.total) * 100}%` }} />
+                <div className="h-full bg-orange-400"
+                  style={{ width: `${((vehicles.maintenance ?? 0) / vehicles.total) * 100}%` }} />
+              </div>
+            )}
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+              {[
+                { color: 'bg-green-400',  label: '사용가능' },
+                { color: 'bg-blue-400',   label: '배차완료' },
+                { color: 'bg-indigo-500', label: '운행중' },
+                { color: 'bg-orange-400', label: '정비중' },
+              ].map(l => (
+                <div key={l.label} className="flex items-center gap-1">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${l.color}`} />
+                  <span className="text-[10px] text-gray-400">{l.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* 2×2 그리드 */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-green-50 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-green-600">{vehicles.available ?? 0}</p>
+              <p className="text-xs text-gray-500 mt-0.5">사용 가능</p>
+            </div>
+            <div className="bg-blue-50 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-blue-600">{vehicles.booked ?? 0}</p>
+              <p className="text-xs text-gray-500 mt-0.5">배차 완료</p>
+            </div>
+            <div className="bg-indigo-50 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-indigo-600">{vehicles.in_use ?? 0}</p>
+              <div className="flex items-center justify-center gap-1 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                <p className="text-xs text-gray-500">운행 중</p>
+              </div>
+            </div>
+            <div className="bg-orange-50 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-orange-600">{vehicles.maintenance ?? 0}</p>
+              <p className="text-xs text-gray-500 mt-0.5">정비 중</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 처리 소요시간 */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <p className="text-xs font-bold text-gray-500 mb-4">처리 소요시간</p>
+          {avgProcessHours !== null ? (
+            <>
+              <div className="mb-5">
+                <p className="text-3xl font-bold text-blue-600">{formatHours(avgProcessHours)}</p>
+                <p className="text-xs text-gray-400 mt-1">평균 처리 소요시간</p>
+                <p className="text-[11px] text-gray-400">신청 → 최종 승인</p>
+              </div>
+              {procDist && (procDist.fast + procDist.mid + procDist.slow) > 0 && (
+                <div className="space-y-3">
+                  {[
+                    { label: '빠름 (1일 미만)',  value: procDist.fast, barColor: 'bg-green-500',  textColor: 'text-green-700' },
+                    { label: '보통 (1~3일)',     value: procDist.mid,  barColor: 'bg-blue-500',   textColor: 'text-blue-700' },
+                    { label: '느림 (3일 초과)',  value: procDist.slow, barColor: 'bg-orange-500', textColor: 'text-orange-700' },
+                  ].map(s => {
+                    const tot = procDist.fast + procDist.mid + procDist.slow;
+                    return (
+                      <div key={s.label}>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-xs text-gray-500">{s.label}</span>
+                          <span className={`text-xs font-bold ${s.textColor}`}>{s.value}건</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${s.barColor}`}
+                            style={{ width: `${tot > 0 ? (s.value / tot) * 100 : 0}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-sm text-gray-400">처리된 건수 없음</p>
+              <p className="text-xs text-gray-300 mt-1">최종 승인된 신청이 없습니다</p>
+            </div>
+          )}
+        </div>
+
+        {/* 차량군별 배차 현황 */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <p className="text-xs font-bold text-gray-500 mb-4">차량군별 배차 현황</p>
+          {vgGroups.length > 0 ? (
+            <div className="space-y-3">
+              {vgGroups.map((g: any, i: number) => (
+                <div key={g.name}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center text-white flex-shrink-0 ${
+                        i === 0 ? 'bg-blue-600' : i === 1 ? 'bg-blue-400' : 'bg-gray-300'
+                      }`}>{i + 1}</span>
+                      <span className="text-sm font-medium text-gray-800 truncate max-w-[100px]">{g.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-gray-400">{g.percent}%</span>
+                      <span className="text-sm font-bold text-gray-700">{g.count}회</span>
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-1.5 rounded-full"
+                      style={{ width: `${Math.round((g.count / maxVgCount) * 100)}%`, backgroundColor: COLORS[i] || COLORS[4] }} />
+                  </div>
+                </div>
+              ))}
+              <p className="text-[10px] text-gray-400 text-right pt-1">총 {vgTotal}회 배차</p>
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-sm text-gray-400">배차 내역 없음</p>
+            </div>
+          )}
+        </div>
+
+        {/* 담당자별 처리 현황 */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <p className="text-xs font-bold text-gray-500 mb-4">담당자별 처리 현황</p>
+          {sortedProcs.length > 0 ? (
+            <div className="space-y-2">
+              {sortedProcs.map((p: any) => (
+                <div key={p.id} className="flex items-center gap-3 py-2 px-3 bg-gray-50 rounded-lg">
+                  <div className={`flex-shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                    p.step === 3 ? 'bg-blue-100 text-blue-700' :
+                    p.step === 4 ? 'bg-violet-100 text-violet-700' :
+                    'bg-purple-100 text-purple-700'
+                  }`}>
+                    {STEP_LABEL[p.step] || '-'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
+                    {p.avg_hours !== null && (
+                      <p className="text-[10px] text-gray-400">평균 {formatHours(p.avg_hours)}</p>
+                    )}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-base font-bold text-gray-800">{p.count}</p>
+                    <p className="text-[10px] text-gray-400">건</p>
+                  </div>
+                </div>
+              ))}
+              <div className="flex justify-between pt-2 border-t border-gray-100">
+                <span className="text-xs text-gray-500">총 처리</span>
+                <span className="text-sm font-bold text-blue-600">
+                  {sortedProcs.reduce((s: number, p: any) => s + p.count, 0)}건
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-sm text-gray-400">처리 내역 없음</p>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );

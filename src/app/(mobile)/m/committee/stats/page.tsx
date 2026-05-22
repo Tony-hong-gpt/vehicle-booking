@@ -74,6 +74,7 @@ export default function CommitteeStatsPage() {
   const [deptRanking, setDeptRanking] = useState<any[]>([]);
   const [processors, setProcessors]   = useState<any[]>([]);
   const [loading, setLoading]         = useState(true);
+  const [loadedAt, setLoadedAt]       = useState<Date | null>(null);
 
   const range = useMemo(() => getPeriodRange(period), [period]);
 
@@ -91,6 +92,7 @@ export default function CommitteeStatsPage() {
       setVehicleGroups(vg.data ?? null);
       setDeptRanking(dp.data?.ranking ?? []);
       setProcessors(pr.data?.processors ?? []);
+      setLoadedAt(new Date());
     }).finally(() => setLoading(false));
   }, [range]);
 
@@ -133,6 +135,11 @@ export default function CommitteeStatsPage() {
 
   // 담당자 정렬: 위원장(step5) → 부위원장(step4) → 총무(step3)
   const sortedProcessors = [...processors].sort((a: any, b: any) => b.step - a.step || b.count - a.count);
+
+  // 실시간 기준 시각 표시용
+  const loadedAtStr = loadedAt
+    ? `${String(loadedAt.getHours()).padStart(2, '0')}:${String(loadedAt.getMinutes()).padStart(2, '0')}`
+    : '';
 
   if (loading) return (
     <div className="flex flex-col min-h-full pb-28">
@@ -375,29 +382,83 @@ export default function CommitteeStatsPage() {
         </div>
 
         {/* 차량 현재 상태 */}
-        {veh ? (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">차량 현재 상태</p>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: '사용 가능', value: veh.available   ?? 0, color: 'text-green-600',  bg: 'bg-green-50' },
-                { label: '배차중',    value: veh.in_use      ?? 0, color: 'text-blue-600',   bg: 'bg-blue-50' },
-                { label: '정비 중',   value: veh.maintenance ?? 0, color: 'text-orange-600', bg: 'bg-orange-50' },
-                { label: '전체',      value: veh.total       ?? 0, color: 'text-gray-700',   bg: 'bg-gray-50' },
-              ].map(s => (
-                <div key={s.label} className={`${s.bg} rounded-xl p-3 text-center`}>
-                  <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">{s.label}</p>
-                </div>
-              ))}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          {/* 헤더 + 실시간 배지 */}
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">차량 현재 상태</p>
+            <div className="flex items-center gap-2">
+              {loadedAtStr && (
+                <span className="text-[9px] text-gray-400">{loadedAtStr} 기준</span>
+              )}
+              <span className="flex items-center gap-1 text-[9px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                실시간
+              </span>
             </div>
           </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">차량 현재 상태</p>
+
+          {veh ? (
+            <>
+              {/* 전체 (풀 너비) + 비례 컬러 바 */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs text-gray-500 font-medium">전체</span>
+                  <span className="text-xl font-bold text-gray-900">{veh.total ?? 0}대</span>
+                </div>
+                {(veh.total ?? 0) > 0 && (
+                  <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden flex">
+                    <div className="h-full bg-green-400"
+                      style={{ width: `${((veh.available ?? 0) / veh.total) * 100}%` }} />
+                    <div className="h-full bg-blue-400"
+                      style={{ width: `${((veh.booked ?? 0) / veh.total) * 100}%` }} />
+                    <div className="h-full bg-indigo-500"
+                      style={{ width: `${((veh.in_use ?? 0) / veh.total) * 100}%` }} />
+                    <div className="h-full bg-orange-400"
+                      style={{ width: `${((veh.maintenance ?? 0) / veh.total) * 100}%` }} />
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
+                  {[
+                    { color: 'bg-green-400',  label: '사용가능' },
+                    { color: 'bg-blue-400',   label: '배차완료' },
+                    { color: 'bg-indigo-500', label: '운행중' },
+                    { color: 'bg-orange-400', label: '정비중' },
+                  ].map(l => (
+                    <div key={l.label} className="flex items-center gap-1">
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${l.color}`} />
+                      <span className="text-[9px] text-gray-400">{l.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2×2 그리드 */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-green-50 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-green-600">{veh.available ?? 0}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">사용 가능</p>
+                </div>
+                <div className="bg-blue-50 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-blue-600">{veh.booked ?? 0}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">배차 완료</p>
+                </div>
+                <div className="bg-indigo-50 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-indigo-600">{veh.in_use ?? 0}</p>
+                  <div className="flex items-center justify-center gap-1 mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                    <p className="text-[10px] text-gray-500">운행 중</p>
+                  </div>
+                </div>
+                <div className="bg-orange-50 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-orange-600">{veh.maintenance ?? 0}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">정비 중</p>
+                </div>
+              </div>
+            </>
+          ) : (
             <EmptyCard icon="🚗" message="차량 정보 없음" />
-          </div>
-        )}
+          )}
+        </div>
 
       </div>
     </div>
