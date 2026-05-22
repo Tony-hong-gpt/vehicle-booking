@@ -38,6 +38,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       .update({ status: 'in_progress', actual_start: now })
       .eq('id', id);
 
+    // 인수(출발) 시점에 차량 상태를 in_use로 변경
+    if (dispatch.vehicle_id) {
+      await supabase.from('vehicles').update({ status: 'in_use' }).eq('id', dispatch.vehicle_id);
+    }
+
     // 출발 주행거리 입력 시 mileage_log 생성
     if (startMileage !== null && dispatch.vehicle_id) {
       await supabase.from('mileage_logs').insert({

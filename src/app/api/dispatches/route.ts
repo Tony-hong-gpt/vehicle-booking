@@ -126,9 +126,10 @@ export async function POST(request: Request) {
     }
 
     await supabase.from('requests').update({ status: 'dispatched' }).eq('id', parsed.data.request_id);
+    // 배차 생성 시점은 출발 전(scheduled)이므로 booked 처리 (in_use는 실제 인수 후에 설정)
     // 대차의 경우 내부 차량 상태 변경 없음
     if (!parsed.data.is_rental && parsed.data.vehicle_id) {
-      await supabase.from('vehicles').update({ status: 'in_use' }).eq('id', parsed.data.vehicle_id);
+      await supabase.from('vehicles').update({ status: 'booked' }).eq('id', parsed.data.vehicle_id);
     }
 
     return Response.json({ data, error: null, message: parsed.data.is_rental ? '대차 배차가 완료되었습니다' : '배차가 완료되었습니다' }, { status: 201 });

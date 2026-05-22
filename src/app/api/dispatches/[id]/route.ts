@@ -44,23 +44,28 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const adminSupabase = createAdminClient();
 
-    // 기존 배차 조회 (차량 변경 감지)
+    // 기존 배차 조회 (차량 변경·취소 감지)
     const { data: existing } = await adminSupabase
-      .from('dispatches').select('vehicle_id, is_rental').eq('id', id).single();
+      .from('dispatches').select('vehicle_id, is_rental, status').eq('id', id).single();
 
     const { data, error } = await adminSupabase
       .from('dispatches').update(parsed.data).eq('id', id).select().single();
     if (error) return createErrorResponse(error.message);
 
-    // 차량이 변경된 경우 vehicle.status 교체
-    if (parsed.data.vehicle_id !== undefined && existing) {
+    // 배차가 취소(cancelled)로 변경된 경우 → 차량 상태 available 복원
+    if (parsed.data.status === 'cancelled' && existing?.vehicle_id && !existing.is_rental) {
+      await adminSupabase.from('vehicles').update({ status: 'available' }).eq('id', existing.vehicle_id);
+    }
+    // 차량이 변경된 경우 vehicle.status 교체 (취소가 아닌 경우에만)
+    else if (parsed.data.vehicle_id !== undefined && existing) {
       const oldId = existing.vehicle_id;
       const newId = parsed.data.vehicle_id;
       if (oldId && oldId !== newId && !existing.is_rental) {
         await adminSupabase.from('vehicles').update({ status: 'available' }).eq('id', oldId);
       }
       if (newId && !parsed.data.is_rental) {
-        await adminSupabase.from('vehicles').update({ status: 'in_use' }).eq('id', newId);
+        // 배차 수정 시에도 scheduled 상태이므로 booked 처리 (in_use는 실제 인수 후)
+        await adminSupabase.from('vehicles').update({ status: 'booked' }).eq('id', newId);
       }
     }
 
