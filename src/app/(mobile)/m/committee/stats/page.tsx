@@ -121,10 +121,10 @@ export default function CommitteeStatsPage() {
   const procDist = overview?.process_distribution ?? null;
 
   const bottomKpis = [
-    { label: '배차 완료', value: dispTotal,    color: 'text-blue-600',   bg: 'bg-blue-50',   diff: disp?.diffs?.total   ?? null },
-    { label: '승인 완료', value: approvedReqs, color: 'text-green-600',  bg: 'bg-green-50',  diff: req?.diffs?.approved ?? null },
-    { label: '취소',      value: cancelledReqs,color: 'text-orange-500', bg: 'bg-orange-50', diff: null },
-    { label: '반려',      value: rejectedReqs, color: 'text-red-500',    bg: 'bg-red-50',    diff: req?.diffs?.rejected ?? null },
+    { label: '배차 완료', value: dispTotal,     color: 'text-blue-600',   bg: 'bg-blue-50',   diff: disp?.diffs?.total   ?? null },
+    { label: '승인 완료', value: approvedReqs,  color: 'text-green-600',  bg: 'bg-green-50',  diff: req?.diffs?.approved ?? null },
+    { label: '반려',      value: rejectedReqs,  color: 'text-red-500',    bg: 'bg-red-50',    diff: req?.diffs?.rejected ?? null },
+    { label: '취소',      value: cancelledReqs, color: 'text-orange-500', bg: 'bg-orange-50', diff: null },
   ];
 
   // 차트 데이터 (time_series from overview)
@@ -203,15 +203,13 @@ export default function CommitteeStatsPage() {
           </div>
         </div>
 
-        {/* KPI 카드 — 하단 2×2 (상세 내역) */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* KPI 카드 — 하단 4개 한 줄 (상세 내역) */}
+        <div className="grid grid-cols-4 gap-2">
           {bottomKpis.map(k => (
-            <div key={k.label} className={`${k.bg} rounded-2xl p-4`}>
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-xs text-gray-500 font-medium">{k.label}</p>
-                <DiffBadge diff={k.diff} />
-              </div>
-              <p className={`text-2xl font-bold ${k.color}`}>{k.value.toLocaleString()}</p>
+            <div key={k.label} className={`${k.bg} rounded-2xl p-3 flex flex-col items-center text-center`}>
+              <p className="text-[10px] text-gray-500 font-medium mb-1 whitespace-nowrap">{k.label}</p>
+              <p className={`text-xl font-bold ${k.color}`}>{k.value.toLocaleString()}</p>
+              <DiffBadge diff={k.diff} />
             </div>
           ))}
         </div>
