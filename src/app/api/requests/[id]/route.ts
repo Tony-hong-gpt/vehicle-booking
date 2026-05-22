@@ -84,8 +84,25 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const { data, error } = await supabase.from('requests').update(updatePayload).eq('id', id).select().single();
     if (error) return createErrorResponse(error.message);
 
-    // admin이 status를 직접 변경한 경우 → approval 기록 자동 생성/업데이트
+    // admin이 cancelled로 변경한 경우 → 연결된 배차 취소 + 차량 복원
     const newStatus = updatePayload.status as string | undefined;
+    if (user.role === 'admin' && newStatus === 'cancelled' && existing.status !== 'cancelled') {
+      const adminSupabase = createAdminClient();
+      const { data: dispatch } = await adminSupabase
+        .from('dispatches')
+        .select('id, vehicle_id, is_rental, status')
+        .eq('request_id', id)
+        .in('status', ['scheduled', 'in_progress'])
+        .maybeSingle();
+      if (dispatch) {
+        await adminSupabase.from('dispatches').update({ status: 'cancelled' }).eq('id', dispatch.id);
+        if (dispatch.vehicle_id && !dispatch.is_rental) {
+          await adminSupabase.from('vehicles').update({ status: 'available' }).eq('id', dispatch.vehicle_id);
+        }
+      }
+    }
+
+    // admin이 status를 직접 변경한 경우 → approval 기록 자동 생성/업데이트
     if (user.role === 'admin' && newStatus && newStatus !== existing.status) {
       const { createAdminClient } = await import('@/lib/server/supabase');
       const adminSupabase = createAdminClient();

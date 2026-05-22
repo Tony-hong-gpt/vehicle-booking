@@ -235,6 +235,7 @@ export default function DispatchesPage() {
     { value: '', label: '전체' },
     { value: 'scheduled', label: '배차완료' },
     { value: 'in_progress', label: '운행중' },
+    { value: 'cancelled', label: '취소' },
   ];
 
   return (
@@ -346,19 +347,23 @@ export default function DispatchesPage() {
                 </td>
               </tr>
             )}
-            {dispatches.map((d: any) => (
-              <tr key={d.id} className="hover:bg-gray-50/70 transition-colors">
+            {dispatches.map((d: any) => {
+              const isCancelled = d.status === 'cancelled';
+              return (
+              <tr key={d.id} className={`transition-colors ${isCancelled ? 'bg-gray-50/60 opacity-70' : 'hover:bg-gray-50/70'}`}>
                 <td className="px-5 py-4 font-mono text-xs text-gray-400">{d.request?.request_no}</td>
-                <td className="px-5 py-4 font-semibold text-gray-900 text-sm">{d.request?.destination}</td>
+                <td className={`px-5 py-4 font-semibold text-sm ${isCancelled ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                  {d.request?.destination}
+                </td>
                 <td className="px-5 py-4 text-gray-500 text-sm">{d.request?.requester?.name}</td>
                 <td className="px-5 py-4">
                   {d.is_rental ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-semibold">
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${isCancelled ? 'bg-gray-100 text-gray-400' : 'bg-amber-50 text-amber-700'}`}>
                       대차
                     </span>
                   ) : (
                     <>
-                      <div className="font-semibold text-gray-900 text-sm">{vehicleName(d.vehicle)}</div>
+                      <div className={`font-semibold text-sm ${isCancelled ? 'text-gray-400' : 'text-gray-900'}`}>{vehicleName(d.vehicle)}</div>
                       <div className="text-xs text-gray-400 mt-0.5">{d.vehicle?.license_plate}</div>
                     </>
                   )}
@@ -370,9 +375,17 @@ export default function DispatchesPage() {
                   {d.scheduled_start && format(new Date(d.scheduled_start), 'yy.MM.dd(EEE) HH:mm', { locale: ko })}
                 </td>
                 <td className="px-5 py-4">
-                  <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${DISPATCH_STATUS_COLORS[d.status] || 'bg-gray-100 text-gray-600'}`}>
-                    {DISPATCH_STATUS_LABELS[d.status] || d.status}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${DISPATCH_STATUS_COLORS[d.status] || 'bg-gray-100 text-gray-600'}`}>
+                      {DISPATCH_STATUS_LABELS[d.status] || d.status}
+                    </span>
+                    {/* 신청 취소로 인한 배차 취소임을 명시 */}
+                    {isCancelled && d.request?.status === 'cancelled' && (
+                      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-rose-50 text-rose-500 rounded-full text-[10px] font-medium">
+                        신청취소
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-5 py-4 text-right">
                   {['scheduled', 'in_progress'].includes(d.status) && (
@@ -385,7 +398,8 @@ export default function DispatchesPage() {
                   )}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         </div>
