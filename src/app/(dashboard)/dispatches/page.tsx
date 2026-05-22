@@ -369,7 +369,14 @@ export default function DispatchesPage() {
                 <td className={`px-5 py-4 font-semibold text-sm ${isCancelled ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
                   {d.request?.destination}
                 </td>
-                <td className="px-5 py-4 text-gray-500 text-sm">{d.request?.requester?.name}</td>
+                <td className="px-5 py-4">
+                  <p className={`text-sm font-medium ${isCancelled ? 'text-gray-400' : 'text-gray-700'}`}>
+                    {d.request?.requester?.name}
+                  </p>
+                  {d.request?.department?.name && (
+                    <p className="text-xs text-gray-400 mt-0.5">{d.request.department.name}</p>
+                  )}
+                </td>
                 <td className="px-5 py-4">
                   {d.is_rental ? (
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${isCancelled ? 'bg-gray-100 text-gray-400' : 'bg-amber-50 text-amber-700'}`}>
