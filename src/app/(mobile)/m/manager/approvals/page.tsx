@@ -436,39 +436,56 @@ export default function ManagerApprovalsPage() {
                     </p>
                   )}
 
-                  {/* 처리완료 탭 — 승인/반려 이력 */}
+                  {/* 처리완료 탭 — 최종 승인/반려 이력 */}
                   {req.status !== 'pending' && (() => {
-                    const step1 = req.approvals?.find((a: any) => a.step === 1);
-                    if (!step1) return null;
-                    const approver = step1.approver;
-                    const isApproved = step1.status === 'approved';
+                    const approvals: any[] = req.approvals ?? [];
+
+                    // 최종 처리 단계: 높은 step 우선, approved/rejected 상태인 것
+                    const finalApproval = [...approvals]
+                      .filter((a: any) => ['approved', 'rejected'].includes(a.status))
+                      .sort((a: any, b: any) => b.step - a.step)[0];
+
+                    const display = finalApproval ?? approvals.find((a: any) => a.step === 1);
+                    if (!display) return null;
+
+                    const isApproved   = display.status === 'approved';
+                    const isCommittee  = display.step >= 3;
+
+                    const label =
+                      isCommittee && isApproved  ? '차량위원회 승인' :
+                      isCommittee && !isApproved ? '차량위원회 반려' :
+                      isApproved                 ? '상위 승인'       : '반려';
+
+                    const borderColor = isApproved ? 'border-blue-100' : 'border-red-100';
+                    const bgColor     = isApproved ? 'bg-blue-50'      : 'bg-red-50';
+                    const iconColor   = isApproved ? 'text-blue-400'   : 'text-red-400';
+                    const labelColor  = isApproved ? 'text-blue-600'   : 'text-red-600';
+                    const nameColor   = isApproved ? 'text-blue-600'   : 'text-red-500';
+                    const timeColor   = isApproved ? 'text-blue-300'   : 'text-red-300';
+
                     return (
-                      <div className={`border rounded-xl overflow-hidden mb-3 ${isApproved ? 'border-blue-100' : 'border-red-100'}`}>
-                        <div className={`px-3 py-2 flex items-center justify-between ${isApproved ? 'bg-blue-50' : 'bg-red-50'}`}>
+                      <div className={`border rounded-xl overflow-hidden mb-3 ${borderColor}`}>
+                        <div className={`px-3 py-2 flex items-center justify-between ${bgColor}`}>
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-xs ${isApproved ? 'text-blue-400' : 'text-red-400'}`}>
-                              {isApproved ? '✓' : '✗'}
-                            </span>
-                            <span className={`text-xs font-semibold ${isApproved ? 'text-blue-600' : 'text-red-600'}`}>
-                              {isApproved ? '상위 승인' : '반려'}
-                            </span>
+                            <span className={`text-xs ${iconColor}`}>{isApproved ? '✓' : '✗'}</span>
+                            <span className={`text-xs font-semibold ${labelColor}`}>{label}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            {approver && (
-                              <span className={`text-xs font-medium ${isApproved ? 'text-blue-600' : 'text-red-500'}`}>
-                                {approver.name}
+                            {display.approver && (
+                              <span className={`text-xs font-medium ${nameColor}`}>
+                                {display.approver.name}
                               </span>
                             )}
-                            {step1.approved_at && (
-                              <span className={`text-[10px] ${isApproved ? 'text-blue-300' : 'text-red-300'}`}>
-                                {format(new Date(step1.approved_at), 'MM.dd HH:mm')}
+                            {display.approved_at && (
+                              <span className={`text-[10px] ${timeColor}`}>
+                                {format(new Date(display.approved_at), 'MM.dd HH:mm')}
                               </span>
                             )}
                           </div>
                         </div>
-                        {!isApproved && step1.comment && (
+                        {!isApproved && display.comment && (
                           <div className="px-3 py-2 bg-white">
-                            <p className="text-xs text-gray-600 leading-relaxed">{step1.comment}</p>
+                            <p className="text-xs text-gray-600 leading-relaxed">{display.comment}</p>
                           </div>
                         )}
                       </div>
