@@ -37,6 +37,7 @@ export default function ManagerStatsPage() {
   const total      = monthReqs.length;
   const approved   = monthReqs.filter(r => ['upper_approved', 'approved', 'dispatched', 'returned'].includes(r.status)).length;
   const rejected   = monthReqs.filter(r => r.status === 'rejected').length;
+  const cancelled  = monthReqs.filter(r => r.status === 'cancelled').length;
   const pending    = monthReqs.filter(r => r.status === 'pending').length;
   const approvalRate = total > 0 ? Math.round((approved / total) * 100) : 0;
 
@@ -94,30 +95,60 @@ export default function ManagerStatsPage() {
           ))}
         </div>
 
-        {/* 주요 지표 카드 */}
+        {/* 주요 지표 카드 — 상단 2개 (전체 요약) */}
         <div className="grid grid-cols-2 gap-2">
-          {[
-            { label: '전체 신청',  value: total,          sub: '건',  color: 'text-gray-900',   bg: 'bg-white border border-gray-100' },
-            { label: '승인률',     value: `${approvalRate}`, sub: '%', color: 'text-blue-600',   bg: 'bg-blue-50' },
-            { label: '승인 완료',  value: approved,       sub: '건',  color: 'text-green-700',  bg: 'bg-green-50' },
-            { label: '반려',       value: rejected,       sub: '건',  color: 'text-red-600',    bg: 'bg-red-50' },
-          ].map(s => (
-            <div key={s.label} className={`${s.bg} rounded-2xl p-4 shadow-sm`}>
-              <p className={`text-3xl font-bold ${s.color}`}>
-                {s.value}<span className="text-base font-medium ml-0.5">{s.sub}</span>
-              </p>
-              <p className="text-xs text-gray-500 mt-1">{s.label}</p>
-            </div>
-          ))}
+          <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+            <p className="text-3xl font-bold text-gray-900">
+              {total}<span className="text-base font-medium ml-0.5">건</span>
+            </p>
+            <p className="text-xs text-gray-500 mt-1">전체 신청</p>
+          </div>
+          <div className="bg-blue-50 rounded-2xl p-4 shadow-sm">
+            <p className="text-3xl font-bold text-blue-600">
+              {approvalRate}<span className="text-base font-medium ml-0.5">%</span>
+            </p>
+            <p className="text-xs text-gray-500 mt-1">승인률</p>
+          </div>
+        </div>
+
+        {/* 주요 지표 카드 — 하단 3개 (승인완료 + 취소 + 반려 = 전체) */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-green-50 rounded-2xl p-4 shadow-sm">
+            <p className="text-2xl font-bold text-green-700">
+              {approved}<span className="text-sm font-medium ml-0.5">건</span>
+            </p>
+            <p className="text-xs text-gray-500 mt-1">승인완료</p>
+          </div>
+          <div className="bg-orange-50 rounded-2xl p-4 shadow-sm">
+            <p className="text-2xl font-bold text-orange-500">
+              {cancelled}<span className="text-sm font-medium ml-0.5">건</span>
+            </p>
+            <p className="text-xs text-gray-500 mt-1">취소</p>
+          </div>
+          <div className="bg-red-50 rounded-2xl p-4 shadow-sm">
+            <p className="text-2xl font-bold text-red-600">
+              {rejected}<span className="text-sm font-medium ml-0.5">건</span>
+            </p>
+            <p className="text-xs text-gray-500 mt-1">반려</p>
+          </div>
         </div>
 
         {/* 6개월 추이 바 차트 */}
         <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
           <p className="text-sm font-bold text-gray-700 mb-3">월별 신청 추이</p>
-          <div className="flex items-end gap-2 h-24">
+          <div className="flex items-end gap-2">
             {monthlyData.map(m => (
-              <div key={m.key} className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full flex items-end justify-center" style={{ height: '72px' }}>
+              <div key={m.key} className="flex-1 flex flex-col items-center">
+                {/* 건수 레이블 */}
+                <span className={`text-xs font-bold leading-none mb-1 ${
+                  m.count > 0
+                    ? m.key === selectedMonth ? 'text-blue-600' : 'text-gray-500'
+                    : 'invisible'
+                }`}>
+                  {m.count}
+                </span>
+                {/* 바 */}
+                <div className="w-full flex items-end justify-center" style={{ height: '64px' }}>
                   <div
                     className={`w-full rounded-t-lg transition-all ${
                       m.key === selectedMonth ? 'bg-blue-500' : 'bg-gray-200'
@@ -125,7 +156,8 @@ export default function ManagerStatsPage() {
                     style={{ height: `${Math.max(4, (m.count / maxMonthly) * 100)}%` }}
                   />
                 </div>
-                <span className={`text-[10px] font-medium ${
+                {/* 월 레이블 */}
+                <span className={`text-[10px] font-medium mt-1 ${
                   m.key === selectedMonth ? 'text-blue-600' : 'text-gray-400'
                 }`}>{m.label}</span>
               </div>

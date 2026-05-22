@@ -32,7 +32,7 @@ function getPrevRange(from: Date, to: Date) {
 export async function GET(request: Request) {
   try {
     const user = await getCurrentUser();
-    const ALLOWED = ['admin', 'committee_secretary', 'committee_vice', 'committee_chair'];
+    const ALLOWED = ['admin', 'committee_secretary', 'committee_vice', 'committee_chair', 'manager'];
     if (!user || !ALLOWED.includes(user.role)) return createUnauthorizedResponse();
 
     const { searchParams } = new URL(request.url);
@@ -562,6 +562,139 @@ export async function GET(request: Request) {
       })).sort((a, b) => a.step - b.step || b.count - a.count);
 
       return Response.json({ data: { processors, total: approvals.length }, error: null });
+    }
+
+    // ── 8. 상위승인자(manager) 부서별 현황 ──────────────────────────────
+    if (type === 'manager_dept') {
+      const deptId = searchParams.get('department_id');
+      if (!deptId) return Response.json({ data: null, error: 'department_id가 필요합니다' }, { status: 400 });
+
+      // manager 역할은 자신이 속한 부서만 조회 가능
+      if (user.role === 'manager') {
+        const { data: udRows } = await supabase.from('user_departments').select('department_id').eq('user_id', user.id);
+        const myDeptIds = (udRows || []).map((r: any) => r.department_id);
+        if (!myDeptIds.includes(deptId)) {
+          return Response.json({ data: null, error: '접근 권한이 없습니다' }, { status: 403 });
+        }
+      }
+
+      const [reqCurrRes, reqPrevRes, purposeReqRes] = await Promise.all([
+        supabase.from('requests')
+          .select('id, status, created_at')
+          .eq('department_id', deptId)
+          .gte('created_at', fromISO)
+          .lte('created_at', toISO),
+        supabase.from('requests')
+          .select('id, status')
+          .eq('department_id', deptId)
+          .gte('created_at', prevFromISO)
+          .lte('created_at', prevToISO),
+        supabase.from('requests')
+          .select('purpose:purposes(name)')
+          .eq('department_id', deptId)
+          .gte('created_at', fromISO)
+          .lte('created_at', toISO)
+          .in('status', ['dispatched', 'in_use', 'returned']),
+      ]);
+
+      const reqCurr     = reqCurrRes.data    || [];
+      const reqPrev     = reqPrevRes.data    || [];
+      const purposeReqs = purposeReqRes.data || [];
+
+      const totalReqs     = reqCurr.length;
+      const approvedReqs  = reqCurr.filter(r => ['approved', 'dispatched', 'in_use', 'returned'].includes(r.status)).length;
+      const rejectedReqs  = reqCurr.filter(r => r.status === 'rejected').length;
+      const cancelledReqs = reqCurr.filter(r => r.status === 'cancelled').length;
+      const pendingReqs   = reqCurr.filter(r => ['pending', 'upper_approved', 'committee_reviewing', 'committee_vice_reviewing'].includes(r.status)).length;
+      const decidedReqs   = totalReqs - pendingReqs;
+      const approvalRate  = decidedReqs > 0 ? Math.round((approvedReqs / decidedReqs) * 100) : 0;
+
+      const prevTotalReqs    = reqPrev.length;
+      const prevApprovedReqs = reqPrev.filter(r => ['approved', 'dispatched', 'in_use', 'returned'].includes(r.status)).length;
+      const diff = (curr: number, prev: number) => prev === 0 ? null : Math.round(((curr - prev) / prev) * 100);
+
+      // 사용목적 TOP 5
+      const purposeMap: Record<string, number> = {};
+      purposeReqs.forEach((r: any) => {
+        const name = r.purpose?.name || '미지정';
+        purposeMap[name] = (purposeMap[name] || 0) + 1;
+      });
+      const topPurposes = Object.entries(purposeMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, count]) => ({ name, count }));
+
+      // 월별 버킷
+      const monthlyBucket: Record<string, any> = {};
+      eachMonthOfInterval({ start: from, end: to }).forEach(monthStart => {
+        const key = format(monthStart, 'yyyy-MM');
+        monthlyBucket[key] = { month: format(monthStart, 'M월'), requests: 0, approved: 0, cancelled: 0 };
+      });
+      reqCurr.forEach((r: any) => {
+        const key = r.created_at?.slice(0, 7);
+        if (!monthlyBucket[key]) return;
+        monthlyBucket[key].requests++;
+        if (['dispatched', 'in_use', 'returned'].includes(r.status)) monthlyBucket[key].approved++;
+        if (r.status === 'cancelled') monthlyBucket[key].cancelled++;
+      });
+
+      // 시계열
+      let timeSeries: any[] = [];
+      if (granularity === 'day') {
+        timeSeries = eachDayOfInterval({ start: from, end: to }).map(day => {
+          const dayStr = format(day, 'yyyy-MM-dd');
+          return {
+            label: format(day, 'EEE', { locale: ko }),
+            requests: reqCurr.filter(r => r.created_at?.startsWith(dayStr)).length,
+          };
+        });
+      } else if (granularity === 'week') {
+        const weeks = eachWeekOfInterval({ start: from, end: to }, { weekStartsOn: 1 });
+        timeSeries = weeks.map((weekStart, i) => {
+          const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+          const wFrom   = weekStart.toISOString();
+          const wTo     = weekEnd.toISOString();
+          return {
+            label: `${i + 1}주`,
+            requests: reqCurr.filter(r => r.created_at >= wFrom && r.created_at <= wTo).length,
+          };
+        });
+      } else {
+        timeSeries = eachMonthOfInterval({ start: from, end: to }).map(monthStart => {
+          const mFrom = monthStart.toISOString();
+          const mEnd  = endOfMonth(monthStart).toISOString();
+          return {
+            label: format(monthStart, 'M월'),
+            requests: reqCurr.filter(r => r.created_at >= mFrom && r.created_at <= mEnd).length,
+          };
+        });
+      }
+
+      return Response.json({
+        data: {
+          kpi: {
+            total_requests: { value: totalReqs,    diff: diff(totalReqs, prevTotalReqs) },
+            approval_rate:  { value: approvalRate },
+            pending:        { value: pendingReqs },
+            cancelled:      { value: cancelledReqs },
+          },
+          requests: {
+            total:     totalReqs,
+            approved:  approvedReqs,
+            rejected:  rejectedReqs,
+            cancelled: cancelledReqs,
+            pending:   pendingReqs,
+            diffs: {
+              total:    diff(totalReqs, prevTotalReqs),
+              approved: diff(approvedReqs, prevApprovedReqs),
+            },
+          },
+          top_purposes: topPurposes,
+          monthly:      Object.values(monthlyBucket),
+          time_series:  timeSeries,
+        },
+        error: null,
+      });
     }
 
     return Response.json({ data: null, error: '알 수 없는 type 파라미터입니다' }, { status: 400 });

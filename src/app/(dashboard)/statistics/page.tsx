@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList,
 } from 'recharts';
 import * as XLSX from 'xlsx';
 
@@ -1391,6 +1391,276 @@ function PurposesTab({ period }: { period: PeriodState }) {
   );
 }
 
+// ── 상위승인자(manager) 부서별 현황 탭 ──────────────────────────────────
+function ManagerDeptTab({ period, departmentId }: { period: PeriodState; departmentId: string }) {
+  const [data, setData]     = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const { from, to, granularity } = periodToRange(period);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/stats?type=manager_dept&from=${from}&to=${to}&granularity=${granularity}&department_id=${departmentId}`)
+      .then(r => r.json())
+      .then(j => { setData(j.data); setLoading(false); });
+  }, [from, to, granularity, departmentId]);
+
+  if (loading) return <Loader />;
+  if (!data)   return null;
+
+  const { kpi, requests, top_purposes, monthly, time_series } = data;
+  const totalPurpose = top_purposes.reduce((s: number, d: any) => s + d.count, 0);
+
+  return (
+    <div className="space-y-4">
+      {/* ── KPI 4개 ── */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          {
+            label: '총 신청 건수', value: kpi.total_requests.value, unit: '건',
+            diff: kpi.total_requests.diff, color: 'text-blue-600',
+          },
+          {
+            label: '신청 승인율', value: kpi.approval_rate.value, unit: '%',
+            color: kpi.approval_rate.value >= 80 ? 'text-green-600' : 'text-orange-500',
+            sub: '취소·반려 제외',
+          },
+          {
+            label: '처리 대기', value: kpi.pending.value, unit: '건',
+            color: kpi.pending.value > 0 ? 'text-orange-500' : 'text-gray-400',
+            sub: '승인 대기 중인 건수',
+          },
+          {
+            label: '취소', value: kpi.cancelled.value, unit: '건',
+            color: kpi.cancelled.value > 0 ? 'text-red-400' : 'text-gray-400',
+          },
+        ].map(card => (
+          <div key={card.label} className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-400">{card.label}</p>
+              <div className="flex items-baseline gap-1 mt-1">
+                <span className={`text-3xl font-bold ${card.color}`}>{card.value}</span>
+                <span className="text-sm text-gray-400">{card.unit}</span>
+              </div>
+              {card.sub && <p className="text-xs text-gray-400 mt-1">{card.sub}</p>}
+            </div>
+            {card.diff != null && (
+              <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                card.diff > 0 ? 'bg-blue-50 text-blue-500' : card.diff < 0 ? 'bg-red-50 text-red-400' : 'bg-gray-100 text-gray-400'
+              }`}>
+                {card.diff > 0 ? '▲' : card.diff < 0 ? '▼' : '─'} {Math.abs(card.diff)}%
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ── 시계열 차트(좌) + 신청 현황(우) ── */}
+      <div className="grid grid-cols-5 gap-3">
+        <div className="col-span-3 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <p className="text-xs font-bold text-gray-500 mb-3">
+            {period.mode === 'week' ? '요일별' : period.mode === 'month' ? '주별' : '월별'} 신청 추이
+          </p>
+          <ResponsiveContainer width="100%" height={210}>
+            <BarChart data={time_series} barGap={4}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
+              <Tooltip />
+              <Bar dataKey="requests" name="신청" fill="#3b82f6" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="requests" position="top"
+                  style={{ fontSize: 11, fontWeight: 600, fill: '#4b5563' }}
+                  formatter={(v: any) => v > 0 ? v : ''} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <p className="text-xs font-bold text-gray-500 mb-3">신청 현황</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+            {[
+              { label: '총 신청',   value: requests.total,     color: 'bg-blue-500' },
+              { label: '승인완료',  value: requests.approved,  color: 'bg-green-500' },
+              { label: '반려',      value: requests.rejected,  color: 'bg-rose-500' },
+              { label: '처리 대기', value: requests.pending,   color: 'bg-orange-400' },
+              { label: '취소',      value: requests.cancelled, color: 'bg-red-400' },
+            ].map(row => (
+              <div key={row.label} className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${row.color}`} />
+                  <span className="text-sm text-gray-500">{row.label}</span>
+                </div>
+                <span className="text-sm font-bold text-gray-700">{row.value}건</span>
+              </div>
+            ))}
+          </div>
+          {requests.total > 0 && (
+            <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden flex">
+              <div className="bg-green-400 h-full" style={{ width: `${(requests.approved / requests.total) * 100}%` }} />
+              <div className="bg-rose-400 h-full" style={{ width: `${((requests.rejected ?? 0) / requests.total) * 100}%` }} />
+              <div className="bg-orange-300 h-full" style={{ width: `${(requests.pending / requests.total) * 100}%` }} />
+              <div className="bg-red-300 h-full" style={{ width: `${(requests.cancelled / requests.total) * 100}%` }} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── 월별 추이 차트(좌) + 사용목적 TOP5(우) ── */}
+      <div className="grid grid-cols-5 gap-3">
+        <div className="col-span-3 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <SectionTitle>월별 신청 건수 추이</SectionTitle>
+          <ResponsiveContainer width="100%" height={230}>
+            <BarChart data={monthly} barGap={4}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const ORDER = ['requests', 'approved', 'cancelled'];
+                  const sorted = ORDER.map(k => payload.find((p: any) => p.dataKey === k)).filter(Boolean);
+                  return (
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm min-w-[120px]">
+                      <p className="font-semibold text-gray-700 mb-2">{label}</p>
+                      {sorted.map((p: any) => (
+                        <p key={p.dataKey} className="text-xs mb-0.5" style={{ color: p.fill }}>
+                          {p.name} : {p.value}
+                        </p>
+                      ))}
+                    </div>
+                  );
+                }}
+              />
+              <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+              <Bar dataKey="requests"  name="총 신청"  fill="#3b82f6" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="requests" position="top"
+                  style={{ fontSize: 10, fontWeight: 600, fill: '#3b82f6' }}
+                  formatter={(v: any) => v > 0 ? v : ''} />
+              </Bar>
+              <Bar dataKey="approved"  name="승인완료" fill="#10b981" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="approved" position="top"
+                  style={{ fontSize: 10, fontWeight: 600, fill: '#10b981' }}
+                  formatter={(v: any) => v > 0 ? v : ''} />
+              </Bar>
+              <Bar dataKey="cancelled" name="취소"     fill="#f87171" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="cancelled" position="top"
+                  style={{ fontSize: 10, fontWeight: 600, fill: '#f87171' }}
+                  formatter={(v: any) => v > 0 ? v : ''} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <p className="text-xs font-bold text-gray-500 mb-3">사용목적별 현황 (TOP 5)</p>
+          {top_purposes.length === 0 ? (
+            <p className="text-sm text-gray-400 py-6 text-center">데이터가 없습니다</p>
+          ) : (
+            <div className="space-y-3">
+              {top_purposes.map((d: any, i: number) => (
+                <div key={d.name} className="flex items-center gap-2">
+                  <span className={`text-xs font-bold w-4 text-center flex-shrink-0 ${i < 3 ? 'text-blue-500' : 'text-gray-300'}`}>{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-700 truncate">{d.name}</span>
+                      <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
+                        {d.count}건 ({totalPurpose > 0 ? Math.round(d.count / totalPurpose * 100) : 0}%)
+                      </span>
+                    </div>
+                    <div className="bg-gray-100 rounded-full h-1.5">
+                      <div className="h-1.5 rounded-full"
+                        style={{ width: `${top_purposes[0].count > 0 ? (d.count / top_purposes[0].count) * 100 : 0}%`, backgroundColor: COLORS[i] }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 상위승인자 뷰 (부서 선택 + 핵심 통계) ────────────────────────────────
+function ManagerView({ period, onPeriodChange }: { period: PeriodState; onPeriodChange: (p: PeriodState) => void }) {
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [selectedDeptId, setSelectedDeptId]   = useState<string>('');
+  const [deptLoading, setDeptLoading]         = useState(true);
+
+  useEffect(() => {
+    fetch('/api/user-departments')
+      .then(r => r.json())
+      .then(j => {
+        const depts = j.data || [];
+        setDepartments(depts);
+        if (depts.length > 0) setSelectedDeptId(depts[0].id);
+        setDeptLoading(false);
+      });
+  }, []);
+
+  const selectedDept = departments.find(d => d.id === selectedDeptId);
+
+  return (
+    <div className="p-6">
+      {/* 헤더 */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">통계</h1>
+          <p className="text-gray-500 mt-0.5 text-xs">
+            {selectedDept ? `${selectedDept.name} 부서 차량 신청 현황` : '부서 차량 신청 현황'}
+          </p>
+        </div>
+        <PeriodSelector period={period} onChange={onPeriodChange} />
+      </div>
+
+      {/* 부서 선택 (복수 부서인 경우) */}
+      {departments.length > 1 && (
+        <div className="flex items-center gap-3 mb-4 bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-3">
+          <span className="text-sm font-semibold text-gray-500 flex-shrink-0">담당 부서</span>
+          <div className="flex gap-2 flex-wrap">
+            {departments.map(dept => (
+              <button
+                key={dept.id}
+                onClick={() => setSelectedDeptId(dept.id)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  selectedDeptId === dept.id
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600'
+                }`}
+              >
+                {dept.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 단일 부서인 경우 배지로 표시 */}
+      {departments.length === 1 && (
+        <div className="flex items-center gap-2 mb-4">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            {selectedDept?.name}
+          </span>
+          <span className="text-xs text-gray-400">담당 부서의 신청 통계를 표시합니다</span>
+        </div>
+      )}
+
+      {deptLoading && <Loader />}
+      {!deptLoading && departments.length === 0 && (
+        <div className="flex items-center justify-center py-24 text-gray-400 text-sm">
+          담당 부서가 설정되지 않았습니다. 관리자에게 문의하세요.
+        </div>
+      )}
+      {!deptLoading && selectedDeptId && (
+        <ManagerDeptTab period={period} departmentId={selectedDeptId} />
+      )}
+    </div>
+  );
+}
+
 // ── 메인 페이지 ──────────────────────────────────────────────────────
 const TABS = [
   { key: 'overview',    label: '개요' },
@@ -1401,9 +1671,31 @@ const TABS = [
 ];
 
 export default function StatisticsPage() {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [period, setPeriod]       = useState<PeriodState>(getDefaultPeriod);
+  const [activeTab, setActiveTab]   = useState('overview');
+  const [period, setPeriod]         = useState<PeriodState>(getDefaultPeriod);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userLoading, setUserLoading] = useState(true);
 
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(j => { setCurrentUser(j.data); setUserLoading(false); });
+  }, []);
+
+  if (userLoading) {
+    return (
+      <div className="p-6">
+        <Loader />
+      </div>
+    );
+  }
+
+  // 상위승인자(manager)는 부서별 통계 전용 뷰
+  if (currentUser?.role === 'manager') {
+    return <ManagerView period={period} onPeriodChange={setPeriod} />;
+  }
+
+  // 관리자 / 차량위원회 — 전체 통계
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
