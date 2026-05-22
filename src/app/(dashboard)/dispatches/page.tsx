@@ -65,9 +65,10 @@ export default function DispatchesPage() {
       const approvedData = await approvedRes.json();
       // 필터 없을 때 완료 건 제외
       const allDispatches: any[] = dispatchData.data || [];
+      // 전체: 반납완료(completed)만 제외 — 배차완료·운행중·취소 모두 표시
       const activeDispatches = statusFilter
         ? allDispatches
-        : allDispatches.filter((d: any) => !['completed', 'cancelled'].includes(d.status));
+        : allDispatches.filter((d: any) => d.status !== 'completed');
       setDispatches(activeDispatches);
       setTotalDispatches(activeDispatches.length);
       setApprovedRequests(approvedData.data || []);
