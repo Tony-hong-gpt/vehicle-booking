@@ -10,7 +10,7 @@ import LogoutButton from '@/components/mobile/LogoutButton';
 const ROLE_PENDING_MAP: Record<string, string[]> = {
   committee_secretary: ['upper_approved', 'approved'],
   committee_vice:      ['committee_reviewing'],
-  committee_chair:     ['committee_vice_reviewing'],
+  committee_chair:     ['upper_approved', 'committee_reviewing', 'committee_vice_reviewing'],
   admin:               ['upper_approved', 'committee_reviewing', 'committee_vice_reviewing', 'approved'],
 };
 

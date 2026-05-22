@@ -9,7 +9,7 @@ import { ko } from 'date-fns/locale';
 const ROLE_PENDING_STATUSES: Record<string, string[]> = {
   committee_secretary: ['upper_approved', 'approved'],  // upper_approved=검토, approved=배차
   committee_vice:      ['committee_reviewing'],
-  committee_chair:     ['committee_vice_reviewing'],
+  committee_chair:     ['upper_approved', 'committee_reviewing', 'committee_vice_reviewing'],
   admin:               ['upper_approved', 'committee_reviewing', 'committee_vice_reviewing', 'approved'],
 };
 
@@ -211,11 +211,10 @@ export default function CommitteeApprovalsPage() {
       }
       return true;
     });
-    const asc = tab === 'pending';
     return list.sort((a: any, b: any) => {
-      const at = a.start_datetime ? new Date(a.start_datetime).getTime() : 0;
-      const bt = b.start_datetime ? new Date(b.start_datetime).getTime() : 0;
-      return asc ? at - bt : bt - at;
+      const at = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const bt = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return bt - at; // 최신 신청순
     });
   }, [requests, tab, pendingStatuses, doneStatuses, searchQuery, filterDept, filterDateFrom, filterDateTo]);
 
@@ -707,7 +706,7 @@ export default function CommitteeApprovalsPage() {
           <p className="text-xs text-gray-400">
             {(hasFilter || hasSearch) ? '검색 결과 ' : ''}
             <span className="font-bold text-gray-600">{filtered.length}건</span>
-            <span className="ml-1 text-gray-300">· {tab === 'pending' ? '출발일 빠른 순' : '최신 순'}</span>
+            <span className="ml-1 text-gray-300">· 최신 신청순</span>
           </p>
         </div>
       )}
