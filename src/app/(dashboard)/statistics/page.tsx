@@ -550,123 +550,118 @@ function OverviewTab({ period }: { period: PeriodState }) {
           {top_purposes.length === 0 ? (
             <p className="text-sm text-gray-400 py-6 text-center">데이터가 없습니다</p>
           ) : (
-            <div className="flex gap-3">
-              <div className="flex-1 space-y-3">
-                {top_purposes.map((d: any, i: number) => (
-                  <div key={d.name} className="flex items-center gap-2">
-                    <span className={`text-xs font-bold w-4 text-center flex-shrink-0 ${i < 3 ? 'text-blue-500' : 'text-gray-300'}`}>{i + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-700 truncate">{d.name}</span>
-                        <span className="text-xs text-gray-400 ml-2 flex-shrink-0">{d.count}건</span>
-                      </div>
-                      <div className="bg-gray-100 rounded-full h-1.5">
-                        <div className="h-1.5 rounded-full" style={{ width: `${top_purposes[0].count > 0 ? (d.count / top_purposes[0].count) * 100 : 0}%`, backgroundColor: COLORS[i] }} />
-                      </div>
+            <div className="space-y-3">
+              {top_purposes.map((d: any, i: number) => (
+                <div key={d.name} className="flex items-center gap-2">
+                  <span className={`text-xs font-bold w-4 text-center flex-shrink-0 ${i < 3 ? 'text-blue-500' : 'text-gray-300'}`}>{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-700 truncate">{d.name}</span>
+                      <span className="text-xs text-gray-400 ml-2 flex-shrink-0">{d.count}건 ({totalPurpose > 0 ? Math.round(d.count / totalPurpose * 100) : 0}%)</span>
+                    </div>
+                    <div className="bg-gray-100 rounded-full h-1.5">
+                      <div className="h-1.5 rounded-full" style={{ width: `${top_purposes[0].count > 0 ? (d.count / top_purposes[0].count) * 100 : 0}%`, backgroundColor: COLORS[i] }} />
                     </div>
                   </div>
-                ))}
-              </div>
-              <div className="w-24 flex-shrink-0">
-                <ResponsiveContainer width="100%" height={120}>
-                  <PieChart>
-                    <Pie data={top_purposes} cx="50%" cy="50%" innerRadius={26} outerRadius={46}
-                      dataKey="count" nameKey="name" labelLine={false}>
-                      {top_purposes.map((_: any, i: number) => <Cell key={i} fill={COLORS[i]} />)}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
       </div>
       {/* ── Row 4: 처리소요시간 + 차량군별배차 + 담당자별처리 ── */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 items-stretch">
 
         {/* 처리 소요시간 */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col">
           <p className="text-xs font-bold text-gray-500 mb-4">처리 소요시간</p>
           {avgProcessHours !== null ? (
-            <>
-              <div className="mb-5">
+            <div className="flex flex-col flex-1">
+              {/* 평균 시간 */}
+              <div className="pb-4 border-b border-gray-100">
                 <p className="text-3xl font-bold text-blue-600">{formatHours(avgProcessHours)}</p>
-                <p className="text-xs text-gray-400 mt-1">평균 처리 소요시간</p>
-                <p className="text-[11px] text-gray-400">신청 → 최종 승인</p>
+                <p className="text-xs text-gray-400 mt-1">평균 처리 소요시간 (신청 → 최종 승인)</p>
               </div>
-              {procDist && (procDist.fast + procDist.mid + procDist.slow) > 0 && (
-                <div className="space-y-3">
-                  {[
-                    { label: '빠름 (1일 미만)',  value: procDist.fast, barColor: 'bg-green-500',  textColor: 'text-green-700' },
-                    { label: '보통 (1~3일)',     value: procDist.mid,  barColor: 'bg-blue-500',   textColor: 'text-blue-700' },
-                    { label: '느림 (3일 초과)',  value: procDist.slow, barColor: 'bg-orange-500', textColor: 'text-orange-700' },
-                  ].map(s => {
-                    const tot = procDist.fast + procDist.mid + procDist.slow;
-                    return (
+              {/* 분포 */}
+              {procDist && (procDist.fast + procDist.mid + procDist.slow) > 0 && (() => {
+                const tot = procDist.fast + procDist.mid + procDist.slow;
+                return (
+                  <div className="flex flex-col justify-around flex-1 pt-4 space-y-3">
+                    {[
+                      { label: '빠름 (1일 미만)',  value: procDist.fast, barColor: 'bg-green-500',  textColor: 'text-green-700' },
+                      { label: '보통 (1~3일)',     value: procDist.mid,  barColor: 'bg-blue-500',   textColor: 'text-blue-700' },
+                      { label: '느림 (3일 초과)',  value: procDist.slow, barColor: 'bg-orange-500', textColor: 'text-orange-700' },
+                    ].map(s => (
                       <div key={s.label}>
-                        <div className="flex justify-between mb-1">
+                        <div className="flex justify-between mb-1.5">
                           <span className="text-xs text-gray-500">{s.label}</span>
                           <span className={`text-xs font-bold ${s.textColor}`}>{s.value}건</span>
                         </div>
-                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                           <div className={`h-full rounded-full ${s.barColor}`}
                             style={{ width: `${tot > 0 ? (s.value / tot) * 100 : 0}%` }} />
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
           ) : (
-            <div className="py-8 text-center">
-              <p className="text-sm text-gray-400">처리된 건수 없음</p>
-              <p className="text-xs text-gray-300 mt-1">최종 승인된 신청이 없습니다</p>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-sm text-gray-400">처리된 건수 없음</p>
+                <p className="text-xs text-gray-300 mt-1">최종 승인된 신청이 없습니다</p>
+              </div>
             </div>
           )}
         </div>
 
         {/* 차량군별 배차 현황 */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p className="text-xs font-bold text-gray-500 mb-4">차량군별 배차 현황</p>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs font-bold text-gray-500">차량군별 배차 현황</p>
+            {vgGroups.length > 0 && (
+              <span className="text-[10px] text-gray-400">총 {vgTotal}회</span>
+            )}
+          </div>
           {vgGroups.length > 0 ? (
-            <div className="space-y-3">
+            <div className="flex flex-col flex-1 justify-around space-y-3">
               {vgGroups.map((g: any, i: number) => (
                 <div key={g.name}>
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center text-white flex-shrink-0 ${
-                        i === 0 ? 'bg-blue-600' : i === 1 ? 'bg-blue-400' : 'bg-gray-300'
+                        i === 0 ? 'bg-blue-600' : i === 1 ? 'bg-blue-400' : i === 2 ? 'bg-sky-400' : 'bg-gray-300'
                       }`}>{i + 1}</span>
-                      <span className="text-sm font-medium text-gray-800 truncate max-w-[100px]">{g.name}</span>
+                      <span className="text-sm font-medium text-gray-800 truncate max-w-[110px]">{g.name}</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-xs text-gray-400">{g.percent}%</span>
                       <span className="text-sm font-bold text-gray-700">{g.count}회</span>
                     </div>
                   </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-1.5 rounded-full"
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full"
                       style={{ width: `${Math.round((g.count / maxVgCount) * 100)}%`, backgroundColor: COLORS[i] || COLORS[4] }} />
                   </div>
                 </div>
               ))}
-              <p className="text-[10px] text-gray-400 text-right pt-1">총 {vgTotal}회 배차</p>
             </div>
           ) : (
-            <div className="py-8 text-center">
+            <div className="flex-1 flex items-center justify-center">
               <p className="text-sm text-gray-400">배차 내역 없음</p>
             </div>
           )}
         </div>
 
         {/* 담당자별 처리 현황 */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col">
           <p className="text-xs font-bold text-gray-500 mb-4">담당자별 처리 현황</p>
           {sortedProcs.length > 0 ? (
-            <div className="space-y-2">
+            <div className="flex flex-col flex-1 justify-around space-y-2">
               {sortedProcs.map((p: any) => (
-                <div key={p.id} className="flex items-center gap-3 py-2 px-3 bg-gray-50 rounded-lg">
+                <div key={p.id} className="flex items-center gap-3 py-2.5 px-3 bg-gray-50 rounded-lg">
                   <div className={`flex-shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold ${
                     p.step === 3 ? 'bg-blue-100 text-blue-700' :
                     p.step === 4 ? 'bg-violet-100 text-violet-700' :
@@ -686,15 +681,9 @@ function OverviewTab({ period }: { period: PeriodState }) {
                   </div>
                 </div>
               ))}
-              <div className="flex justify-between pt-2 border-t border-gray-100">
-                <span className="text-xs text-gray-500">총 처리</span>
-                <span className="text-sm font-bold text-blue-600">
-                  {sortedProcs.reduce((s: number, p: any) => s + p.count, 0)}건
-                </span>
-              </div>
             </div>
           ) : (
-            <div className="py-8 text-center">
+            <div className="flex-1 flex items-center justify-center">
               <p className="text-sm text-gray-400">처리 내역 없음</p>
             </div>
           )}
