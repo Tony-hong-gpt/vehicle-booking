@@ -8,7 +8,7 @@ import { ko } from 'date-fns/locale';
 /** 역할별 처리 대기 상태 */
 const ROLE_PENDING_STATUSES: Record<string, string[]> = {
   committee_secretary: ['upper_approved', 'approved'],  // upper_approved=검토, approved=배차
-  committee_vice:      ['committee_reviewing'],
+  committee_vice:      ['upper_approved', 'committee_reviewing'],
   committee_chair:     ['upper_approved', 'committee_reviewing', 'committee_vice_reviewing'],
   admin:               ['upper_approved', 'committee_reviewing', 'committee_vice_reviewing', 'approved'],
 };

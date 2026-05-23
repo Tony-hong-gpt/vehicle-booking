@@ -9,7 +9,7 @@ import LogoutButton from '@/components/mobile/LogoutButton';
 /** 역할별 결재 대기 상태 (홈 → 결재탭 이동 시 탭 결정용) */
 const ROLE_PENDING_MAP: Record<string, string[]> = {
   committee_secretary: ['upper_approved', 'approved'],
-  committee_vice:      ['committee_reviewing'],
+  committee_vice:      ['upper_approved', 'committee_reviewing'],
   committee_chair:     ['upper_approved', 'committee_reviewing', 'committee_vice_reviewing'],
   admin:               ['upper_approved', 'committee_reviewing', 'committee_vice_reviewing', 'approved'],
 };
@@ -34,7 +34,7 @@ const ROLE_CONFIG: Record<string, {
   committee_vice: {
     label: '차량위원회 부위원장',
     pendingStatuses: ['committee_reviewing'],
-    pendingLabel: '위원장 결재 대기',
+    pendingLabel: '부위원장 결재 대기',
     color: '#9333EA',
     bgFrom: 'from-fuchsia-600',
     bgTo: 'to-purple-700',
