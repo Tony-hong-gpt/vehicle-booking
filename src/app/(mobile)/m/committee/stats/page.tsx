@@ -23,17 +23,17 @@ function getPeriodRange(period: Period): { from: string; to: string; label: stri
     const from = new Date(y, m, 1);
     const to   = new Date(y, m + 1, 0);
     return { from: fmtDate(from), to: fmtDate(to),
-      label: `${y}년 ${m + 1}월`, granularity: 'week', chartLabel: '주차별 신청 추이' };
+      label: `${y}년 ${m + 1}월`, granularity: 'week', chartLabel: '주차별 신청 및 배차 추이' };
   }
   if (period === 'quarter') {
     const q = Math.floor(m / 3);
     const from = new Date(y, q * 3, 1);
     const to   = new Date(y, q * 3 + 3, 0);
     return { from: fmtDate(from), to: fmtDate(to),
-      label: `${y}년 ${q + 1}분기`, granularity: 'month', chartLabel: '월별 신청 추이' };
+      label: `${y}년 ${q + 1}분기`, granularity: 'month', chartLabel: '월별 신청 및 배차 추이' };
   }
   return { from: `${y}-01-01`, to: `${y}-12-31`,
-    label: `${y}년`, granularity: 'month', chartLabel: '월별 신청 추이' };
+    label: `${y}년`, granularity: 'month', chartLabel: '월별 신청 및 배차 추이' };
 }
 
 const PERIOD_TABS: { key: Period; label: string }[] = [
@@ -266,7 +266,7 @@ export default function CommitteeStatsPage() {
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1">
               {[
-                { dot: 'bg-purple-500', text: `승인 ${approvedReqs}건` },
+                { dot: 'bg-purple-500', text: `승인 ${totalApproved}건` },
                 { dot: 'bg-red-400',    text: `반려 ${rejectedReqs}건` },
                 { dot: 'bg-orange-300', text: `취소 ${cancelledReqs}건` },
                 { dot: 'bg-gray-300',   text: `대기 ${pendingReqs}건` },

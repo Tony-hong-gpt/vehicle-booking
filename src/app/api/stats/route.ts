@@ -55,8 +55,8 @@ export async function GET(request: Request) {
         supabase.from('vehicles').select('id, status'),
         supabase.from('requests').select('id, status, created_at').gte('created_at', fromISO).lte('created_at', toISO),
         supabase.from('requests').select('id, status').gte('created_at', prevFromISO).lte('created_at', prevToISO),
-        supabase.from('dispatches').select('id, status, vehicle_id, scheduled_start').gte('scheduled_start', fromISO).lte('scheduled_start', toISO),
-        supabase.from('dispatches').select('id, status').gte('scheduled_start', prevFromISO).lte('scheduled_start', prevToISO),
+        supabase.from('dispatches').select('id, status, vehicle_id, scheduled_start').gte('scheduled_start', fromISO).lte('scheduled_start', toISO).neq('status', 'cancelled'),
+        supabase.from('dispatches').select('id, status').gte('scheduled_start', prevFromISO).lte('scheduled_start', prevToISO).neq('status', 'cancelled'),
         // 부서 요약용
         supabase.from('requests')
           .select('department:departments(name)')
