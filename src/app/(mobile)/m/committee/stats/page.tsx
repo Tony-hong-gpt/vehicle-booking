@@ -116,7 +116,9 @@ export default function CommitteeStatsPage() {
   const cancelledReqs = req?.cancelled ?? 0;
   const pendingReqs   = req?.pending   ?? 0;
   const dispTotal     = disp?.total    ?? 0;
-  const approvalRate  = totalReqs > 0 ? Math.round((approvedReqs / totalReqs) * 100) : 0;
+  // 승인 완료(approved) + 배차 완료(dispatched)는 모두 승인이 완료된 상태
+  const totalApproved = approvedReqs + dispTotal;
+  const approvalRate  = totalReqs > 0 ? Math.min(100, Math.round((totalApproved / totalReqs) * 100)) : 0;
   const avgProcessHours: number | null = overview?.avg_process_hours ?? null;
   const procDist = overview?.process_distribution ?? null;
 
