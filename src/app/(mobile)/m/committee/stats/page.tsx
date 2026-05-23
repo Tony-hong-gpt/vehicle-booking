@@ -115,7 +115,7 @@ export default function CommitteeStatsPage() {
   const cancelledReqs = req?.cancelled ?? 0;
   const pendingReqs   = req?.pending  ?? 0;
   const onHoldReqs    = req?.on_hold  ?? 0;
-  const approvalRate  = totalReqs > 0 ? Math.round((approvedReqs / totalReqs) * 100) : 0;
+  const approvalRate  = overview?.kpi?.approval_rate?.value ?? 0;  // API: 승인완료 / 결정완료건(미결·보류 제외)
   const avgProcessHours: number | null = overview?.avg_process_hours ?? null;
   const procDist = overview?.process_distribution ?? null;
 
