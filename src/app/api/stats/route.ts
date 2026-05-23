@@ -55,7 +55,7 @@ export async function GET(request: Request) {
         supabase.from('vehicles').select('id, status'),
         supabase.from('requests').select('id, status, created_at').gte('created_at', fromISO).lte('created_at', toISO),
         supabase.from('requests').select('id, status').gte('created_at', prevFromISO).lte('created_at', prevToISO),
-        supabase.from('dispatches').select('id, status, vehicle_id, scheduled_start').gte('scheduled_start', fromISO).lte('scheduled_start', toISO).neq('status', 'cancelled'),
+        supabase.from('dispatches').select('id, status, vehicle_id, scheduled_start, request_id').gte('scheduled_start', fromISO).lte('scheduled_start', toISO).neq('status', 'cancelled'),
         supabase.from('dispatches').select('id, status').gte('scheduled_start', prevFromISO).lte('scheduled_start', prevToISO).neq('status', 'cancelled'),
         // 부서 요약용
         supabase.from('requests')
@@ -135,6 +135,14 @@ export async function GET(request: Request) {
       const fastCount = processTimes.filter(t => t < 24).length;
       const midCount  = processTimes.filter(t => t >= 24 && t < 72).length;
       const slowCount = processTimes.filter(t => t >= 72).length;
+
+      // 이번달 신청 기준 승인건 IDs
+      const approvedReqIds = new Set(
+        reqCurr.filter(r => ['approved','dispatched','in_use','returned'].includes(r.status)).map(r => r.id)
+      );
+      // 이번달 배차됐지만 이전 기간 신청건 (이중집계 방지)
+      const additionalDisp = dispCurr.filter((d: any) => d.request_id && !approvedReqIds.has(d.request_id));
+      const totalApproved  = approvedReqs + additionalDisp.length;
 
       const completedDisp  = dispCurr.filter((d: any) => d.status === 'completed').length;
       const scheduledDisp  = dispCurr.filter((d: any) => d.status === 'scheduled').length;
@@ -236,8 +244,8 @@ export async function GET(request: Request) {
             utilization_rate: { value: utilizationRate,  unit: '%' },
           },
           requests:   {
-            total: totalReqs, approved: approvedReqs, rejected: rejectedReqs,
-            cancelled: cancelledReqs, pending: pendingReqs, on_hold: onHoldReqs,
+            total: totalReqs, approved: approvedReqs, total_approved: totalApproved,
+            rejected: rejectedReqs, cancelled: cancelledReqs, pending: pendingReqs, on_hold: onHoldReqs,
             diffs: {
               total:    diff(totalReqs, prevTotalReqs),
               approved: diff(approvedReqs, prevApprovedReqs),
