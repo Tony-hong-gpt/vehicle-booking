@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 
     // ── 1. 개요 ────────────────────────────────────────────────────────
     if (type === 'overview') {
-      const [vehiclesRes, reqCurrRes, reqPrevRes, dispCurrRes, dispPrevRes, deptReqRes, purposeReqRes, step5AppRes, actualDispsRes] = await Promise.all([
+      const [vehiclesRes, reqCurrRes, reqPrevRes, dispCurrRes, dispPrevRes, deptReqRes, purposeReqRes, actualDispsRes] = await Promise.all([
         supabase.from('vehicles').select('id, status'),
         supabase.from('requests').select('id, status, created_at').gte('created_at', fromISO).lte('created_at', toISO),
         supabase.from('requests').select('id, status').gte('created_at', prevFromISO).lte('created_at', prevToISO),
@@ -67,13 +67,6 @@ export async function GET(request: Request) {
           .select('purpose:purposes(name)')
           .gte('created_at', fromISO).lte('created_at', toISO)
           .in('status', ['dispatched','in_use','returned']),
-        // 처리 소요시간 계산용 (최종 승인 step=5)
-        supabase.from('approvals')
-          .select('request_id, approved_at')
-          .eq('step', 5)
-          .eq('status', 'approved')
-          .gte('approved_at', fromISO)
-          .lte('approved_at', toISO),
         // 운행일수 기반 가동률 계산용 (실제 운행 시간 기준)
         supabase.from('dispatches')
           .select('vehicle_id, actual_start, actual_end')
@@ -107,17 +100,32 @@ export async function GET(request: Request) {
       const prevDispTotal     = dispPrev.length;
 
       // 처리 소요시간 (신청 생성 → 최종 승인)
-      const step5Data = step5AppRes.data || [];
-      const step5ReqIds = [...new Set(step5Data.map((a: any) => a.request_id).filter(Boolean))];
-      let step5ReqCreatedMap: Record<string, string> = {};
-      if (step5ReqIds.length > 0) {
-        const { data: step5Reqs } = await supabase.from('requests').select('id, created_at').in('id', step5ReqIds);
-        step5ReqCreatedMap = Object.fromEntries((step5Reqs || []).map((r: any) => [r.id, r.created_at]));
+      // 기간 내 created_at 기준으로 완료된 신청을 찾고,
+      // step=5(위원장) 또는 step=2(admin 최종승인) 결재를 기준으로 계산
+      const completedReqs = reqCurr.filter((r: any) =>
+        ['approved', 'dispatched', 'in_use', 'returned'].includes(r.status)
+      );
+      let finalAppMap: Record<string, { approved_at: string; step: number }> = {};
+      if (completedReqs.length > 0) {
+        const completedReqIds = completedReqs.map((r: any) => r.id);
+        const { data: finalApps } = await supabase
+          .from('approvals')
+          .select('request_id, step, approved_at')
+          .in('request_id', completedReqIds)
+          .in('step', [2, 5])
+          .eq('status', 'approved');
+        // request_id별로 step이 높은 것(step=5 우선, 없으면 step=2) 적용
+        (finalApps || []).forEach((a: any) => {
+          const existing = finalAppMap[a.request_id];
+          if (!existing || a.step > existing.step) {
+            finalAppMap[a.request_id] = a;
+          }
+        });
       }
-      const processTimes = step5Data.map((a: any) => {
-        const created = step5ReqCreatedMap[a.request_id];
-        if (!created || !a.approved_at) return null;
-        const h = (new Date(a.approved_at).getTime() - new Date(created).getTime()) / 3600000;
+      const processTimes = completedReqs.map((r: any) => {
+        const app = finalAppMap[r.id];
+        if (!app || !r.created_at || !app.approved_at) return null;
+        const h = (new Date(app.approved_at).getTime() - new Date(r.created_at).getTime()) / 3600000;
         return h >= 0 ? h : null;
       }).filter((t): t is number => t !== null);
       const avgProcessHours = processTimes.length > 0
