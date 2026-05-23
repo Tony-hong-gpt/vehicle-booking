@@ -436,56 +436,92 @@ export default function ManagerApprovalsPage() {
                     </p>
                   )}
 
-                  {/* 처리완료 탭 — 최종 승인/반려 이력 */}
+                  {/* 처리완료 탭 — 차량위원회 결재 이력 */}
                   {req.status !== 'pending' && (() => {
                     const approvals: any[] = req.approvals ?? [];
 
-                    // 최종 처리 단계: 높은 step 우선, approved/rejected 상태인 것
-                    const finalApproval = [...approvals]
-                      .filter((a: any) => ['approved', 'rejected'].includes(a.status))
-                      .sort((a: any, b: any) => b.step - a.step)[0];
+                    // 상위승인자 본인 반려 (step 1 rejected)
+                    const managerReject = approvals.find((a: any) => a.step === 1 && a.status === 'rejected');
+                    if (managerReject) {
+                      return (
+                        <div className="border border-red-100 rounded-xl overflow-hidden mb-3">
+                          <div className="px-3 py-2 flex items-center justify-between bg-red-50">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-red-400">✗</span>
+                              <span className="text-xs font-semibold text-red-600">반려</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {managerReject.approver && (
+                                <span className="text-xs font-medium text-red-500">{managerReject.approver.name}</span>
+                              )}
+                              {managerReject.approved_at && (
+                                <span className="text-[10px] text-red-300">{format(new Date(managerReject.approved_at), 'MM.dd HH:mm')}</span>
+                              )}
+                            </div>
+                          </div>
+                          {managerReject.comment && (
+                            <div className="px-3 py-2 bg-white">
+                              <p className="text-xs text-gray-600 leading-relaxed">{managerReject.comment}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
 
-                    const display = finalApproval ?? approvals.find((a: any) => a.step === 1);
-                    if (!display) return null;
+                    // 위원장(step 5) 결재 여부 확인
+                    const chairApproval = approvals.find((a: any) => a.step === 5);
 
-                    const isApproved   = display.status === 'approved';
-                    const isCommittee  = display.step >= 3;
+                    // 위원장 결재 전 → "차량위원회 검토중"
+                    if (!chairApproval) {
+                      return (
+                        <div className="border border-violet-100 rounded-xl overflow-hidden mb-3">
+                          <div className="px-3 py-2 flex items-center gap-1.5 bg-violet-50">
+                            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse flex-shrink-0" />
+                            <span className="text-xs font-semibold text-violet-600">차량위원회 검토중</span>
+                          </div>
+                        </div>
+                      );
+                    }
 
-                    const label =
-                      isCommittee && isApproved  ? '차량위원회 승인' :
-                      isCommittee && !isApproved ? '차량위원회 반려' :
-                      isApproved                 ? '상위 승인'       : '반려';
+                    // 위원장 결재 있음 → 결재 내용(승인/반려/대기)에 따라 표시
+                    const isOnHold   = chairApproval.comment?.startsWith('[대기]') || chairApproval.comment?.includes('[대기]');
+                    const isRejected = chairApproval.status === 'rejected';
+                    const isApproved = !isOnHold && !isRejected;
+                    const cleanComment = chairApproval.comment
+                      ?.replace(/^\[강제처리\]\[대기\]\s*/, '')
+                      .replace(/^\[대기\]\s*/, '')
+                      .replace(/^\[강제처리\]\s*/, '');
 
-                    const borderColor = isApproved ? 'border-blue-100' : 'border-red-100';
-                    const bgColor     = isApproved ? 'bg-blue-50'      : 'bg-red-50';
-                    const iconColor   = isApproved ? 'text-blue-400'   : 'text-red-400';
-                    const labelColor  = isApproved ? 'text-blue-600'   : 'text-red-600';
-                    const nameColor   = isApproved ? 'text-blue-600'   : 'text-red-500';
-                    const timeColor   = isApproved ? 'text-blue-300'   : 'text-red-300';
+                    const label       = isOnHold ? '차량위원회 대기' : isRejected ? '차량위원회 반려' : '차량위원회 승인';
+                    const borderColor = isApproved ? 'border-blue-100'   : isOnHold ? 'border-orange-100' : 'border-red-100';
+                    const bgColor     = isApproved ? 'bg-blue-50'         : isOnHold ? 'bg-orange-50'      : 'bg-red-50';
+                    const iconColor   = isApproved ? 'text-blue-400'      : isOnHold ? 'text-orange-400'   : 'text-red-400';
+                    const labelColor  = isApproved ? 'text-blue-600'      : isOnHold ? 'text-orange-600'   : 'text-red-600';
+                    const nameColor   = isApproved ? 'text-blue-600'      : isOnHold ? 'text-orange-500'   : 'text-red-500';
+                    const timeColor   = isApproved ? 'text-blue-300'      : isOnHold ? 'text-orange-300'   : 'text-red-300';
+                    const icon        = isApproved ? '✓'                  : isOnHold ? '⏸'                 : '✗';
 
                     return (
                       <div className={`border rounded-xl overflow-hidden mb-3 ${borderColor}`}>
                         <div className={`px-3 py-2 flex items-center justify-between ${bgColor}`}>
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-xs ${iconColor}`}>{isApproved ? '✓' : '✗'}</span>
+                            <span className={`text-xs ${iconColor}`}>{icon}</span>
                             <span className={`text-xs font-semibold ${labelColor}`}>{label}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            {display.approver && (
-                              <span className={`text-xs font-medium ${nameColor}`}>
-                                {display.approver.name}
-                              </span>
+                            {chairApproval.approver && (
+                              <span className={`text-xs font-medium ${nameColor}`}>{chairApproval.approver.name}</span>
                             )}
-                            {display.approved_at && (
+                            {chairApproval.approved_at && (
                               <span className={`text-[10px] ${timeColor}`}>
-                                {format(new Date(display.approved_at), 'MM.dd HH:mm')}
+                                {format(new Date(chairApproval.approved_at), 'MM.dd HH:mm')}
                               </span>
                             )}
                           </div>
                         </div>
-                        {!isApproved && display.comment && (
+                        {(isRejected || isOnHold) && cleanComment && (
                           <div className="px-3 py-2 bg-white">
-                            <p className="text-xs text-gray-600 leading-relaxed">{display.comment}</p>
+                            <p className="text-xs text-gray-600 leading-relaxed">{cleanComment}</p>
                           </div>
                         )}
                       </div>
