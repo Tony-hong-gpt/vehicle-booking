@@ -91,7 +91,8 @@ export async function GET(request: Request) {
       const rejectedReqs  = reqCurr.filter(r => r.status === 'rejected').length;
       const cancelledReqs = reqCurr.filter(r => r.status === 'cancelled').length;
       const pendingReqs   = reqCurr.filter(r => ['pending','upper_approved','committee_reviewing','committee_vice_reviewing'].includes(r.status)).length;
-      const decidedReqs   = totalReqs - pendingReqs;
+      const onHoldReqs    = reqCurr.filter(r => r.status === 'on_hold').length;
+      const decidedReqs   = totalReqs - pendingReqs - onHoldReqs;
       const approvalRate  = decidedReqs > 0 ? Math.round((approvedReqs / decidedReqs) * 100) : 0;
 
       // 이전 기간 비교용
@@ -236,7 +237,7 @@ export async function GET(request: Request) {
           },
           requests:   {
             total: totalReqs, approved: approvedReqs, rejected: rejectedReqs,
-            cancelled: cancelledReqs, pending: pendingReqs,
+            cancelled: cancelledReqs, pending: pendingReqs, on_hold: onHoldReqs,
             diffs: {
               total:    diff(totalReqs, prevTotalReqs),
               approved: diff(approvedReqs, prevApprovedReqs),

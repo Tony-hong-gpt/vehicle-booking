@@ -106,25 +106,22 @@ export default function CommitteeStatsPage() {
   }, [range]);
 
   // 데이터 추출
-  const req  = overview?.requests;
-  const disp = overview?.dispatches;
-  const veh  = overview?.vehicles;
+  const req = overview?.requests;
+  const veh = overview?.vehicles;
 
   const totalReqs     = req?.total     ?? 0;
-  const approvedReqs  = req?.approved  ?? 0;
+  const approvedReqs  = req?.approved  ?? 0;  // approved+dispatched+in_use+returned
   const rejectedReqs  = req?.rejected  ?? 0;
   const cancelledReqs = req?.cancelled ?? 0;
-  const pendingReqs   = req?.pending   ?? 0;
-  const dispTotal     = disp?.total    ?? 0;
-  // 승인 완료(approved) + 배차 완료(dispatched)는 모두 승인이 완료된 상태
-  const totalApproved = approvedReqs + dispTotal;
-  const approvalRate  = totalReqs > 0 ? Math.min(100, Math.round((totalApproved / totalReqs) * 100)) : 0;
+  const pendingReqs   = req?.pending   ?? 0;  // 처리중(위원회 심사 대기 포함)
+  const onHoldReqs    = req?.on_hold   ?? 0;  // 위원장 보류 결정
+  const approvalRate  = totalReqs > 0 ? Math.round((approvedReqs / totalReqs) * 100) : 0;
   const avgProcessHours: number | null = overview?.avg_process_hours ?? null;
   const procDist = overview?.process_distribution ?? null;
 
   const bottomKpis = [
-    { label: '배차 완료', value: dispTotal,     color: 'text-blue-600',   bg: 'bg-blue-50',   diff: disp?.diffs?.total   ?? null },
     { label: '승인 완료', value: approvedReqs,  color: 'text-green-600',  bg: 'bg-green-50',  diff: req?.diffs?.approved ?? null },
+    { label: '보류',      value: onHoldReqs,    color: 'text-amber-600',  bg: 'bg-amber-50',  diff: null },
     { label: '반려',      value: rejectedReqs,  color: 'text-red-500',    bg: 'bg-red-50',    diff: req?.diffs?.rejected ?? null },
     { label: '취소',      value: cancelledReqs, color: 'text-orange-500', bg: 'bg-orange-50', diff: null },
   ];
@@ -266,10 +263,10 @@ export default function CommitteeStatsPage() {
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1">
               {[
-                { dot: 'bg-purple-500', text: `승인 ${totalApproved}건` },
+                { dot: 'bg-purple-500', text: `승인 ${approvedReqs}건` },
                 { dot: 'bg-red-400',    text: `반려 ${rejectedReqs}건` },
                 { dot: 'bg-orange-300', text: `취소 ${cancelledReqs}건` },
-                { dot: 'bg-gray-300',   text: `대기 ${pendingReqs}건` },
+                { dot: 'bg-gray-300',   text: `미결 ${pendingReqs + onHoldReqs}건` },
               ].map(s => (
                 <div key={s.text} className="flex items-center gap-1.5">
                   <div className={`w-2 h-2 rounded-full ${s.dot}`} />

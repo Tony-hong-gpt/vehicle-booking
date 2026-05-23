@@ -10,8 +10,10 @@ const MONTHS = Array.from({ length: 6 }, (_, i) => {
 });
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: '승인대기', upper_approved: '위원회대기', approved: '승인',
-  rejected: '반려', dispatched: '배차완료', returned: '반납완료', cancelled: '취소',
+  pending: '결재대기', upper_approved: '위원회대기',
+  committee_reviewing: '총무검토', committee_vice_reviewing: '부위원장검토',
+  on_hold: '보류', approved: '승인완료', dispatched: '배차완료',
+  in_use: '운행중', returned: '반납완료', rejected: '반려', cancelled: '취소',
 };
 
 export default function ManagerStatsPage() {
@@ -35,7 +37,8 @@ export default function ManagerStatsPage() {
   /* 선택 월 데이터 */
   const monthReqs  = requests.filter(r => r.created_at?.slice(0, 7) === selectedMonth);
   const total      = monthReqs.length;
-  const approved   = monthReqs.filter(r => ['upper_approved', 'approved', 'dispatched', 'returned'].includes(r.status)).length;
+  const approved   = monthReqs.filter(r => ['approved', 'dispatched', 'in_use', 'returned'].includes(r.status)).length;
+  const onHold     = monthReqs.filter(r => r.status === 'on_hold').length;
   const rejected   = monthReqs.filter(r => r.status === 'rejected').length;
   const cancelled  = monthReqs.filter(r => r.status === 'cancelled').length;
   const pending    = monthReqs.filter(r => r.status === 'pending').length;
@@ -115,25 +118,23 @@ export default function ManagerStatsPage() {
           </div>
         </div>
 
-        {/* 주요 지표 카드 — 하단 3개 (승인완료 + 취소 + 반려 = 전체) */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-green-50 rounded-2xl p-4 shadow-sm">
-            <p className="text-2xl font-bold text-green-700">
-              {approved}<span className="text-sm font-medium ml-0.5">건</span>
-            </p>
+        {/* 주요 지표 카드 — 하단 4개 */}
+        <div className="grid grid-cols-4 gap-2">
+          <div className="bg-green-50 rounded-2xl p-3 shadow-sm text-center">
+            <p className="text-xl font-bold text-green-700">{approved}</p>
             <p className="text-xs text-gray-500 mt-1">승인완료</p>
           </div>
-          <div className="bg-orange-50 rounded-2xl p-4 shadow-sm">
-            <p className="text-2xl font-bold text-orange-500">
-              {cancelled}<span className="text-sm font-medium ml-0.5">건</span>
-            </p>
-            <p className="text-xs text-gray-500 mt-1">취소</p>
+          <div className="bg-amber-50 rounded-2xl p-3 shadow-sm text-center">
+            <p className="text-xl font-bold text-amber-600">{onHold}</p>
+            <p className="text-xs text-gray-500 mt-1">보류</p>
           </div>
-          <div className="bg-red-50 rounded-2xl p-4 shadow-sm">
-            <p className="text-2xl font-bold text-red-600">
-              {rejected}<span className="text-sm font-medium ml-0.5">건</span>
-            </p>
+          <div className="bg-red-50 rounded-2xl p-3 shadow-sm text-center">
+            <p className="text-xl font-bold text-red-600">{rejected}</p>
             <p className="text-xs text-gray-500 mt-1">반려</p>
+          </div>
+          <div className="bg-orange-50 rounded-2xl p-3 shadow-sm text-center">
+            <p className="text-xl font-bold text-orange-500">{cancelled}</p>
+            <p className="text-xs text-gray-500 mt-1">취소</p>
           </div>
         </div>
 
