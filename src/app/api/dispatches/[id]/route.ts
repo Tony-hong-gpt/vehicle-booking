@@ -52,9 +52,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       .from('dispatches').update(parsed.data).eq('id', id).select().single();
     if (error) return createErrorResponse(error.message);
 
-    // 배차가 취소(cancelled)로 변경된 경우 → 차량 상태 available 복원
-    if (parsed.data.status === 'cancelled' && existing?.vehicle_id && !existing.is_rental) {
-      await adminSupabase.from('vehicles').update({ status: 'available' }).eq('id', existing.vehicle_id);
+    // 배차가 취소(cancelled)로 변경된 경우 → 차량 상태 복원 + 신청 재배차 대기 상태로 복원
+    if (parsed.data.status === 'cancelled') {
+      if (existing?.vehicle_id && !existing.is_rental) {
+        await adminSupabase.from('vehicles').update({ status: 'available' }).eq('id', existing.vehicle_id);
+      }
+      const { data: dispatch } = await adminSupabase
+        .from('dispatches').select('request_id').eq('id', id).single();
+      if (dispatch?.request_id) {
+        await adminSupabase.from('requests').update({ status: 'approved' }).eq('id', dispatch.request_id);
+      }
     }
     // 차량이 변경된 경우 vehicle.status 교체 (취소가 아닌 경우에만)
     else if (parsed.data.vehicle_id !== undefined && existing) {

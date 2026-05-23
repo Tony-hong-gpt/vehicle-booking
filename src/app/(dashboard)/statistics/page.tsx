@@ -443,6 +443,7 @@ function OverviewTab({ period }: { period: PeriodState }) {
                 { label: '총 신청',   value: requests.total,     color: 'bg-blue-500' },
                 { label: '승인완료',  value: requests.approved,  color: 'bg-green-500' },
                 { label: '반려',      value: requests.rejected,  color: 'bg-rose-500' },
+                { label: '보류',      value: requests.on_hold,   color: 'bg-amber-400' },
                 { label: '처리 대기', value: requests.pending,   color: 'bg-orange-400' },
                 { label: '취소',      value: requests.cancelled, color: 'bg-red-400' },
               ].map(row => (
@@ -459,6 +460,7 @@ function OverviewTab({ period }: { period: PeriodState }) {
               <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden flex">
                 <div className="bg-green-400 h-full" style={{ width: `${(requests.approved / requests.total) * 100}%` }} />
                 <div className="bg-rose-400 h-full" style={{ width: `${((requests.rejected ?? 0) / requests.total) * 100}%` }} />
+                <div className="bg-amber-300 h-full" style={{ width: `${((requests.on_hold ?? 0) / requests.total) * 100}%` }} />
                 <div className="bg-orange-300 h-full" style={{ width: `${(requests.pending / requests.total) * 100}%` }} />
                 <div className="bg-red-300 h-full" style={{ width: `${(requests.cancelled / requests.total) * 100}%` }} />
               </div>
@@ -470,9 +472,10 @@ function OverviewTab({ period }: { period: PeriodState }) {
             <p className="text-xs font-bold text-gray-500 mb-3">배차 현황</p>
             <div className="space-y-2.5">
               {[
-                { label: '총 배차',  value: dispatches.total,     color: 'bg-blue-500' },
-                { label: '반납완료', value: dispatches.completed, color: 'bg-green-500' },
-                { label: '배차완료', value: dispatches.scheduled, color: 'bg-blue-400' },
+                { label: '총 배차',  value: dispatches.total,        color: 'bg-blue-500' },
+                { label: '반납완료', value: dispatches.completed,    color: 'bg-green-500' },
+                { label: '운행중',   value: dispatches.in_progress,  color: 'bg-indigo-500' },
+                { label: '배차완료', value: dispatches.scheduled,    color: 'bg-blue-400' },
               ].map(row => (
                 <div key={row.label} className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -486,6 +489,7 @@ function OverviewTab({ period }: { period: PeriodState }) {
             {dispatches.total > 0 && (
               <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden flex">
                 <div className="bg-green-400 h-full" style={{ width: `${(dispatches.completed / dispatches.total) * 100}%` }} />
+                <div className="bg-indigo-400 h-full" style={{ width: `${((dispatches.in_progress ?? 0) / dispatches.total) * 100}%` }} />
                 <div className="bg-blue-400 h-full" style={{ width: `${(dispatches.scheduled / dispatches.total) * 100}%` }} />
               </div>
             )}

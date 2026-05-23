@@ -136,9 +136,10 @@ export async function GET(request: Request) {
       const midCount  = processTimes.filter(t => t >= 24 && t < 72).length;
       const slowCount = processTimes.filter(t => t >= 72).length;
 
-      const completedDisp  = dispCurr.filter((d: any) => d.status === 'completed').length;
-      const scheduledDisp  = dispCurr.filter((d: any) => d.status === 'scheduled').length;
-      const totalDisp      = dispCurr.length;
+      const completedDisp   = dispCurr.filter((d: any) => d.status === 'completed').length;
+      const scheduledDisp   = dispCurr.filter((d: any) => d.status === 'scheduled').length;
+      const inProgressDisp  = dispCurr.filter((d: any) => d.status === 'in_progress').length;
+      const totalDisp       = dispCurr.length;
       const usedVehicleIds = new Set(dispCurr.map((d: any) => d.vehicle_id).filter(Boolean));
       const activeVehicles = vehicles.filter((v: any) => v.status !== 'inactive').length;
 
@@ -245,7 +246,7 @@ export async function GET(request: Request) {
             },
           },
           dispatches: {
-            total: totalDisp, completed: completedDisp, scheduled: scheduledDisp,
+            total: totalDisp, completed: completedDisp, in_progress: inProgressDisp, scheduled: scheduledDisp,
             diffs: { total: diff(totalDisp, prevDispTotal) },
           },
           avg_process_hours: avgProcessHours,
