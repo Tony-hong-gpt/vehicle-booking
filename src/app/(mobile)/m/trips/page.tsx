@@ -256,7 +256,7 @@ export default function MobileTripsPage() {
                               {cfg?.label ?? req.status}
                             </span>
                           </div>
-                          <span className="text-xs text-gray-400 font-mono">{req.request_no}</span>
+                          <span className="text-xs text-gray-400">{format(new Date(req.start_datetime), 'MM.dd HH:mm', { locale: ko })}</span>
                         </div>
                         <div className="px-4 py-3.5">
                           <div className="flex items-start justify-between gap-2 mb-3">
@@ -326,7 +326,7 @@ export default function MobileTripsPage() {
                           <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
                           <span className="text-xs font-bold text-gray-400">반납 완료</span>
                         </div>
-                        <span className="text-xs text-gray-400 font-mono">{trip.request?.request_no}</span>
+                        <span className="text-xs text-gray-400">{trip.actual_start ? format(new Date(trip.actual_start), 'MM.dd HH:mm', { locale: ko }) : '-'}</span>
                       </div>
                       <div className="px-4 py-3">
                         <p className="font-bold text-gray-700 text-sm mb-2">{trip.request?.destination}</p>
@@ -535,7 +535,9 @@ function TripCard({
             {isInProgress ? '운행 중' : '인수 대기'}
           </span>
         </div>
-        <span className="text-xs text-gray-400 font-mono">{trip.request?.request_no}</span>
+        <span className="text-xs text-gray-400">
+          {trip.request?.start_datetime ? format(new Date(trip.request.start_datetime), 'MM.dd HH:mm', { locale: ko }) : '-'}
+        </span>
       </div>
 
       <div className="px-4 py-3.5">

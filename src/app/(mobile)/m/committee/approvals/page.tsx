@@ -780,17 +780,20 @@ export default function CommitteeApprovalsPage() {
                 )}
 
                 {/* 상태 헤더 */}
-                <div className={`px-4 py-2.5 flex items-center justify-between ${cfg.bg}`}>
-                  <div className="flex items-center gap-1.5">
+                <div className={`px-4 py-2.5 flex items-center justify-between gap-2 ${cfg.bg}`}>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot} ${
                       ['committee_reviewing','committee_vice_reviewing'].includes(req.status) ? 'animate-pulse' : ''
                     }`} />
                     <span className={`text-xs font-bold ${cfg.color}`}>{cfg.label}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-gray-400">{req.request_no}</span>
-                    <span className="text-gray-200 text-xs">·</span>
-                    <span className="text-xs text-gray-400">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {req.department?.name && (
+                      <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md truncate max-w-[160px]">
+                        {req.department.name}
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-400 flex-shrink-0">
                       {req.created_at ? format(new Date(req.created_at), 'MM.dd HH:mm') : '-'}
                     </span>
                   </div>
@@ -798,20 +801,7 @@ export default function CommitteeApprovalsPage() {
 
                 <div className="px-4 pt-3 pb-4 space-y-3">
 
-                  {/* ① 부서 배지 (시인성 강조) */}
-                  {req.department?.name && (
-                    <div className="flex items-center gap-1.5">
-                      <svg className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                      <span className="text-sm font-bold text-indigo-800 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg leading-tight">
-                        {req.department.name}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* ② 목적지 + 인원 */}
+                  {/* ① 목적지 + 인원 */}
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-bold text-gray-900 text-[17px] leading-snug flex-1">{req.destination}</p>
                     {req.passengers != null && (
@@ -951,7 +941,6 @@ export default function CommitteeApprovalsPage() {
                 <p className="text-xs text-gray-500 mt-0.5">
                   {secretaryModal.requester?.name}
                   {secretaryModal.department?.name && ` · ${secretaryModal.department.name}`}
-                  {' · '}<span className="font-mono">{secretaryModal.request_no}</span>
                 </p>
                 {secretaryModal.start_datetime && (
                   <p className="text-xs text-violet-600 mt-1.5 font-medium">
@@ -1166,7 +1155,7 @@ export default function CommitteeApprovalsPage() {
               <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
                 <p className="text-sm font-semibold text-gray-800">{rejectModal.destination}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {rejectModal.requester?.name} · <span className="font-mono">{rejectModal.request_no}</span>
+                  {rejectModal.requester?.name}{rejectModal.department?.name && ` · ${rejectModal.department.name}`}
                 </p>
               </div>
               {rejectError && (
@@ -1221,7 +1210,7 @@ export default function CommitteeApprovalsPage() {
               <div className="bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3">
                 <p className="text-sm font-semibold text-gray-800">{holdModal.destination}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {holdModal.requester?.name} · <span className="font-mono">{holdModal.request_no}</span>
+                  {holdModal.requester?.name}{holdModal.department?.name && ` · ${holdModal.department.name}`}
                 </p>
               </div>
               {holdError && (
@@ -1283,7 +1272,6 @@ export default function CommitteeApprovalsPage() {
                 <p className="text-xs text-gray-500 mt-0.5">
                   {dispatchModal.requester?.name}
                   {dispatchModal.department?.name && ` · ${dispatchModal.department.name}`}
-                  {' · '}<span className="font-mono">{dispatchModal.request_no}</span>
                 </p>
                 <div className="flex items-center gap-3 mt-2 flex-wrap">
                   {[

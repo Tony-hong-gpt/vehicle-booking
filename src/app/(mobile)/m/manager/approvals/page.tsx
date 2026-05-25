@@ -366,11 +366,9 @@ export default function ManagerApprovalsPage() {
                       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot} ${isPending ? 'animate-pulse' : ''}`} />
                       {cfg.label}
                     </span>
-                    <div className="flex items-center gap-1 text-[11px] text-gray-400">
-                      <span className="font-mono">{req.request_no}</span>
-                      <span className="text-gray-200 mx-0.5">|</span>
-                      <span>{req.created_at ? format(new Date(req.created_at), 'MM.dd HH:mm') : '-'}</span>
-                    </div>
+                    <span className="text-[11px] text-gray-400">
+                      {req.created_at ? format(new Date(req.created_at), 'MM.dd HH:mm') : '-'}
+                    </span>
                   </div>
 
                   {/* 목적지 + 탑승인원 */}
@@ -557,7 +555,7 @@ export default function ManagerApprovalsPage() {
               <div className="bg-gray-50 rounded-2xl px-4 py-3">
                 <p className="text-sm font-semibold text-gray-800">{rejectModal.destination}</p>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {rejectModal.requester?.name} · {rejectModal.request_no}
+                  {rejectModal.requester?.name}{rejectModal.department?.name && ` · ${rejectModal.department.name}`}
                 </p>
               </div>
 

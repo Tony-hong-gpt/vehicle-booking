@@ -121,7 +121,7 @@ export default function MobileRequestDetailPage({ params }: { params: Promise<{ 
         </button>
         <div className="flex-1 min-w-0">
           <h1 className="text-base font-bold text-gray-900 truncate">{req.destination}</h1>
-          <p className="text-xs text-gray-400 font-mono mt-0.5">{req.request_no}</p>
+          {req.department?.name && <p className="text-xs text-gray-400 mt-0.5">{req.department.name}</p>}
         </div>
         <span className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 ${REQUEST_STATUS_COLORS[req.status] || 'bg-gray-100 text-gray-500'}`}>
           {EMPLOYEE_STATUS_LABELS[req.status] || req.status}
