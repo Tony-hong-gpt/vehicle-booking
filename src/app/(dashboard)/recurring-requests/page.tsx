@@ -124,27 +124,29 @@ export default function RecurringRequestsPage() {
 
       if (raw.length < 2) throw new Error('데이터가 없습니다');
 
-      /** Excel Date 객체 또는 시리얼 숫자 → 'YYYY-MM-DD' 문자열
+      /**
+       * Excel Date 객체 또는 시리얼 숫자 → 'YYYY-MM-DD' 문자열
        *
-       * XLSX cellDates:true 는 Date 객체를 로컬 자정(local midnight)으로 생성.
-       * 한국(UTC+9) 로컬 자정 = UTC 전날 15:00 이므로, UTC 메서드로 추출하면
-       * 하루가 당겨지는 오류 발생.
-       *
-       * 해결: getTimezoneOffset()으로 오프셋을 보정한 뒤 ISO 문자열의
-       * 앞 10자리(날짜 부분)만 가져오면 UTC/로컬 midnight 모두 정확히 처리됨.
+       * XLSX cellDates:true 가 Date 객체를 UTC 자정 또는 로컬 자정으로 생성하는지
+       * 버전·환경에 따라 다르므로, 아래 방식으로 두 경우 모두 정확하게 처리:
+       *  - Date 객체: getFullYear/getMonth/getDate (로컬 성분 직접 추출)
+       *    → UTC 자정 또는 로컬 자정 어느 쪽이든 로컬 날짜 성분은 동일
+       *  - 시리얼 숫자: UTC 변환 후 getUTCFullYear/Month/Date (timezone 완전 무관)
        */
       function toDateStr(v: any): string {
         if (!v && v !== 0) return '';
         if (v instanceof Date) {
-          // 타임존 오프셋 보정: new Date(v - offsetMs) 를 UTC 문자열로 변환하면
-          // 항상 로컬 기준 날짜를 정확히 얻을 수 있음
-          const local = new Date(v.getTime() - v.getTimezoneOffset() * 60000);
-          return local.toISOString().slice(0, 10);
+          const y  = v.getFullYear();
+          const mo = String(v.getMonth() + 1).padStart(2, '0');
+          const d  = String(v.getDate()).padStart(2, '0');
+          return `${y}-${mo}-${d}`;
         }
         if (typeof v === 'number') {
-          // Excel 시리얼 → UTC 기반 날짜 문자열 (timezone 무관)
           const dt = new Date(Math.round((v - 25569) * 86400 * 1000));
-          return dt.toISOString().slice(0, 10);
+          const y  = dt.getUTCFullYear();
+          const mo = String(dt.getUTCMonth() + 1).padStart(2, '0');
+          const d  = String(dt.getUTCDate()).padStart(2, '0');
+          return `${y}-${mo}-${d}`;
         }
         return String(v);
       }
@@ -153,19 +155,17 @@ export default function RecurringRequestsPage() {
       function toTimeStr(v: any): string {
         if (!v && v !== 0) return '';
         if (v instanceof Date) {
-          // 날짜와 동일한 오프셋 보정 적용
-          const local = new Date(v.getTime() - v.getTimezoneOffset() * 60000);
-          return local.toISOString().slice(11, 16); // 'HH:MM'
+          const h  = String(v.getHours()).padStart(2, '0');
+          const mi = String(v.getMinutes()).padStart(2, '0');
+          return `${h}:${mi}`;
         }
         if (typeof v === 'number') {
           if (v < 1) {
-            // 시간 분수: 0.375 = 09:00
             const totalMin = Math.round(v * 24 * 60);
             const h = Math.floor(totalMin / 60);
             const min = totalMin % 60;
             return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
           }
-          // 1 이상이면 날짜+시간 혼합 시리얼 (소수 부분만 추출)
           const timePart = v - Math.floor(v);
           const totalMin = Math.round(timePart * 24 * 60);
           const h = Math.floor(totalMin / 60);
