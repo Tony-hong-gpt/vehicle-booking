@@ -69,9 +69,16 @@ export default function UsersPage() {
 
   /* 검색 / 정렬 / 페이지네이션 */
   const [searchName, setSearchName] = useState('');
+  const [sortField, setSortField] = useState<'name' | 'dept'>('name');
   const [sortAsc, setSortAsc] = useState(true);
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
+
+  function handleSort(field: 'name' | 'dept') {
+    if (sortField === field) setSortAsc(p => !p);
+    else { setSortField(field); setSortAsc(true); }
+    setCurrentPage(1);
+  }
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -437,7 +444,19 @@ export default function UsersPage() {
       {(() => {
         const filtered = users
           .filter(u => !searchName.trim() || u.name.includes(searchName.trim()))
-          .sort((a, b) => sortAsc ? a.name.localeCompare(b.name, 'ko') : b.name.localeCompare(a.name, 'ko'));
+          .sort((a, b) => {
+            let va = '', vb = '';
+            if (sortField === 'name') {
+              va = a.name; vb = b.name;
+            } else {
+              const getDept = (u: UserItem) => {
+                const d = departments.find(x => x.id === u.department_ids?.[0]);
+                return d?.name ?? '';
+              };
+              va = getDept(a); vb = getDept(b);
+            }
+            return sortAsc ? va.localeCompare(vb, 'ko') : vb.localeCompare(va, 'ko');
+          });
         const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
         const page = Math.min(currentPage, totalPages);
         const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -453,16 +472,18 @@ export default function UsersPage() {
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50/70">
                         <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">
-                          <button
-                            onClick={() => setSortAsc(p => !p)}
-                            className="flex items-center gap-1 hover:text-blue-600 transition-colors"
-                          >
+                          <button onClick={() => handleSort('name')} className="flex items-center gap-1 hover:text-blue-600 transition-colors">
                             이름
-                            <span className="text-xs">{sortAsc ? '▲' : '▼'}</span>
+                            {sortField === 'name' && <span className="text-xs">{sortAsc ? '▲' : '▼'}</span>}
                           </button>
                         </th>
                         <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">전화번호</th>
-                        <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">부서/위원회</th>
+                        <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">
+                          <button onClick={() => handleSort('dept')} className="flex items-center gap-1 hover:text-blue-600 transition-colors">
+                            부서/위원회
+                            {sortField === 'dept' && <span className="text-xs">{sortAsc ? '▲' : '▼'}</span>}
+                          </button>
+                        </th>
                         <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">역할</th>
                         <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">상태</th>
                         <th className="px-5 py-3.5"></th>
