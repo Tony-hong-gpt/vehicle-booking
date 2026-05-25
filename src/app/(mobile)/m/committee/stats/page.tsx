@@ -390,12 +390,6 @@ export default function CommitteeStatsPage() {
                   </div>
                 </div>
               ))}
-              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                <span className="text-xs text-gray-500">총 처리 건수</span>
-                <span className="text-sm font-bold text-purple-600">
-                  {sortedProcessors.reduce((s: number, p: any) => s + p.count, 0)}건
-                </span>
-              </div>
             </div>
           ) : (
             <EmptyCard icon="👤" message="처리 내역 없음" sub="해당 기간 위원회 처리 내역이 없습니다" />
