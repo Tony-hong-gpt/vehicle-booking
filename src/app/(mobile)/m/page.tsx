@@ -18,17 +18,30 @@ export default async function MobileHomePage() {
     .order('created_at', { ascending: false })
     .limit(3);
 
+  // 진행 중인 신청 전체 (최종 완료·취소·반려 제외)
   const { count: activeCount } = await supabase
     .from('requests')
     .select('*', { count: 'exact', head: true })
     .eq('requester_id', user!.id)
-    .in('status', ['pending', 'upper_approved', 'on_hold', 'approved', 'dispatched', 'in_use']);
+    .in('status', [
+      'pending', 'upper_approved',
+      'committee_reviewing', 'committee_vice_reviewing',
+      'on_hold', 'approved', 'dispatched', 'in_use',
+    ]);
 
-  const { count: pendingCount } = await supabase
+  // 상위 결재 대기 (부서장 승인 전)
+  const { count: managerPendingCount } = await supabase
     .from('requests')
     .select('*', { count: 'exact', head: true })
     .eq('requester_id', user!.id)
-    .in('status', ['pending', 'upper_approved', 'on_hold']);
+    .in('status', ['pending']);
+
+  // 차량위원회 검토 중
+  const { count: committeeCount } = await supabase
+    .from('requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('requester_id', user!.id)
+    .in('status', ['upper_approved', 'committee_reviewing', 'committee_vice_reviewing', 'on_hold']);
 
   return (
     <div className="flex flex-col min-h-full bg-gray-50">
@@ -46,14 +59,18 @@ export default async function MobileHomePage() {
 
       {/* 요약 카드 (헤더에 걸친 형태) */}
       <div className="px-4 -mt-5">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 px-5 pt-7 pb-5 grid grid-cols-2 divide-x divide-gray-100">
-          <div className="pr-4 flex flex-col items-center">
-            <p className="text-xs text-gray-400 font-medium">진행 중인 신청</p>
-            <p className="text-3xl font-bold text-blue-600 mt-1.5">{activeCount ?? 0}<span className="text-sm font-semibold ml-0.5">건</span></p>
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 px-2 pt-5 pb-4 grid grid-cols-3 divide-x divide-gray-100">
+          <div className="px-2 flex flex-col items-center">
+            <p className="text-[10px] text-gray-400 font-medium text-center leading-tight">진행 중인<br/>신청</p>
+            <p className="text-2xl font-bold text-blue-600 mt-1.5">{activeCount ?? 0}<span className="text-xs font-semibold ml-0.5">건</span></p>
           </div>
-          <div className="pl-4 flex flex-col items-center">
-            <p className="text-xs text-gray-400 font-medium">결재 대기</p>
-            <p className="text-3xl font-bold text-amber-500 mt-1.5">{pendingCount ?? 0}<span className="text-sm font-semibold ml-0.5">건</span></p>
+          <div className="px-2 flex flex-col items-center">
+            <p className="text-[10px] text-gray-400 font-medium text-center leading-tight">상위 결재<br/>대기</p>
+            <p className="text-2xl font-bold text-amber-500 mt-1.5">{managerPendingCount ?? 0}<span className="text-xs font-semibold ml-0.5">건</span></p>
+          </div>
+          <div className="px-2 flex flex-col items-center">
+            <p className="text-[10px] text-gray-400 font-medium text-center leading-tight">차량위원회<br/>검토 중</p>
+            <p className="text-2xl font-bold text-violet-600 mt-1.5">{committeeCount ?? 0}<span className="text-xs font-semibold ml-0.5">건</span></p>
           </div>
         </div>
       </div>
