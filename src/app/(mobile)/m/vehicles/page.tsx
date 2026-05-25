@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { vehicleName } from '@/lib/vehicle-utils';
@@ -38,6 +38,18 @@ export default function MobileVehiclesPage() {
   // 날짜 필터 (단일 날짜 → 00:00 ~ 23:59)
   const [filterDate, setFilterDate] = useState('');
   const [checking, setChecking] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
+  /** 박스 전체 클릭 시 네이티브 달력 오픈 */
+  function openDatePicker() {
+    const input = dateInputRef.current;
+    if (!input) return;
+    try {
+      (input as any).showPicker(); // 모던 브라우저 (iOS 16+, Chrome 99+)
+    } catch {
+      input.click();               // 폴백
+    }
+  }
 
   // 전체 차량 + 그룹 로드
   useEffect(() => {
@@ -116,32 +128,36 @@ export default function MobileVehiclesPage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-4">
           <p className="text-sm font-semibold text-gray-700 mb-2">날짜별 가용 확인</p>
           <div className="flex gap-2 items-center">
-            {/* 커스텀 날짜 선택 — 네이티브 input은 숨기고 표시 UI 오버레이 */}
-            <div className="relative flex-1 min-w-0 h-11 cursor-pointer">
+            {/* 박스 전체를 클릭하면 달력 오픈 — showPicker() 방식 */}
+            <button
+              type="button"
+              onClick={openDatePicker}
+              className="relative flex-1 min-w-0 h-11 flex items-center justify-between px-3 border border-gray-200 rounded-xl bg-white active:bg-gray-50 transition-colors"
+            >
+              {/* 숨겨진 네이티브 date input */}
               <input
+                ref={dateInputRef}
                 type="date"
                 value={filterDate}
                 onChange={e => setFilterDate(e.target.value)}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                className="sr-only"
               />
-              <div className="absolute inset-0 flex items-center justify-between px-3 border border-gray-200 rounded-xl bg-white pointer-events-none">
-                {filterDate ? (
-                  <span className="text-sm text-gray-900 truncate">
-                    {format(new Date(filterDate), 'yyyy년 MM월 dd일 (EEE)', { locale: ko })}
-                  </span>
-                ) : (
-                  <span className="text-sm text-gray-400">날짜를 선택하세요</span>
-                )}
-                <svg className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-            </div>
+              {filterDate ? (
+                <span className="text-sm text-gray-900 truncate">
+                  {format(new Date(filterDate), 'yyyy년 MM월 dd일 (EEE)', { locale: ko })}
+                </span>
+              ) : (
+                <span className="text-sm text-gray-400">날짜를 선택하세요</span>
+              )}
+              <svg className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </button>
             {filterDate && (
               <button
                 onClick={() => setFilterDate('')}
-                className="flex-shrink-0 px-3 py-2.5 text-sm text-gray-500 border border-gray-200 rounded-xl bg-gray-50 whitespace-nowrap"
+                className="flex-shrink-0 px-3 py-2.5 text-sm text-gray-500 border border-gray-200 rounded-xl bg-gray-50 whitespace-nowrap active:bg-gray-100"
               >
                 초기화
               </button>
