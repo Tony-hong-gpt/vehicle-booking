@@ -40,6 +40,33 @@ export default function MobileRequestPage() {
     driver_phone: '',
   });
 
+  // 날짜/시간 분리 입력 상태 (모바일 호환성)
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [endTime, setEndTime] = useState('');
+
+  function handleStartDate(date: string) {
+    setStartDate(date);
+    const combined = date && startTime ? `${date}T${startTime}` : '';
+    setForm(prev => ({ ...prev, start_datetime: combined }));
+  }
+  function handleStartTime(time: string) {
+    setStartTime(time);
+    const combined = startDate && time ? `${startDate}T${time}` : '';
+    setForm(prev => ({ ...prev, start_datetime: combined }));
+  }
+  function handleEndDate(date: string) {
+    setEndDate(date);
+    const combined = date && endTime ? `${date}T${endTime}` : '';
+    setForm(prev => ({ ...prev, end_datetime: combined }));
+  }
+  function handleEndTime(time: string) {
+    setEndTime(time);
+    const combined = endDate && time ? `${endDate}T${time}` : '';
+    setForm(prev => ({ ...prev, end_datetime: combined }));
+  }
+
   // 초기 데이터 한 번에 로드 → 완료 후 렌더링
   useEffect(() => {
     Promise.all([
@@ -342,54 +369,38 @@ export default function MobileRequestPage() {
             {/* 출발 일시 */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">출발 일시 *</label>
-              <div className="relative h-12 cursor-pointer">
+              <div className="flex gap-2">
                 <input
-                  name="start_datetime"
-                  type="datetime-local"
-                  value={form.start_datetime}
-                  onChange={handleChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  type="date"
+                  value={startDate}
+                  onChange={e => handleStartDate(e.target.value)}
+                  className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 />
-                <div className="absolute inset-0 flex items-center justify-between px-4 border border-gray-200 rounded-xl bg-white pointer-events-none">
-                  {form.start_datetime ? (
-                    <span className="text-sm text-gray-900">
-                      {format(new Date(form.start_datetime), 'yyyy년 MM월 dd일 (EEE) HH:mm', { locale: ko })}
-                    </span>
-                  ) : (
-                    <span className="text-sm text-gray-400">날짜 및 시간을 선택하세요</span>
-                  )}
-                  <svg className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={e => handleStartTime(e.target.value)}
+                  className="w-32 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                />
               </div>
             </div>
 
             {/* 반납 일시 */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">반납 일시 *</label>
-              <div className="relative h-12 cursor-pointer">
+              <div className="flex gap-2">
                 <input
-                  name="end_datetime"
-                  type="datetime-local"
-                  value={form.end_datetime}
-                  onChange={handleChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  type="date"
+                  value={endDate}
+                  onChange={e => handleEndDate(e.target.value)}
+                  className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 />
-                <div className="absolute inset-0 flex items-center justify-between px-4 border border-gray-200 rounded-xl bg-white pointer-events-none">
-                  {form.end_datetime ? (
-                    <span className="text-sm text-gray-900">
-                      {format(new Date(form.end_datetime), 'yyyy년 MM월 dd일 (EEE) HH:mm', { locale: ko })}
-                    </span>
-                  ) : (
-                    <span className="text-sm text-gray-400">날짜 및 시간을 선택하세요</span>
-                  )}
-                  <svg className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={e => handleEndTime(e.target.value)}
+                  className="w-32 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                />
               </div>
             </div>
 
