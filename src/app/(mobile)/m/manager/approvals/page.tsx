@@ -351,113 +351,108 @@ export default function ManagerApprovalsPage() {
             const isPending = req.status === 'pending';
             const isActing  = actionId === req.id;
             return (
-              <div key={req.id}
-                className={`bg-white rounded-2xl border overflow-hidden shadow-sm ${
-                  isPending ? 'border-yellow-200' : 'border-gray-100'
-                }`}>
-                {/* 상태 바 */}
-                <div className={`px-4 py-2 flex items-center justify-between ${
-                  isPending ? 'bg-yellow-50' : 'bg-gray-50'
-                }`}>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                    <span className={`text-xs font-bold ${isPending ? 'text-yellow-700' : 'text-gray-500'}`}>
+              <div key={req.id} className={`bg-white rounded-2xl overflow-hidden shadow-sm border ${
+                isPending ? 'border-amber-200' : 'border-gray-100'
+              }`}>
+                {/* 상단 컬러 액센트 바 */}
+                <div className={`h-1 ${isPending
+                  ? 'bg-gradient-to-r from-amber-400 to-orange-400'
+                  : 'bg-gradient-to-r from-gray-200 to-gray-100'}`} />
+
+                <div className="px-4 pt-3 pb-4">
+                  {/* 상태 칩 + 신청번호/시간 */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${cfg.color}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot} ${isPending ? 'animate-pulse' : ''}`} />
                       {cfg.label}
                     </span>
+                    <div className="flex items-center gap-1 text-[11px] text-gray-400">
+                      <span className="font-mono">{req.request_no}</span>
+                      <span className="text-gray-200 mx-0.5">|</span>
+                      <span>{req.created_at ? format(new Date(req.created_at), 'MM.dd HH:mm') : '-'}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400 font-mono">{req.request_no}</span>
-                    <span className="text-xs text-gray-300">·</span>
-                    <span className="text-xs text-gray-400">
-                      {req.created_at ? format(new Date(req.created_at), 'MM.dd HH:mm') : '-'}
-                    </span>
-                  </div>
-                </div>
 
-                <div className="px-4 py-3.5">
-                  {/* 목적지 + 신청자 */}
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <div>
-                      <p className="font-bold text-gray-900 text-base">{req.destination}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {req.requester?.name}
-                        {req.department?.name && ` · ${req.department.name}`}
-                      </p>
+                  {/* 목적지 + 탑승인원 */}
+                  <div className="flex items-start justify-between gap-2 mb-2.5">
+                    <div className="min-w-0">
+                      <h3 className="text-[17px] font-bold text-gray-900 leading-tight truncate">{req.destination}</h3>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <span className="text-sm font-medium text-gray-600">{req.requester?.name}</span>
+                        {req.department?.name && (
+                          <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-semibold">{req.department.name}</span>
+                        )}
+                      </div>
                     </div>
                     {req.passengers && (
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full flex-shrink-0">
-                        {req.passengers}명
-                      </span>
+                      <div className="flex-shrink-0 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5 text-center">
+                        <p className="text-base font-bold text-gray-800 leading-none">{req.passengers}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">명</p>
+                      </div>
                     )}
                   </div>
 
-                  {/* 일정 */}
-                  <div className="bg-gray-50 rounded-xl px-3 py-2.5 mb-3 space-y-1">
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-gray-400 w-12">출발</span>
-                      <span className="font-medium text-gray-700">
-                        {req.start_datetime
-                          ? format(new Date(req.start_datetime), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko })
-                          : '-'}
+                  {/* 일정 카드 */}
+                  <div className="bg-gray-50 rounded-xl px-3 py-2.5 mb-3 space-y-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-1.5 w-12 flex-shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+                        <span className="text-[11px] text-gray-400 font-medium">출발</span>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-800">
+                        {req.start_datetime ? format(new Date(req.start_datetime), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko }) : '-'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-gray-400 w-12">반납</span>
-                      <span className="font-medium text-gray-700">
-                        {req.end_datetime
-                          ? format(new Date(req.end_datetime), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko })
-                          : '-'}
+                    <div className="border-l-2 border-dashed border-gray-200 ml-1 h-2" />
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-1.5 w-12 flex-shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-rose-400 flex-shrink-0" />
+                        <span className="text-[11px] text-gray-400 font-medium">반납</span>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-800">
+                        {req.end_datetime ? format(new Date(req.end_datetime), 'yyyy.MM.dd(EEE) HH:mm', { locale: ko }) : '-'}
                       </span>
                     </div>
-                    {req.purpose?.name && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-gray-400 w-12">목적</span>
-                        <span className="font-medium text-gray-700">{req.purpose.name}</span>
-                      </div>
-                    )}
-                    {req.vehicle_group?.name && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-gray-400 w-12">차량군</span>
-                        <span className="font-medium text-gray-700">{req.vehicle_group.name}</span>
-                      </div>
-                    )}
-                    {req.driver_name && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-gray-400 w-12">운전기사</span>
-                        <span className="font-medium text-gray-700">{req.driver_name}</span>
-                      </div>
-                    )}
                   </div>
+
+                  {/* 태그 행: 목적 + 차량군 + 기사 */}
+                  {(req.purpose?.name || req.vehicle_group?.name || req.driver_name) && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {req.purpose?.name && (
+                        <span className="text-xs bg-violet-50 text-violet-600 px-2.5 py-1 rounded-full font-medium">{req.purpose.name}</span>
+                      )}
+                      {req.vehicle_group?.name && (
+                        <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-medium">🚌 {req.vehicle_group.name}</span>
+                      )}
+                      {req.driver_name && (
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-medium">👤 {req.driver_name}</span>
+                      )}
+                    </div>
+                  )}
 
                   {/* 비고 */}
                   {req.notes && (
-                    <p className="text-xs text-gray-500 bg-blue-50 rounded-xl px-3 py-2 mb-3">
-                      💬 {req.notes}
-                    </p>
+                    <div className="flex items-start gap-2 bg-sky-50 rounded-xl px-3 py-2 mb-3">
+                      <span className="text-sky-400 text-sm flex-shrink-0">💬</span>
+                      <p className="text-xs text-sky-700 leading-relaxed">{req.notes}</p>
+                    </div>
                   )}
 
-                  {/* 처리완료 탭 — 차량위원회 결재 이력 */}
+                  {/* 처리완료 탭 — 결재 이력 */}
                   {req.status !== 'pending' && (() => {
                     const approvals: any[] = req.approvals ?? [];
-
-                    // 상위승인자 본인 반려 (step 1 rejected)
                     const managerReject = approvals.find((a: any) => a.step === 1 && a.status === 'rejected');
                     if (managerReject) {
                       return (
-                        <div className="border border-red-100 rounded-xl overflow-hidden mb-3">
-                          <div className="px-3 py-2 flex items-center justify-between bg-red-50">
+                        <div className="rounded-xl overflow-hidden border border-red-100 mb-3">
+                          <div className="px-3 py-2 bg-red-50 flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-xs text-red-400">✗</span>
-                              <span className="text-xs font-semibold text-red-600">반려</span>
+                              <span className="text-[10px] font-bold text-white bg-red-400 px-1.5 py-0.5 rounded">반려</span>
+                              {managerReject.approver && <span className="text-xs font-semibold text-red-600">{managerReject.approver.name}</span>}
                             </div>
-                            <div className="flex items-center gap-2">
-                              {managerReject.approver && (
-                                <span className="text-xs font-medium text-red-500">{managerReject.approver.name}</span>
-                              )}
-                              {managerReject.approved_at && (
-                                <span className="text-[10px] text-red-300">{format(new Date(managerReject.approved_at), 'MM.dd HH:mm')}</span>
-                              )}
-                            </div>
+                            {managerReject.approved_at && (
+                              <span className="text-[10px] text-red-300">{format(new Date(managerReject.approved_at), 'MM.dd HH:mm')}</span>
+                            )}
                           </div>
                           {managerReject.comment && (
                             <div className="px-3 py-2 bg-white">
@@ -468,56 +463,39 @@ export default function ManagerApprovalsPage() {
                       );
                     }
 
-                    // 위원장(step 5) 결재 여부 확인
                     const chairApproval = approvals.find((a: any) => a.step === 5);
-
-                    // 위원장 결재 전 → "차량위원회 검토중"
                     if (!chairApproval) {
                       return (
-                        <div className="border border-violet-100 rounded-xl overflow-hidden mb-3">
-                          <div className="px-3 py-2 flex items-center gap-1.5 bg-violet-50">
-                            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse flex-shrink-0" />
-                            <span className="text-xs font-semibold text-violet-600">차량위원회 검토중</span>
-                          </div>
+                        <div className="flex items-center gap-2 bg-violet-50 rounded-xl px-3 py-2.5 mb-3">
+                          <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse flex-shrink-0" />
+                          <span className="text-xs font-semibold text-violet-600">차량위원회 검토중</span>
                         </div>
                       );
                     }
 
-                    // 위원장 결재 있음 → 결재 내용(승인/반려/대기)에 따라 표시
-                    const isOnHold   = chairApproval.comment?.startsWith('[대기]') || chairApproval.comment?.includes('[대기]');
+                    const isOnHold   = chairApproval.comment?.includes('[대기]');
                     const isRejected = chairApproval.status === 'rejected';
                     const isApproved = !isOnHold && !isRejected;
                     const cleanComment = chairApproval.comment
-                      ?.replace(/^\[강제처리\]\[대기\]\s*/, '')
-                      .replace(/^\[대기\]\s*/, '')
-                      .replace(/^\[강제처리\]\s*/, '');
+                      ?.replace(/^\[강제처리\]\[대기\]\s*/, '').replace(/^\[대기\]\s*/, '').replace(/^\[강제처리\]\s*/, '');
 
-                    const label       = isOnHold ? '차량위원회 대기' : isRejected ? '차량위원회 반려' : '차량위원회 승인';
-                    const borderColor = isApproved ? 'border-blue-100'   : isOnHold ? 'border-orange-100' : 'border-red-100';
-                    const bgColor     = isApproved ? 'bg-blue-50'         : isOnHold ? 'bg-orange-50'      : 'bg-red-50';
-                    const iconColor   = isApproved ? 'text-blue-400'      : isOnHold ? 'text-orange-400'   : 'text-red-400';
-                    const labelColor  = isApproved ? 'text-blue-600'      : isOnHold ? 'text-orange-600'   : 'text-red-600';
-                    const nameColor   = isApproved ? 'text-blue-600'      : isOnHold ? 'text-orange-500'   : 'text-red-500';
-                    const timeColor   = isApproved ? 'text-blue-300'      : isOnHold ? 'text-orange-300'   : 'text-red-300';
-                    const icon        = isApproved ? '✓'                  : isOnHold ? '⏸'                 : '✗';
+                    const badgeBg   = isApproved ? 'bg-emerald-500' : isOnHold ? 'bg-orange-400' : 'bg-red-400';
+                    const wrapBg    = isApproved ? 'bg-emerald-50'  : isOnHold ? 'bg-orange-50'  : 'bg-red-50';
+                    const wrapBdr   = isApproved ? 'border-emerald-100' : isOnHold ? 'border-orange-100' : 'border-red-100';
+                    const nameClr   = isApproved ? 'text-emerald-700'   : isOnHold ? 'text-orange-700'   : 'text-red-700';
+                    const timeClr   = isApproved ? 'text-emerald-400'   : isOnHold ? 'text-orange-300'   : 'text-red-300';
+                    const badgeLabel = isApproved ? '승인' : isOnHold ? '대기' : '반려';
 
                     return (
-                      <div className={`border rounded-xl overflow-hidden mb-3 ${borderColor}`}>
-                        <div className={`px-3 py-2 flex items-center justify-between ${bgColor}`}>
+                      <div className={`rounded-xl overflow-hidden border mb-3 ${wrapBdr}`}>
+                        <div className={`px-3 py-2 flex items-center justify-between ${wrapBg}`}>
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-xs ${iconColor}`}>{icon}</span>
-                            <span className={`text-xs font-semibold ${labelColor}`}>{label}</span>
+                            <span className={`text-[10px] font-bold text-white px-1.5 py-0.5 rounded ${badgeBg}`}>{badgeLabel}</span>
+                            {chairApproval.approver && <span className={`text-xs font-semibold ${nameClr}`}>{chairApproval.approver.name}</span>}
                           </div>
-                          <div className="flex items-center gap-2">
-                            {chairApproval.approver && (
-                              <span className={`text-xs font-medium ${nameColor}`}>{chairApproval.approver.name}</span>
-                            )}
-                            {chairApproval.approved_at && (
-                              <span className={`text-[10px] ${timeColor}`}>
-                                {format(new Date(chairApproval.approved_at), 'MM.dd HH:mm')}
-                              </span>
-                            )}
-                          </div>
+                          {chairApproval.approved_at && (
+                            <span className={`text-[10px] ${timeClr}`}>{format(new Date(chairApproval.approved_at), 'MM.dd HH:mm')}</span>
+                          )}
                         </div>
                         {(isRejected || isOnHold) && cleanComment && (
                           <div className="px-3 py-2 bg-white">
@@ -528,30 +506,23 @@ export default function ManagerApprovalsPage() {
                     );
                   })()}
 
-                  {/* 승인/반려 버튼 (대기 탭만) */}
+                  {/* 승인/반려 버튼 */}
                   {isPending && (
                     <div className="flex gap-2 pt-1">
                       <button
                         onClick={() => handleApprove(req)}
                         disabled={isActing}
-                        className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5">
-                        {isActing ? (
-                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            승인
-                          </>
-                        )}
+                        className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-sm font-bold disabled:opacity-60 transition-colors flex items-center justify-center gap-2 shadow-sm shadow-blue-200">
+                        {isActing
+                          ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>승인</>}
                       </button>
                       <button
                         onClick={() => { setRejectModal(req); setRejectComment(''); setRejectError(''); }}
                         disabled={isActing}
-                        className="flex-1 py-2.5 bg-white border border-red-300 text-red-600 rounded-xl text-sm font-semibold disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5">
+                        className="flex-1 py-3 bg-white border-2 border-red-200 text-red-500 rounded-xl text-sm font-bold disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                         반려
                       </button>
