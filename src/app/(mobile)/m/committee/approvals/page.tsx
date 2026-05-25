@@ -192,6 +192,18 @@ export default function CommitteeApprovalsPage() {
 
   const doneStatuses = ROLE_DONE_STATUSES[role] ?? ROLE_DONE_STATUSES.committee_chair;
 
+  /** batch_id → 해당 배치에 속한 request 목록 맵 */
+  const batchGroups = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    requests.forEach((r: any) => {
+      if (r.batch_id) {
+        if (!map[r.batch_id]) map[r.batch_id] = [];
+        map[r.batch_id].push(r);
+      }
+    });
+    return map;
+  }, [requests]);
+
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const targetStatuses = tab === 'pending' ? pendingStatuses : doneStatuses;
@@ -741,11 +753,31 @@ export default function CommitteeApprovalsPage() {
             const cfg       = labelOverride ? { ...baseCfg, label: labelOverride } : baseCfg;
             const isPending = tab === 'pending';
 
+            // 배치 정보
+            const batchSiblings = req.batch_id ? (batchGroups[req.batch_id] ?? []) : [];
+            const batchTotal    = batchSiblings.length;
+            const batchIndex    = batchTotal > 1
+              ? batchSiblings.findIndex((s: any) => s.id === req.id) + 1
+              : 0;
+
             return (
               <div key={req.id}
                 className={`bg-white rounded-2xl overflow-hidden shadow-sm ${
                   isPending ? 'border border-purple-200' : 'border border-gray-100'
                 }`}>
+
+                {/* 배치(일괄 신청) 배너 */}
+                {batchTotal > 1 && (
+                  <div className="px-4 py-1.5 bg-amber-50 border-b border-amber-100 flex items-center gap-1.5">
+                    <svg className="w-3 h-3 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    <span className="text-[11px] font-bold text-amber-700">
+                      동시 신청 {batchTotal}건 묶음 · {batchIndex}/{batchTotal}번째
+                    </span>
+                  </div>
+                )}
 
                 {/* 상태 헤더 */}
                 <div className={`px-4 py-2.5 flex items-center justify-between ${cfg.bg}`}>
@@ -817,6 +849,45 @@ export default function CommitteeApprovalsPage() {
 
                   {/* ⑤ 결재 현황 타임라인 */}
                   <ApprovalTimeline req={req} />
+
+                  {/* ⑤-b 동시 신청 묶음 건 목록 */}
+                  {batchTotal > 1 && (
+                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                      <p className="text-[10px] font-bold text-amber-600 mb-2 flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        함께 신청된 {batchTotal}건
+                      </p>
+                      <div className="space-y-1.5">
+                        {batchSiblings.map((sibling: any) => {
+                          const sibCfg = STATUS_CONFIG[sibling.status] ?? STATUS_CONFIG.pending;
+                          const sibLabelOverride = ROLE_STATUS_LABEL_OVERRIDE[role]?.[sibling.status];
+                          const sibLabel = sibLabelOverride ?? sibCfg.label;
+                          const isSelf = sibling.id === req.id;
+                          return (
+                            <div key={sibling.id}
+                              className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg ${
+                                isSelf ? 'bg-amber-100 border border-amber-200' : 'bg-white border border-amber-100'
+                              }`}>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                {isSelf && (
+                                  <span className="text-[9px] font-bold text-amber-600 bg-amber-200 px-1 py-0.5 rounded flex-shrink-0">현재</span>
+                                )}
+                                <span className="text-[11px] font-medium text-gray-700 truncate">
+                                  {sibling.vehicle_group?.name ?? '-'}
+                                </span>
+                              </div>
+                              <span className={`text-[10px] font-bold flex-shrink-0 ${sibCfg.color}`}>
+                                {sibLabel}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* ⑥ 취소 표시 (cancelled 건) */}
                   {req.status === 'cancelled' && (

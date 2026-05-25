@@ -247,6 +247,9 @@ export default function MobileRequestPage() {
     try {
       const allRequests: Promise<{ res: Response; data: any }>[] = [];
 
+      // 2건 이상 동시 신청 시 같은 batch_id UUID 부여 → 묶음 식별용
+      const batchId = totalRequestCount > 1 ? crypto.randomUUID() : null;
+
       for (const groupId of selectedGroupIds) {
         const g = vehicleGroups.find((x: SelectOption) => x.id === groupId);
         const isBus = g ? isBusGroup(g.name) : false;
@@ -274,6 +277,7 @@ export default function MobileRequestPage() {
             reason: reasonText,
             driver_name: isBus ? null : (form.driver_name.trim() || null),
             driver_phone: isBus ? null : (form.driver_phone.trim() || null),
+            batch_id: batchId,
           };
           if (purposeMode === 'select') {
             body.purpose_id = purposeId;

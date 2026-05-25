@@ -80,6 +80,8 @@ export const createRequestSchema = z.object({
   reason: z.string().optional(),
   driver_name: z.string().max(30).optional().nullable(),
   driver_phone: z.string().max(20).optional().nullable(),
+  /** 동시 일괄 신청 묶음 식별자. 여러 건을 한 번에 신청할 때 동일한 UUID 부여 */
+  batch_id: z.string().uuid().optional().nullable(),
 }).refine(data => data.purpose_id || (data.custom_purpose && data.custom_purpose.trim()), {
   message: '사용목적을 선택하거나 직접 입력해주세요',
 }).refine(data => new Date(data.end_datetime) > new Date(data.start_datetime), {
