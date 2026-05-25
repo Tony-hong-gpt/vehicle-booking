@@ -73,7 +73,7 @@ export default function RecurringRequestDetailPage({
     try {
       const [rrRes, meRes] = await Promise.all([
         fetch(`/api/recurring-requests/${id}`),
-        fetch('/api/me'),
+        fetch('/api/auth/me'),
       ]);
       const rrJson = await rrRes.json();
       const meJson = await meRes.json();
