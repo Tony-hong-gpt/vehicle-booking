@@ -19,6 +19,8 @@ interface TripDispatch {
     id: string;
     request_no: string;
     destination: string;
+    start_datetime: string;
+    end_datetime: string;
     purpose?: { name: string };
     passengers: number;
     requester?: { name: string };
