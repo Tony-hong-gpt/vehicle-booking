@@ -117,8 +117,8 @@ export default function RecurringRequestsPage() {
 
     try {
       const buffer = await file.arrayBuffer();
-      // cellDates: true → 날짜 셀을 JS Date 객체로 파싱 (serial 숫자 방지)
-      const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
+      // cellDates 옵션 제거: 날짜 셀을 Excel serial 숫자로 받아 toDateStr에서 UTC 변환
+      const wb = XLSX.read(buffer, { type: 'array' });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
