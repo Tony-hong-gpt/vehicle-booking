@@ -83,7 +83,7 @@ export default function UsersPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     const [usersRes, deptsRes] = await Promise.all([
-      fetch('/api/users').then(r => r.json()),
+      fetch('/api/users?page_size=500').then(r => r.json()),
       fetch('/api/departments').then(r => r.json()),
     ]);
     const depts: Department[] = deptsRes.data || [];
