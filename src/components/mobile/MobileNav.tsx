@@ -62,6 +62,7 @@ const navItems = [
       </svg>
     ),
   },
+  /* ─── 차량 현황 메뉴 (임시 비활성화 – 필요 시 주석 해제) ───
   {
     href: '/m/vehicles',
     label: '차량 현황',
@@ -76,6 +77,7 @@ const navItems = [
       </svg>
     ),
   },
+  ─── 차량 현황 메뉴 끝 ─── */
   {
     href: '/m/profile',
     label: '내 정보',
@@ -121,7 +123,7 @@ export default function MobileNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-sm border-t border-gray-100 z-50 safe-area-bottom">
-      <div className="grid grid-cols-6 px-1">
+      <div className="grid grid-cols-5 px-1">
         {navItems.map(item => {
           const isActive = item.href === '/m'
             ? pathname === '/m'
