@@ -111,8 +111,12 @@ export default function CommitteeHomePage() {
   const pending = requests.filter(r => config.pendingStatuses.includes(r.status));
   const thisMonth = new Date().toISOString().slice(0, 7);
   const monthReqs = requests.filter(r => r.created_at?.slice(0, 7) === thisMonth);
-  const approved = requests.filter(r => ['approved', 'dispatched', 'returned'].includes(r.status));
-  const rejected = requests.filter(r => r.status === 'rejected');
+
+  // 이번달 현황 집계
+  const monthInReview  = monthReqs.filter(r => ['pending', 'upper_approved', 'committee_reviewing', 'committee_vice_reviewing'].includes(r.status));
+  const monthOnHold    = monthReqs.filter(r => r.status === 'on_hold');
+  const monthApproved  = monthReqs.filter(r => ['approved', 'dispatched', 'in_use', 'returned'].includes(r.status));
+  const monthRejected  = monthReqs.filter(r => r.status === 'rejected');
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -175,17 +179,32 @@ export default function CommitteeHomePage() {
         {/* 이번달 현황 */}
         <div>
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 px-1">이번달 현황</p>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: '전체 신청',  count: monthReqs.length, color: 'text-gray-800',  bg: 'bg-white',       border: 'border border-gray-100' },
-              { label: '승인 완료',  count: approved.filter(r => r.created_at?.slice(0,7) === thisMonth).length, color: 'text-green-700', bg: 'bg-green-50', border: '' },
-              { label: '반려',       count: rejected.filter(r => r.created_at?.slice(0,7) === thisMonth).length, color: 'text-red-600',   bg: 'bg-red-50',   border: '' },
-            ].map(s => (
-              <div key={s.label} className={`${s.bg} ${s.border} rounded-2xl p-3.5 text-center shadow-sm`}>
-                <p className={`text-2xl font-bold ${s.color}`}>{s.count}</p>
-                <p className="text-xs text-gray-500 mt-1">{s.label}</p>
-              </div>
-            ))}
+          {/* 전체 신청 — full width */}
+          <div className="bg-white border border-gray-100 rounded-2xl px-5 py-3.5 flex items-center justify-between shadow-sm mb-2">
+            <p className="text-sm font-semibold text-gray-600">전체 신청</p>
+            <p className="text-2xl font-bold text-gray-800">{monthReqs.length}<span className="text-sm font-semibold ml-0.5 text-gray-500">건</span></p>
+          </div>
+          {/* 검토중 / 보류 */}
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <div className="bg-indigo-50 rounded-2xl p-3.5 text-center shadow-sm">
+              <p className="text-2xl font-bold text-indigo-600">{monthInReview.length}</p>
+              <p className="text-xs text-indigo-400 mt-1">검토 중</p>
+            </div>
+            <div className="bg-amber-50 rounded-2xl p-3.5 text-center shadow-sm">
+              <p className="text-2xl font-bold text-amber-500">{monthOnHold.length}</p>
+              <p className="text-xs text-amber-400 mt-1">보류</p>
+            </div>
+          </div>
+          {/* 승인 완료 / 반려 */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-green-50 rounded-2xl p-3.5 text-center shadow-sm">
+              <p className="text-2xl font-bold text-green-600">{monthApproved.length}</p>
+              <p className="text-xs text-green-500 mt-1">승인 완료</p>
+            </div>
+            <div className="bg-red-50 rounded-2xl p-3.5 text-center shadow-sm">
+              <p className="text-2xl font-bold text-red-500">{monthRejected.length}</p>
+              <p className="text-xs text-red-400 mt-1">반려</p>
+            </div>
           </div>
         </div>
 
