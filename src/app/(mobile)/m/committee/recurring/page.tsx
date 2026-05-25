@@ -58,14 +58,28 @@ export default function CommitteeRecurringPage() {
   const role = user?.role ?? '';
   const fromStatus = ROLE_FROM[role] ?? '';
 
+  // 상태 순서: 이 인덱스 이후 = "내가 처리 완료한 것"
+  const STATUS_ORDER = [
+    'upper_approved',
+    'committee_reviewing',
+    'committee_vice_reviewing',
+    'approved',
+    'rejected',
+    'cancelled',
+  ];
+  const fromIdx = STATUS_ORDER.indexOf(fromStatus);
+
   const pendingItems = items.filter(r =>
     fromStatus === '*'
       ? !['approved', 'rejected', 'cancelled'].includes(r.status)
       : r.status === fromStatus
   );
-  const doneItems = items.filter(r =>
-    ['approved', 'rejected', 'cancelled'].includes(r.status)
-  );
+  const doneItems = items.filter(r => {
+    if (fromStatus === '*') return ['approved', 'rejected', 'cancelled'].includes(r.status);
+    // 내 처리 단계(fromStatus) 이후 상태 → 내가 처리 완료한 것
+    const idx = STATUS_ORDER.indexOf(r.status);
+    return idx > fromIdx;
+  });
 
   const displayItems = tab === 'pending' ? pendingItems : doneItems;
 
