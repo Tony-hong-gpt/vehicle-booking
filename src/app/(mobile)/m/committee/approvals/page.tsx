@@ -798,7 +798,20 @@ export default function CommitteeApprovalsPage() {
 
                 <div className="px-4 pt-3 pb-4 space-y-3">
 
-                  {/* ① 목적지 (가장 중요) */}
+                  {/* ① 부서 배지 (시인성 강조) */}
+                  {req.department?.name && (
+                    <div className="flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                      <span className="text-sm font-bold text-indigo-800 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg leading-tight">
+                        {req.department.name}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* ② 목적지 + 인원 */}
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-bold text-gray-900 text-[17px] leading-snug flex-1">{req.destination}</p>
                     {req.passengers != null && (
@@ -808,11 +821,8 @@ export default function CommitteeApprovalsPage() {
                     )}
                   </div>
 
-                  {/* ② 신청자 · 부서 */}
-                  <p className="text-sm text-gray-500">
-                    {req.requester?.name}
-                    {req.department?.name && <span className="text-gray-400"> · {req.department.name}</span>}
-                  </p>
+                  {/* ③ 신청자 */}
+                  <p className="text-sm text-gray-400">{req.requester?.name}</p>
 
                   {/* ③ 일정 */}
                   <div className="flex items-center gap-3 py-2.5 px-3 bg-gray-50 rounded-xl">

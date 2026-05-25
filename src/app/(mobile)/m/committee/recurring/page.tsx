@@ -37,6 +37,46 @@ export default function CommitteeRecurringPage() {
   const [actionError, setActionError] = useState('');
   const [toast, setToast] = useState('');
 
+  // 일괄 배차
+  const [showBatchDispatch, setShowBatchDispatch] = useState(false);
+  const [batchVehicles, setBatchVehicles] = useState<any[]>([]);
+  const [batchVehicleId, setBatchVehicleId] = useState('');
+  const [batchNotes, setBatchNotes] = useState('');
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [batchError, setBatchError] = useState('');
+  const [pendingDispatchCount, setPendingDispatchCount] = useState(0);
+
+  async function openBatchDispatch(item: any) {
+    setBatchVehicleId(''); setBatchNotes(''); setBatchError('');
+    setPendingDispatchCount(item.generated_count || 0);
+    setShowBatchDispatch(true);
+    // 해당 차량군의 차량 목록 조회
+    const vehicleRes = await fetch(`/api/vehicles?vehicle_group_id=${item.vehicle_group_id}&page_size=100`).then(r => r.json());
+    setBatchVehicles((vehicleRes.data || []).filter((v: any) => v.status !== 'inactive' && v.status !== 'maintenance'));
+  }
+
+  async function handleBatchDispatch() {
+    if (!selected || !batchVehicleId) { setBatchError('차량을 선택해주세요'); return; }
+    setBatchLoading(true); setBatchError('');
+    try {
+      const res = await fetch(`/api/recurring-requests/${selected.id}/batch-dispatch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vehicle_id: batchVehicleId, notes: batchNotes || undefined }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setBatchError(json.error || '배차 실패'); return; }
+      showToast(`✅ ${json.message}`);
+      setShowBatchDispatch(false);
+      setSelected(null);
+      load();
+    } catch {
+      setBatchError('서버 오류가 발생했습니다');
+    } finally {
+      setBatchLoading(false);
+    }
+  }
+
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const load = useCallback(async () => {
@@ -198,6 +238,104 @@ export default function CommitteeRecurringPage() {
         </div>
       )}
 
+      {/* 일괄 배차 모달 */}
+      {showBatchDispatch && selected && (
+        <div className="fixed inset-0 bg-black/50 flex items-end z-[60]">
+          <div className="w-full bg-white rounded-t-3xl max-h-[80vh] overflow-y-auto pb-8">
+            <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-gray-900">차량 일괄 배차</h2>
+                <p className="text-xs text-gray-500 mt-0.5">{selected.title}</p>
+              </div>
+              <button onClick={() => setShowBatchDispatch(false)} className="p-1">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-4 py-4 space-y-4">
+              {/* 안내 */}
+              <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                <p className="text-xs text-green-700">
+                  선택한 차량으로 <strong>미배차 {pendingDispatchCount}건</strong> 전체에 일괄 배차됩니다.
+                </p>
+              </div>
+
+              {/* 차량 선택 */}
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-2">
+                  차량 선택 <span className="text-red-500">*</span>
+                  <span className="text-xs font-normal text-gray-400 ml-1">({selected.vehicle_group?.name})</span>
+                </p>
+                {batchVehicles.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-4 text-center">사용 가능한 차량이 없습니다</p>
+                ) : (
+                  <div className="space-y-2">
+                    {batchVehicles.map((v: any) => (
+                      <button
+                        key={v.id}
+                        onClick={() => setBatchVehicleId(v.id)}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-colors text-left ${
+                          batchVehicleId === v.id
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-gray-100 bg-gray-50 hover:border-gray-300'
+                        }`}
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {[v.name, v.model].filter(Boolean).join(' ')}
+                          </p>
+                          <p className="text-xs text-gray-500">{v.license_plate} · {v.capacity}인승</p>
+                        </div>
+                        {batchVehicleId === v.id && (
+                          <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 메모 (선택) */}
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-2">메모 <span className="text-gray-400 font-normal">(선택)</span></p>
+                <textarea
+                  value={batchNotes}
+                  onChange={e => setBatchNotes(e.target.value)}
+                  placeholder="배차 메모를 입력하세요"
+                  rows={2}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                />
+              </div>
+
+              {batchError && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-600">{batchError}</div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowBatchDispatch(false)}
+                  disabled={batchLoading}
+                  className="flex-1 py-3 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleBatchDispatch}
+                  disabled={batchLoading || !batchVehicleId}
+                  className="flex-1 py-3 text-sm font-bold text-white bg-green-600 rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {batchLoading ? '배차 중...' : `${pendingDispatchCount}건 일괄 배차`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 상세 & 처리 모달 */}
       {selected && (
         <div className="fixed inset-0 bg-black/50 flex items-end z-50">
@@ -256,6 +394,20 @@ export default function CommitteeRecurringPage() {
                   💡 승인 완료 시 개별 신청이 자동 생성되며, 각 건의 <strong>사용 시작일 3일 전부터</strong> 배차 가능합니다.
                 </p>
               </div>
+
+              {/* 일괄 배차 버튼 — 승인 완료 + 총무/admin */}
+              {selected.status === 'approved' && ['committee_secretary', 'admin'].includes(role) && (
+                <button
+                  onClick={() => openBatchDispatch(selected)}
+                  className="w-full py-3 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10M9 7h6m0 10V6m0 10h2a2 2 0 002-2v-4a2 2 0 00-.586-1.414L17 7" />
+                  </svg>
+                  차량 배차 등록
+                </button>
+              )}
 
               {actionError && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-600">{actionError}</div>
