@@ -19,7 +19,7 @@ export async function GET(request: Request) {
       .from('dispatches')
       .select(`
         *,
-        request:requests(id, request_no, destination, start_datetime, end_datetime, passengers,
+        request:requests(id, request_no, destination, start_datetime, end_datetime, passengers, recurring_request_id,
           purpose:purposes(name), requester:users!requester_id(id, name)),
         vehicle:vehicles(id, name, model, license_plate, fuel_type, current_mileage),
         driver:drivers(id, user:users(name, phone))
@@ -27,6 +27,27 @@ export async function GET(request: Request) {
 
     const status = searchParams.get('status');
     if (status) query = query.eq('status', status);
+
+    // 장기신청 유래 건 필터 (exclude_recurring=true: 일반만 / only_recurring=true: 장기만)
+    const excludeRecurring = searchParams.get('exclude_recurring');
+    const onlyRecurring    = searchParams.get('only_recurring');
+    if (excludeRecurring === 'true' || onlyRecurring === 'true') {
+      const { data: recurringReqs } = await supabase
+        .from('requests')
+        .select('id')
+        .not('recurring_request_id', 'is', null);
+      const recurringIds = (recurringReqs || []).map((r: any) => r.id);
+      if (excludeRecurring === 'true') {
+        if (recurringIds.length > 0) {
+          query = query.not('request_id', 'in', `(${recurringIds.join(',')})`);
+        }
+      } else {
+        if (recurringIds.length === 0) {
+          return Response.json({ data: [], total: 0, page: 1, page_size: pagination.page_size, total_pages: 0, error: null });
+        }
+        query = query.in('request_id', recurringIds);
+      }
+    }
 
     const vehicleId = searchParams.get('vehicle_id');
     if (vehicleId) query = query.eq('vehicle_id', vehicleId);

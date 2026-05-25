@@ -43,6 +43,8 @@ export default async function RequestsPage({
   if (user?.role === 'employee') query = query.eq('requester_id', user.id);
   if (user?.role === 'manager' && user.department_id) query = query.eq('department_id', user.department_id);
   if (status)   query = query.eq('status', status);
+  // 장기신청에서 생성된 건 제외 (장기 차량 신청 메뉴에서 별도 관리)
+  query = query.is('recurring_request_id', null);
 
   // 날짜 필터 (KST → UTC 변환)
   if (dateFrom) query = query.gte('start_datetime', new Date(`${dateFrom}T00:00:00+09:00`).toISOString());

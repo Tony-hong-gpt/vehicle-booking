@@ -55,6 +55,10 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     if (status) query = query.eq('status', status);
 
+    // 장기신청에서 생성된 건 제외 (exclude_recurring=true 시 recurring_request_id IS NULL 인 것만)
+    const excludeRecurring = searchParams.get('exclude_recurring');
+    if (excludeRecurring === 'true') query = query.is('recurring_request_id', null);
+
     const vehicleGroupId = searchParams.get('vehicle_group_id');
     if (vehicleGroupId) query = query.eq('vehicle_group_id', vehicleGroupId);
 

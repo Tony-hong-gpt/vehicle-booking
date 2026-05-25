@@ -69,8 +69,8 @@ export default function MobileTripsPage() {
       const [res1, res2, res3, res4, res5] = await Promise.all([
         fetch('/api/dispatches?my_trips=true&status=in_progress&page_size=50'),
         fetch('/api/dispatches?my_trips=true&status=scheduled&page_size=50'),
-        fetch('/api/requests?status=upper_approved&page_size=50'),
-        fetch('/api/requests?status=approved&page_size=50'),
+        fetch('/api/requests?status=upper_approved&page_size=50&exclude_recurring=true'),
+        fetch('/api/requests?status=approved&page_size=50&exclude_recurring=true'),
         fetch('/api/dispatches?my_trips=true&status=completed&page_size=10'),
       ]);
       const [j1, j2, j3, j4, j5] = await Promise.all([res1.json(), res2.json(), res3.json(), res4.json(), res5.json()]);

@@ -157,7 +157,7 @@ export default function CommitteeApprovalsPage() {
     try {
       const [meRes, reqRes] = await Promise.all([
         fetch('/api/auth/me').then(r => r.json()),
-        fetch('/api/requests?page_size=500').then(r => r.json()),
+        fetch('/api/requests?page_size=500&exclude_recurring=true').then(r => r.json()),
       ]);
       setUser(meRes.data);
       const allRequests = reqRes.data || [];

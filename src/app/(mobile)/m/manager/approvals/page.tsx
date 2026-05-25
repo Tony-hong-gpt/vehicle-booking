@@ -54,7 +54,7 @@ export default function ManagerApprovalsPage() {
   const fetchRequests = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/requests?page_size=200');
+      const res = await fetch('/api/requests?page_size=200&exclude_recurring=true');
       const json = await res.json();
       setRequests(json.data || []);
     } finally {
