@@ -316,7 +316,7 @@ export default function CommitteeApprovalsPage() {
     setDispatchModal(req);
     setDispatchVehicleGroupId(initGroupId);
     setDispatchVehicleId(''); setDispatchIsRental(false);
-    setDispatchDriverName(''); setDispatchDriverPhone('');
+    setDispatchDriverName(req.driver_name || ''); setDispatchDriverPhone(req.driver_phone || '');
     setDispatchNotes(''); setDispatchError('');
     setLoadingVehicles(true);
     try {
