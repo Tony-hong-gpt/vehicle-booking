@@ -59,19 +59,44 @@ export default async function MobileHomePage() {
 
       {/* 요약 카드 (헤더에 걸친 형태) */}
       <div className="px-4 -mt-5">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 px-2 pt-5 pb-4 grid grid-cols-3 divide-x divide-gray-100">
-          <div className="px-2 flex flex-col items-center">
-            <p className="text-[10px] text-gray-400 font-medium text-center leading-tight">진행 중인<br/>신청</p>
-            <p className="text-2xl font-bold text-blue-600 mt-1.5">{activeCount ?? 0}<span className="text-xs font-semibold ml-0.5">건</span></p>
+        <div className="grid grid-cols-3 gap-2.5">
+
+          {/* 진행 중인 신청 */}
+          <div className="bg-white border border-blue-100 rounded-2xl shadow-md p-3 flex flex-col items-center">
+            <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center mb-2.5">
+              <svg className="w-4.5 h-4.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <p className="text-2xl font-bold text-blue-600 leading-none">{activeCount ?? 0}</p>
+            <p className="text-[10px] text-gray-400 font-medium text-center mt-1.5 leading-tight">진행 중인<br/>신청</p>
           </div>
-          <div className="px-2 flex flex-col items-center">
-            <p className="text-[10px] text-gray-400 font-medium text-center leading-tight">상위 결재<br/>대기</p>
-            <p className="text-2xl font-bold text-amber-500 mt-1.5">{managerPendingCount ?? 0}<span className="text-xs font-semibold ml-0.5">건</span></p>
+
+          {/* 상위 결재 대기 */}
+          <div className="bg-white border border-amber-100 rounded-2xl shadow-md p-3 flex flex-col items-center">
+            <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center mb-2.5">
+              <svg className="w-4.5 h-4.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-2xl font-bold text-amber-500 leading-none">{managerPendingCount ?? 0}</p>
+            <p className="text-[10px] text-gray-400 font-medium text-center mt-1.5 leading-tight">상위 결재<br/>대기</p>
           </div>
-          <div className="px-2 flex flex-col items-center">
-            <p className="text-[10px] text-gray-400 font-medium text-center leading-tight">차량위원회<br/>검토 중</p>
-            <p className="text-2xl font-bold text-violet-600 mt-1.5">{committeeCount ?? 0}<span className="text-xs font-semibold ml-0.5">건</span></p>
+
+          {/* 차량위원회 검토 중 */}
+          <div className="bg-white border border-violet-100 rounded-2xl shadow-md p-3 flex flex-col items-center">
+            <div className="w-9 h-9 bg-violet-100 rounded-xl flex items-center justify-center mb-2.5">
+              <svg className="w-4.5 h-4.5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <p className="text-2xl font-bold text-violet-600 leading-none">{committeeCount ?? 0}</p>
+            <p className="text-[10px] text-gray-400 font-medium text-center mt-1.5 leading-tight">차량위원회<br/>검토 중</p>
           </div>
+
         </div>
       </div>
 
