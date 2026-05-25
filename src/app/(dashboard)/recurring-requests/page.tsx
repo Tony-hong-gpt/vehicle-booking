@@ -96,11 +96,56 @@ export default function RecurringRequestsPage() {
 
     try {
       const buffer = await file.arrayBuffer();
-      const wb = XLSX.read(buffer, { type: 'array' });
+      // cellDates: true → 날짜 셀을 JS Date 객체로 파싱 (serial 숫자 방지)
+      const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
       if (raw.length < 2) throw new Error('데이터가 없습니다');
+
+      /** Excel Date 객체 또는 시리얼 숫자 → 'YYYY-MM-DD' 문자열 */
+      function toDateStr(v: any): string {
+        if (!v && v !== 0) return '';
+        if (v instanceof Date) {
+          const y = v.getFullYear();
+          const m = String(v.getMonth() + 1).padStart(2, '0');
+          const d = String(v.getDate()).padStart(2, '0');
+          return `${y}-${m}-${d}`;
+        }
+        if (typeof v === 'number') {
+          // Excel 시리얼 날짜 → UTC Date (엑셀 에포크: 1899-12-30)
+          const dt = new Date(Math.round((v - 25569) * 86400 * 1000));
+          const y = dt.getUTCFullYear();
+          const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+          const d = String(dt.getUTCDate()).padStart(2, '0');
+          return `${y}-${m}-${d}`;
+        }
+        return String(v);
+      }
+
+      /** Excel 시간 분수(0~1) 또는 Date 객체 → 'HH:MM' 문자열 */
+      function toTimeStr(v: any): string {
+        if (!v && v !== 0) return '';
+        if (v instanceof Date) {
+          return `${String(v.getHours()).padStart(2, '0')}:${String(v.getMinutes()).padStart(2, '0')}`;
+        }
+        if (typeof v === 'number') {
+          if (v < 1) {
+            // 시간 분수: 0.375 = 09:00
+            const totalMin = Math.round(v * 24 * 60);
+            const h = Math.floor(totalMin / 60);
+            const min = totalMin % 60;
+            return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+          }
+          // 1 이상이면 날짜+시간 혼합 시리얼 (소수 부분만 추출)
+          const timePart = v - Math.floor(v);
+          const totalMin = Math.round(timePart * 24 * 60);
+          const h = Math.floor(totalMin / 60);
+          const min = totalMin % 60;
+          return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+        }
+        return String(v);
+      }
 
       const rows = raw.slice(1).filter(r => r.some(Boolean)).map(r => ({
         title: String(r[0] || ''),
@@ -111,15 +156,15 @@ export default function RecurringRequestsPage() {
         vehicle_group_name: String(r[5] || ''),
         driver_name: r[6] ? String(r[6]) : undefined,
         driver_phone: r[7] ? String(r[7]) : undefined,
-        period_start: String(r[8] || ''),
-        period_end: String(r[9] || ''),
+        period_start: toDateStr(r[8]),
+        period_end: toDateStr(r[9]),
         pattern_type: String(r[10] || ''),
         weekdays: r[11] ? String(r[11]) : undefined,
         monthly_dates: r[12] ? String(r[12]) : undefined,
         week_of_month: r[13] ? Number(r[13]) : undefined,
         weekday_label: r[14] ? String(r[14]) : undefined,
-        start_time: String(r[15] || ''),
-        end_time: String(r[16] || ''),
+        start_time: toTimeStr(r[15]) || String(r[15] || ''),
+        end_time: toTimeStr(r[16]) || String(r[16] || ''),
         reason: r[17] ? String(r[17]) : undefined,
       }));
 
