@@ -320,6 +320,7 @@ export default function MobileRequestPage() {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">목적지 *</label>
               <input name="destination" value={form.destination} onChange={handleChange}
+                lang="ko" inputMode="text"
                 placeholder="목적지를 입력하세요"
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
@@ -469,6 +470,7 @@ export default function MobileRequestPage() {
                     name="driver_name"
                     value={form.driver_name}
                     onChange={handleChange}
+                    lang="ko" inputMode="text"
                     placeholder="운전기사 이름"
                     maxLength={30}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -493,6 +495,7 @@ export default function MobileRequestPage() {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">사용 사유</label>
               <textarea name="reason" value={form.reason} onChange={handleChange} rows={3}
+                lang="ko" inputMode="text"
                 placeholder="사용 사유를 입력하세요 (선택)"
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
             </div>
