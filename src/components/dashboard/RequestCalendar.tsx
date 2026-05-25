@@ -26,7 +26,7 @@ const STATUS_CONFIG: Record<string, { label: string; dot: string; bar: string; p
   rejected:       { label: '반려',        dot: 'bg-red-500',     bar: 'border-l-red-500     bg-red-50     text-red-700',     pill: 'bg-red-50 text-red-700 border-red-200',            emoji: '🔴' },
   cancelled:      { label: '취소',        dot: 'bg-slate-400',   bar: 'border-l-slate-400   bg-slate-100  text-slate-500',   pill: 'bg-slate-100 text-slate-500 border-slate-200',     emoji: '⚫' },
   dispatched:     { label: '배차완료',    dot: 'bg-sky-500',     bar: 'border-l-sky-500     bg-sky-50     text-sky-800',     pill: 'bg-sky-50 text-sky-800 border-sky-200',            emoji: '🔵' },
-  in_use:         { label: '운행중',      dot: 'bg-teal-500',    bar: 'border-l-teal-500    bg-teal-50    text-teal-800',    pill: 'bg-teal-50 text-teal-800 border-teal-200',         emoji: '🚗' },
+  in_use:         { label: '차량 인수',   dot: 'bg-teal-500',    bar: 'border-l-teal-500    bg-teal-50    text-teal-800',    pill: 'bg-teal-50 text-teal-800 border-teal-200',         emoji: '🚗' },
   returned:       { label: '반납완료',    dot: 'bg-zinc-400',    bar: 'border-l-zinc-400    bg-zinc-100   text-zinc-500',    pill: 'bg-zinc-100 text-zinc-500 border-zinc-200',        emoji: '⚪' },
 };
 

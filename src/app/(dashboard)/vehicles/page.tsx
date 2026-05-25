@@ -23,7 +23,7 @@ interface VehicleGroup { id: string; name: string; }
 const DATE_STATUS_CONFIG: Record<string, { label: string; color: string; badgeColor: string }> = {
   available:    { label: '사용 가능', color: 'text-green-600',  badgeColor: 'bg-green-100 text-green-700' },
   booked:       { label: '배차완료',  color: 'text-blue-600',   badgeColor: 'bg-blue-100 text-blue-700' },
-  in_progress:  { label: '운행 중',   color: 'text-purple-600', badgeColor: 'bg-purple-100 text-purple-700' },
+  in_progress:  { label: '차량 인수', color: 'text-purple-600', badgeColor: 'bg-purple-100 text-purple-700' },
   maintenance:  { label: '정비 중',   color: 'text-orange-600', badgeColor: 'bg-orange-100 text-orange-700' },
   inactive:     { label: '비운행',    color: 'text-gray-400',   badgeColor: 'bg-gray-100 text-gray-500' },
 };
@@ -138,7 +138,7 @@ export default function VehiclesPage() {
   const statusOptions = availableIds !== null ? [
     { value: '', label: '전체' },
     { value: 'available',   label: `사용 가능 (${counts.available})` },
-    { value: 'in_progress', label: `운행 중 (${counts.in_progress})` },
+    { value: 'in_progress', label: `차량 인수 (${counts.in_progress})` },
     { value: 'booked',      label: `배차완료 (${counts.booked})` },
     { value: 'maintenance', label: `정비 중 (${counts.maintenance})` },
   ] : [
@@ -199,7 +199,7 @@ export default function VehiclesPage() {
           <div className="flex gap-3 mt-3 pt-3 border-t border-gray-50 flex-wrap">
             {[
               { label: '사용 가능', count: counts.available,    color: 'text-green-600',  bg: 'bg-green-50' },
-              { label: '운행 중',   count: counts.in_progress,  color: 'text-purple-600', bg: 'bg-purple-50' },
+              { label: '차량 인수', count: counts.in_progress,  color: 'text-purple-600', bg: 'bg-purple-50' },
               { label: '배차완료',  count: counts.booked,       color: 'text-blue-600',   bg: 'bg-blue-50' },
               { label: '정비 중',   count: counts.maintenance,  color: 'text-orange-600', bg: 'bg-orange-50' },
             ].map(s => (

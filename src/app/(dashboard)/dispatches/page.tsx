@@ -7,7 +7,7 @@ import { vehicleName } from '@/lib/vehicle-utils';
 
 const DISPATCH_STATUS_LABELS: Record<string, string> = {
   scheduled: '배차완료',
-  in_progress: '운행중',
+  in_progress: '차량 인수',
   completed: '반납완료',
   cancelled: '취소',
 };
@@ -248,7 +248,7 @@ export default function DispatchesPage() {
   const statusOptions = [
     { value: '', label: '전체' },
     { value: 'scheduled', label: '배차완료' },
-    { value: 'in_progress', label: '운행중' },
+    { value: 'in_progress', label: '차량 인수' },
     { value: 'cancelled', label: '취소' },
   ];
 

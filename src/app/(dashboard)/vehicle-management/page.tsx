@@ -25,7 +25,7 @@ interface VehicleGroup { id: string; name: string; }
 const DATE_STATUS: Record<string, { label: string; badgeColor: string; dot: string }> = {
   available:   { label: '사용 가능', badgeColor: 'bg-green-100 text-green-700',   dot: 'bg-green-500' },
   booked:      { label: '배차 완료', badgeColor: 'bg-blue-100 text-blue-700',     dot: 'bg-blue-500' },
-  in_progress: { label: '운행 중',   badgeColor: 'bg-purple-100 text-purple-700', dot: 'bg-purple-500' },
+  in_progress: { label: '차량 인수', badgeColor: 'bg-purple-100 text-purple-700', dot: 'bg-purple-500' },
   maintenance: { label: '정비 중',   badgeColor: 'bg-yellow-100 text-yellow-700', dot: 'bg-yellow-500' },
   inactive:    { label: '비활성',    badgeColor: 'bg-gray-100 text-gray-500',     dot: 'bg-gray-300' },
 };
@@ -33,7 +33,7 @@ const DATE_STATUS: Record<string, { label: string; badgeColor: string; dot: stri
 /* DB 상태 (날짜 미선택 시) */
 const DB_STATUS: Record<string, { label: string; badgeColor: string }> = {
   available:   { label: '사용가능', badgeColor: 'bg-green-100 text-green-700' },
-  in_use:      { label: '운행중',   badgeColor: 'bg-blue-100 text-blue-700' },
+  in_use:      { label: '차량 인수', badgeColor: 'bg-blue-100 text-blue-700' },
   maintenance: { label: '정비중',   badgeColor: 'bg-yellow-100 text-yellow-700' },
   inactive:    { label: '비활성',   badgeColor: 'bg-gray-100 text-gray-500' },
 };
@@ -194,14 +194,14 @@ export default function VehicleManagementPage() {
   const statusOptions = isDateMode ? [
     { value: '',            label: '전체' },
     { value: 'available',   label: `사용 가능 (${counts.available})` },
-    { value: 'in_progress', label: `운행 중 (${counts.in_progress})` },
+    { value: 'in_progress', label: `차량 인수 (${counts.in_progress})` },
     { value: 'booked',      label: `배차 완료 (${counts.booked})` },
     { value: 'maintenance', label: `정비 중 (${counts.maintenance})` },
     { value: 'inactive',    label: `비활성 (${counts.inactive})` },
   ] : [
     { value: '',            label: '전체' },
     { value: 'available',   label: '사용가능' },
-    { value: 'in_use',      label: '운행중' },
+    { value: 'in_use',      label: '차량 인수' },
     { value: 'maintenance', label: '정비중' },
     { value: 'inactive',    label: '비활성' },
   ];
@@ -580,7 +580,7 @@ export default function VehicleManagementPage() {
           <div className="flex gap-2 mt-3 pt-3 border-t border-gray-50 flex-wrap">
             {[
               { key: 'available',   label: '사용 가능', count: counts.available,   color: 'text-green-600',  bg: 'bg-green-50',  border: 'border-green-100' },
-              { key: 'in_progress', label: '운행 중',   count: counts.in_progress, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
+              { key: 'in_progress', label: '차량 인수', count: counts.in_progress, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
               { key: 'booked',      label: '배차 완료', count: counts.booked,      color: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-100' },
               { key: 'maintenance', label: '정비 중',   count: counts.maintenance, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-100' },
               { key: 'inactive',    label: '비활성',    count: counts.inactive,    color: 'text-gray-500',   bg: 'bg-gray-50',   border: 'border-gray-100' },

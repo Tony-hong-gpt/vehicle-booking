@@ -325,7 +325,7 @@ function VehicleSnapshotBar({ vehicles, loadedAtStr }: { vehicles: VehicleSnapsh
             <span className="absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-60" />
             <span className="relative block w-2 h-2 rounded-full bg-indigo-500" />
           </span>
-          <span className="text-xs text-gray-500">운행중</span>
+          <span className="text-xs text-gray-500">차량 인수</span>
           <span className="text-sm font-bold text-indigo-600">{vehicles.in_use ?? 0}</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -474,7 +474,7 @@ function OverviewTab({ period }: { period: PeriodState }) {
               {[
                 { label: '총 배차',  value: dispatches.total,        color: 'bg-blue-500' },
                 { label: '반납완료', value: dispatches.completed,    color: 'bg-green-500' },
-                { label: '운행중',   value: dispatches.in_progress,  color: 'bg-indigo-500' },
+                { label: '차량 인수', value: dispatches.in_progress,  color: 'bg-indigo-500' },
                 { label: '배차완료', value: dispatches.scheduled,    color: 'bg-blue-400' },
               ].map(row => (
                 <div key={row.label} className="flex items-center justify-between">

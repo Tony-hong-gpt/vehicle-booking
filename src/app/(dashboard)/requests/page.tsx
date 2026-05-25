@@ -63,7 +63,7 @@ export default async function RequestsPage({
     { value: 'approved',                  label: '차량위원회 승인' },
     { value: 'rejected',                  label: '반려' },
     { value: 'dispatched',                label: '배차완료' },
-    { value: 'in_use',                    label: '운행중' },
+    { value: 'in_use',                    label: '차량 인수' },
     { value: 'returned',                  label: '반납완료' },
     { value: 'cancelled',                 label: '취소' },
   ];

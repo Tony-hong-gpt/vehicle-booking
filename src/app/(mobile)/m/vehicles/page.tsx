@@ -19,7 +19,7 @@ interface Vehicle {
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
   available:   { label: '사용 가능', color: 'bg-green-50 text-green-700',   dot: 'bg-green-400' },
-  in_progress: { label: '운행 중',   color: 'bg-purple-50 text-purple-700', dot: 'bg-purple-500 animate-pulse' },
+  in_progress: { label: '차량 인수',  color: 'bg-purple-50 text-purple-700', dot: 'bg-purple-500 animate-pulse' },
   booked:      { label: '배차완료',  color: 'bg-blue-50 text-blue-700',     dot: 'bg-blue-400' },
   maintenance: { label: '정비 중',   color: 'bg-orange-50 text-orange-700', dot: 'bg-orange-400' },
   inactive:    { label: '비운행',    color: 'bg-gray-100 text-gray-500',    dot: 'bg-gray-300' },
@@ -158,7 +158,7 @@ export default function MobileVehiclesPage() {
         <div className="grid grid-cols-3 gap-2">
           {(availableIds !== null ? [
             { label: '사용 가능', count: availableCount,   color: 'text-green-600',  bg: 'bg-green-50' },
-            { label: '운행 중',   count: inProgressCount,  color: 'text-purple-600', bg: 'bg-purple-50' },
+            { label: '차량 인수',  count: inProgressCount,  color: 'text-purple-600', bg: 'bg-purple-50' },
             { label: '배차완료',  count: bookedCount,      color: 'text-blue-600',   bg: 'bg-blue-50' },
           ] : [
             { label: '사용 가능', count: availableCount,   color: 'text-green-600',  bg: 'bg-green-50' },

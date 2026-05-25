@@ -11,7 +11,7 @@ import { vehicleName } from '@/lib/vehicle-utils';
 /* ─── 상수 ─── */
 const DISPATCH_STATUS: Record<string, { label: string; color: string }> = {
   scheduled:   { label: '배차완료', color: 'bg-blue-100 text-blue-700' },
-  in_progress: { label: '운행중',   color: 'bg-purple-100 text-purple-700' },
+  in_progress: { label: '차량 인수', color: 'bg-purple-100 text-purple-700' },
   completed:   { label: '반납완료', color: 'bg-green-100 text-green-700' },
   cancelled:   { label: '취소',     color: 'bg-gray-100 text-gray-500' },
 };

@@ -43,6 +43,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       await supabase.from('vehicles').update({ status: 'in_use' }).eq('id', dispatch.vehicle_id);
     }
 
+    // 신청 상태를 in_use로 업데이트 (달력/현황 색상 정확히 반영)
+    if (dispatch.request_id) {
+      await supabase.from('requests').update({ status: 'in_use' }).eq('id', dispatch.request_id);
+    }
+
     // 출발 주행거리 입력 시 mileage_log 생성
     if (startMileage !== null && dispatch.vehicle_id) {
       await supabase.from('mileage_logs').insert({
