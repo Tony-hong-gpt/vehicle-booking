@@ -109,6 +109,12 @@ export default function CommitteeHomePage() {
 
   const config = ROLE_CONFIG[user?.role] ?? ROLE_CONFIG.committee_secretary;
   const pending = requests.filter(r => config.pendingStatuses.includes(r.status));
+
+  // 차량위원회 총무 전용: 위원장 최종 승인 완료 → 배차 등록 대기 건
+  const approvedForDispatch = user?.role === 'committee_secretary'
+    ? requests.filter(r => r.status === 'approved')
+    : [];
+
   const thisMonth = new Date().toISOString().slice(0, 7);
   const monthReqs = requests.filter(r => r.created_at?.slice(0, 7) === thisMonth);
 
@@ -143,38 +149,66 @@ export default function CommitteeHomePage() {
       <div className="px-4 py-4 space-y-4">
 
         {/* 처리 대기 알림 */}
-        {pending.length > 0 ? (
-          <button onClick={() => router.push('/m/committee/approvals')}
-            className="w-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 flex items-center justify-between shadow-sm active:scale-[0.98] transition-transform">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        <div className="space-y-2">
+          {/* 결재 대기 (모든 역할 공통) */}
+          {pending.length > 0 && (
+            <button onClick={() => router.push('/m/committee/approvals')}
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 flex items-center justify-between shadow-sm active:scale-[0.98] transition-transform">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <p className="text-white font-bold text-base">{config.pendingLabel} {pending.length}건</p>
+                  <p className="text-white/80 text-xs mt-0.5">결재가 필요합니다</p>
+                </div>
+              </div>
+              <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+
+          {/* 배차 등록 대기 (차량위원회 총무 전용) */}
+          {approvedForDispatch.length > 0 && (
+            <button onClick={() => router.push('/m/committee/approvals')}
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-4 flex items-center justify-between shadow-sm active:scale-[0.98] transition-transform">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <p className="text-white font-bold text-base">배차 등록 대기 {approvedForDispatch.length}건</p>
+                  <p className="text-white/80 text-xs mt-0.5">위원장 최종 승인 완료 · 배차를 등록해 주세요</p>
+                </div>
+              </div>
+              <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+
+          {/* 모두 없을 때 처리 완료 */}
+          {pending.length === 0 && approvedForDispatch.length === 0 && (
+            <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center gap-3">
+              <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <div className="text-left">
-                <p className="text-white font-bold text-base">{config.pendingLabel} {pending.length}건</p>
-                <p className="text-white/80 text-xs mt-0.5">결재가 필요합니다</p>
+              <div>
+                <p className="text-sm font-semibold text-green-800">처리 완료</p>
+                <p className="text-xs text-green-600 mt-0.5">대기 중인 결재 요청이 없습니다</p>
               </div>
             </div>
-            <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        ) : (
-          <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center gap-3">
-            <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-green-800">처리 완료</p>
-              <p className="text-xs text-green-600 mt-0.5">대기 중인 결재 요청이 없습니다</p>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* 이번달 현황 */}
         <div>
