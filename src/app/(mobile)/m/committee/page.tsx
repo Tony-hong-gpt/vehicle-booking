@@ -96,11 +96,27 @@ export default function CommitteeHomePage() {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading]   = useState(true);
 
+  const [recurringPendingCount, setRecurringPendingCount] = useState(0);
+
   useEffect(() => {
     Promise.all([
       fetch('/api/auth/me').then(r => r.json()),
       fetch('/api/requests?page_size=200').then(r => r.json()),
-    ]).then(([me, reqs]) => {
+      fetch('/api/recurring-requests?page_size=100').then(r => r.json()),
+    ]).then(([me, reqs, rr]) => {
+      const role = me.data?.role ?? '';
+      const fromMap: Record<string, string> = {
+        committee_secretary: 'upper_approved',
+        committee_vice: 'committee_reviewing',
+        committee_chair: 'committee_vice_reviewing',
+        admin: '*',
+      };
+      const fromStatus = fromMap[role] ?? '';
+      const rrData: any[] = rr.data || [];
+      const pending = fromStatus === '*'
+        ? rrData.filter((r: any) => !['approved', 'rejected', 'cancelled'].includes(r.status))
+        : rrData.filter((r: any) => r.status === fromStatus);
+      setRecurringPendingCount(pending.length);
       setUser(me.data);
       setRequests(reqs.data || []);
       setLoading(false);
@@ -209,6 +225,35 @@ export default function CommitteeHomePage() {
             </div>
           )}
         </div>
+
+        {/* 장기 신청 결재 바로가기 */}
+        <button onClick={() => router.push('/m/committee/recurring')}
+          className="w-full bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between shadow-sm active:bg-gray-50 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
+              <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-bold text-gray-900">장기 신청 결재</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {recurringPendingCount > 0 ? `처리 대기 ${recurringPendingCount}건` : '대기 건 없음'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {recurringPendingCount > 0 && (
+              <span className="bg-violet-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                {recurringPendingCount}
+              </span>
+            )}
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </button>
 
         {/* 이번달 현황 */}
         <div>
