@@ -63,7 +63,7 @@ export default function UsersPage() {
     name: '', phone: '', password: '', department_id: '', role: 'manager' as 'manager' | 'employee',
   });
   const [editForm, setEditForm] = useState({
-    name: '', department_ids: [] as string[], role: '', is_active: true,
+    name: '', phone: '', department_ids: [] as string[], role: '', is_active: true,
   });
   const [deptDropdownOpen, setDeptDropdownOpen] = useState(false);
 
@@ -96,7 +96,7 @@ export default function UsersPage() {
 
   function openEditModal(u: UserItem) {
     setEditUser(u);
-    setEditForm({ name: u.name, department_ids: u.department_ids || [], role: u.role, is_active: u.is_active });
+    setEditForm({ name: u.name, phone: u.phone || '', department_ids: u.department_ids || [], role: u.role, is_active: u.is_active });
     setDeptDropdownOpen(false);
     setError('');
     setShowModal(true);
@@ -146,6 +146,7 @@ export default function UsersPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: editForm.name.trim(),
+        phone: editForm.phone.trim() || undefined,
         department_ids: editForm.department_ids,
         role: editForm.role,
         is_active: editForm.is_active,
@@ -572,6 +573,19 @@ export default function UsersPage() {
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+
+              {editUser && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">전화번호</label>
+                  <input
+                    value={editForm.phone}
+                    onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))}
+                    placeholder="010-0000-0000"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">로그인 ID로 사용됩니다</p>
+                </div>
+              )}
 
               {!editUser && (
                 <>

@@ -46,11 +46,27 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const adminSupabase = createAdminClient();
 
+    // 전화번호 변경 시 이메일도 함께 업데이트 (전화번호가 로그인 ID)
+    let emailUpdate: { email?: string } = {};
+    if (parsed.data.phone) {
+      const digits = parsed.data.phone.replace(/\D/g, '');
+      if (digits) {
+        const newEmail = `${digits}@member.local`;
+        emailUpdate = { email: newEmail };
+        // auth.users 이메일 업데이트
+        await adminSupabase.auth.admin.updateUserById(id, { email: newEmail });
+      }
+    }
+
     // users 테이블 업데이트 (department_id = 첫 번째 선택 부서)
     const primaryDeptId = Array.isArray(department_ids) && department_ids.length > 0
       ? department_ids[0]
       : null;
-    const updatePayload = { ...parsed.data, ...(Array.isArray(department_ids) ? { department_id: primaryDeptId } : {}) };
+    const updatePayload = {
+      ...parsed.data,
+      ...emailUpdate,
+      ...(Array.isArray(department_ids) ? { department_id: primaryDeptId } : {}),
+    };
     const { data, error } = await adminSupabase
       .from('users')
       .update(updatePayload)
