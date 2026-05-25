@@ -178,32 +178,32 @@ export default function CommitteeHomePage() {
 
         {/* 이번달 현황 */}
         <div>
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 px-1">이번달 현황</p>
-          {/* 전체 신청 — full width */}
-          <div className="bg-white border border-gray-100 rounded-2xl px-5 py-3.5 flex items-center justify-between shadow-sm mb-2">
-            <p className="text-sm font-semibold text-gray-600">전체 신청</p>
-            <p className="text-2xl font-bold text-gray-800">{monthReqs.length}<span className="text-sm font-semibold ml-0.5 text-gray-500">건</span></p>
-          </div>
-          {/* 검토중 / 보류 */}
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            <div className="bg-indigo-50 rounded-2xl p-3.5 text-center shadow-sm">
-              <p className="text-2xl font-bold text-indigo-600">{monthInReview.length}</p>
-              <p className="text-xs text-indigo-400 mt-1">검토 중</p>
+          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+            {/* 헤더 */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">이번달 현황</p>
+              <p className="text-xs font-semibold text-gray-700">
+                전체 <span className="text-base font-bold text-gray-900 ml-0.5">{monthReqs.length}</span>건
+              </p>
             </div>
-            <div className="bg-amber-50 rounded-2xl p-3.5 text-center shadow-sm">
-              <p className="text-2xl font-bold text-amber-500">{monthOnHold.length}</p>
-              <p className="text-xs text-amber-400 mt-1">보류</p>
-            </div>
-          </div>
-          {/* 승인 완료 / 반려 */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-green-50 rounded-2xl p-3.5 text-center shadow-sm">
-              <p className="text-2xl font-bold text-green-600">{monthApproved.length}</p>
-              <p className="text-xs text-green-500 mt-1">승인 완료</p>
-            </div>
-            <div className="bg-red-50 rounded-2xl p-3.5 text-center shadow-sm">
-              <p className="text-2xl font-bold text-red-500">{monthRejected.length}</p>
-              <p className="text-xs text-red-400 mt-1">반려</p>
+            {/* 4개 항목 */}
+            <div className="grid grid-cols-4 divide-x divide-gray-100 py-3">
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-xl font-bold text-indigo-600">{monthInReview.length}</p>
+                <p className="text-[10px] text-indigo-400 font-medium">검토 중</p>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-xl font-bold text-amber-500">{monthOnHold.length}</p>
+                <p className="text-[10px] text-amber-400 font-medium">보류</p>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-xl font-bold text-green-600">{monthApproved.length}</p>
+                <p className="text-[10px] text-green-500 font-medium">승인완료</p>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-xl font-bold text-red-500">{monthRejected.length}</p>
+                <p className="text-[10px] text-red-400 font-medium">반려</p>
+              </div>
             </div>
           </div>
         </div>
