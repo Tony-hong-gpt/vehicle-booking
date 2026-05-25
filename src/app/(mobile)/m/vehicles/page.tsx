@@ -134,13 +134,14 @@ export default function MobileVehiclesPage() {
               onClick={openDatePicker}
               className="relative flex-1 min-w-0 h-11 flex items-center justify-between px-3 border border-gray-200 rounded-xl bg-white active:bg-gray-50 transition-colors"
             >
-              {/* 숨겨진 네이티브 date input */}
+              {/* input을 버튼 내부에 투명하게 배치 — showPicker()가 뷰포트 내 요소를 요구하므로 sr-only 대신 사용 */}
               <input
                 ref={dateInputRef}
                 type="date"
                 value={filterDate}
                 onChange={e => setFilterDate(e.target.value)}
-                className="sr-only"
+                tabIndex={-1}
+                className="absolute inset-0 w-full h-full opacity-0 pointer-events-none"
               />
               {filterDate ? (
                 <span className="text-sm text-gray-900 truncate">
