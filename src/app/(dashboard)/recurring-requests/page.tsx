@@ -103,22 +103,27 @@ export default function RecurringRequestsPage() {
 
       if (raw.length < 2) throw new Error('데이터가 없습니다');
 
-      /** Excel Date 객체 또는 시리얼 숫자 → 'YYYY-MM-DD' 문자열 */
+      /** Excel Date 객체 또는 시리얼 숫자 → 'YYYY-MM-DD' 문자열
+       *
+       * XLSX cellDates:true 는 Date 객체를 로컬 자정(local midnight)으로 생성.
+       * 한국(UTC+9) 로컬 자정 = UTC 전날 15:00 이므로, UTC 메서드로 추출하면
+       * 하루가 당겨지는 오류 발생.
+       *
+       * 해결: getTimezoneOffset()으로 오프셋을 보정한 뒤 ISO 문자열의
+       * 앞 10자리(날짜 부분)만 가져오면 UTC/로컬 midnight 모두 정확히 처리됨.
+       */
       function toDateStr(v: any): string {
         if (!v && v !== 0) return '';
         if (v instanceof Date) {
-          const y = v.getFullYear();
-          const m = String(v.getMonth() + 1).padStart(2, '0');
-          const d = String(v.getDate()).padStart(2, '0');
-          return `${y}-${m}-${d}`;
+          // 타임존 오프셋 보정: new Date(v - offsetMs) 를 UTC 문자열로 변환하면
+          // 항상 로컬 기준 날짜를 정확히 얻을 수 있음
+          const local = new Date(v.getTime() - v.getTimezoneOffset() * 60000);
+          return local.toISOString().slice(0, 10);
         }
         if (typeof v === 'number') {
-          // Excel 시리얼 날짜 → UTC Date (엑셀 에포크: 1899-12-30)
+          // Excel 시리얼 → UTC 기반 날짜 문자열 (timezone 무관)
           const dt = new Date(Math.round((v - 25569) * 86400 * 1000));
-          const y = dt.getUTCFullYear();
-          const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
-          const d = String(dt.getUTCDate()).padStart(2, '0');
-          return `${y}-${m}-${d}`;
+          return dt.toISOString().slice(0, 10);
         }
         return String(v);
       }
@@ -127,7 +132,9 @@ export default function RecurringRequestsPage() {
       function toTimeStr(v: any): string {
         if (!v && v !== 0) return '';
         if (v instanceof Date) {
-          return `${String(v.getHours()).padStart(2, '0')}:${String(v.getMinutes()).padStart(2, '0')}`;
+          // 날짜와 동일한 오프셋 보정 적용
+          const local = new Date(v.getTime() - v.getTimezoneOffset() * 60000);
+          return local.toISOString().slice(11, 16); // 'HH:MM'
         }
         if (typeof v === 'number') {
           if (v < 1) {
