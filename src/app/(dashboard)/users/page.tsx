@@ -67,6 +67,12 @@ export default function UsersPage() {
   });
   const [deptDropdownOpen, setDeptDropdownOpen] = useState(false);
 
+  /* 검색 / 정렬 / 페이지네이션 */
+  const [searchName, setSearchName] = useState('');
+  const [sortAsc, setSortAsc] = useState(true);
+  const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     const [usersRes, deptsRes] = await Promise.all([
@@ -403,82 +409,174 @@ export default function UsersPage() {
         )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="text-center py-14 text-gray-400 text-sm">불러오는 중...</div>
-        ) : (
-          <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px]">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/70">
-                <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">이름</th>
-                <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">전화번호</th>
-                <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">부서/위원회</th>
-                <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">역할</th>
-                <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">상태</th>
-                <th className="px-5 py-3.5"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {users.length === 0 && (
-                <tr><td colSpan={6} className="px-5 py-14 text-center text-gray-400 text-sm">사용자가 없습니다</td></tr>
-              )}
-              {users.map(u => (
-                <tr key={u.id} className={`hover:bg-gray-50/70 transition-colors group ${!u.is_active ? 'opacity-50' : ''}`}>
-                  <td className="px-5 py-4">
-                    <div className="font-semibold text-gray-900 text-sm">{u.name}</div>
-                    <div className="text-xs text-gray-400 font-mono mt-0.5">{u.employee_no}</div>
-                  </td>
-                  <td className="px-5 py-4 text-gray-500 text-sm">{u.phone || <span className="text-gray-300">-</span>}</td>
-                  <td className="px-5 py-4">
-                    {u.department_ids?.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {u.department_ids.map((did: string) => {
-                          const d = departments.find(x => x.id === did);
-                          return d ? (
-                            <span key={did} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">{d.name}</span>
-                          ) : null;
-                        })}
-                      </div>
-                    ) : <span className="text-gray-300 text-sm">-</span>}
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${ROLE_COLORS[u.role] || 'bg-gray-50 text-gray-700'}`}>
-                      {ROLE_LABELS[u.role] || u.role}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${u.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {u.is_active ? '활성' : '비활성'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <div className="flex gap-3 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEditModal(u)} className="text-sm text-blue-600 hover:text-blue-700 font-medium">수정</button>
-                      <button onClick={() => openResetModal(u)} className="text-sm text-amber-600 hover:text-amber-700 font-medium">비밀번호 초기화</button>
-                      <button
-                        onClick={() => handleToggleActive(u)}
-                        className={`text-sm font-medium ${u.is_active ? 'text-gray-400 hover:text-red-600' : 'text-emerald-600 hover:text-emerald-700'}`}
-                      >
-                        {u.is_active ? '비활성화' : '활성화'}
-                      </button>
-                      {!u.is_active && (
-                        <button
-                          onClick={() => handleDelete(u)}
-                          className="text-sm font-medium text-red-500 hover:text-red-700"
-                        >
-                          삭제
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-        )}
+      {/* 검색 + 페이지 크기 */}
+      <div className="flex items-center gap-3 mb-3">
+        <div className="relative flex-1 max-w-xs">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={searchName}
+            onChange={e => { setSearchName(e.target.value); setCurrentPage(1); }}
+            placeholder="이름으로 검색"
+            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <select
+          value={pageSize}
+          onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+          className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value={10}>10명씩</option>
+          <option value={20}>20명씩</option>
+          <option value={50}>50명씩</option>
+        </select>
       </div>
+
+      {(() => {
+        const filtered = users
+          .filter(u => !searchName.trim() || u.name.includes(searchName.trim()))
+          .sort((a, b) => sortAsc ? a.name.localeCompare(b.name, 'ko') : b.name.localeCompare(a.name, 'ko'));
+        const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+        const page = Math.min(currentPage, totalPages);
+        const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+        return (
+          <>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              {loading ? (
+                <div className="text-center py-14 text-gray-400 text-sm">불러오는 중...</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[720px]">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50/70">
+                        <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">
+                          <button
+                            onClick={() => setSortAsc(p => !p)}
+                            className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                          >
+                            이름
+                            <span className="text-xs">{sortAsc ? '▲' : '▼'}</span>
+                          </button>
+                        </th>
+                        <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">전화번호</th>
+                        <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">부서/위원회</th>
+                        <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">역할</th>
+                        <th className="text-left px-5 py-3.5 text-sm font-semibold text-gray-500">상태</th>
+                        <th className="px-5 py-3.5"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {paginated.length === 0 && (
+                        <tr><td colSpan={6} className="px-5 py-14 text-center text-gray-400 text-sm">
+                          {searchName ? '검색 결과가 없습니다' : '사용자가 없습니다'}
+                        </td></tr>
+                      )}
+                      {paginated.map(u => (
+                        <tr key={u.id} className={`hover:bg-gray-50/70 transition-colors group ${!u.is_active ? 'opacity-50' : ''}`}>
+                          <td className="px-5 py-4">
+                            <div className="font-semibold text-gray-900 text-sm">{u.name}</div>
+                            <div className="text-xs text-gray-400 font-mono mt-0.5">{u.employee_no}</div>
+                          </td>
+                          <td className="px-5 py-4 text-gray-500 text-sm">{u.phone || <span className="text-gray-300">-</span>}</td>
+                          <td className="px-5 py-4">
+                            {u.department_ids?.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {u.department_ids.map((did: string) => {
+                                  const d = departments.find(x => x.id === did);
+                                  return d ? (
+                                    <span key={did} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">{d.name}</span>
+                                  ) : null;
+                                })}
+                              </div>
+                            ) : <span className="text-gray-300 text-sm">-</span>}
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${ROLE_COLORS[u.role] || 'bg-gray-50 text-gray-700'}`}>
+                              {ROLE_LABELS[u.role] || u.role}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${u.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                              {u.is_active ? '활성' : '비활성'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <div className="flex gap-3 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => openEditModal(u)} className="text-sm text-blue-600 hover:text-blue-700 font-medium">수정</button>
+                              <button onClick={() => openResetModal(u)} className="text-sm text-amber-600 hover:text-amber-700 font-medium">비밀번호 초기화</button>
+                              <button
+                                onClick={() => handleToggleActive(u)}
+                                className={`text-sm font-medium ${u.is_active ? 'text-gray-400 hover:text-red-600' : 'text-emerald-600 hover:text-emerald-700'}`}
+                              >
+                                {u.is_active ? '비활성화' : '활성화'}
+                              </button>
+                              {!u.is_active && (
+                                <button onClick={() => handleDelete(u)} className="text-sm font-medium text-red-500 hover:text-red-700">삭제</button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* 페이지네이션 */}
+            {!loading && totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <p className="text-xs text-gray-400">
+                  총 {filtered.length}명 중 {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)}명
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(n => n === 1 || n === totalPages || Math.abs(n - page) <= 2)
+                    .reduce<(number | '...')[]>((acc, n, i, arr) => {
+                      if (i > 0 && n - (arr[i - 1] as number) > 1) acc.push('...');
+                      acc.push(n);
+                      return acc;
+                    }, [])
+                    .map((n, i) => n === '...' ? (
+                      <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-gray-400 text-sm">…</span>
+                    ) : (
+                      <button
+                        key={n}
+                        onClick={() => setCurrentPage(n as number)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                          page === n ? 'bg-blue-600 text-white' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* 비밀번호 초기화 모달 */}
       {showResetModal && resetUser && (
