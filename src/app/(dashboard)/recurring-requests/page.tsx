@@ -46,6 +46,27 @@ export default function RecurringRequestsPage() {
   const [uploadSuccess, setUploadSuccess] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 삭제 확인 모달
+  const [deleteTarget, setDeleteTarget] = useState<RecurringRequest | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true); setDeleteError('');
+    try {
+      const res = await fetch(`/api/recurring-requests/${deleteTarget.id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) { setDeleteError(json.error || '삭제 실패'); return; }
+      setDeleteTarget(null);
+      load();
+    } catch {
+      setDeleteError('서버 오류가 발생했습니다');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   async function load() {
     setLoading(true);
     try {
@@ -319,18 +340,85 @@ export default function RecurringRequestsPage() {
                         {item.status === 'approved' ? `${item.generated_count}건` : '-'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <Link
-                          href={`/recurring-requests/${item.id}`}
-                          className="text-blue-600 hover:text-blue-700 text-xs font-medium"
-                        >
-                          상세 →
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/recurring-requests/${item.id}`}
+                            className="text-blue-600 hover:text-blue-700 text-xs font-medium"
+                          >
+                            상세 →
+                          </Link>
+                          <button
+                            onClick={() => { setDeleteTarget(item); setDeleteError(''); }}
+                            className="p-1 text-gray-300 hover:text-red-500 transition-colors rounded"
+                            title="삭제"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* 삭제 확인 모달 */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">장기 신청 삭제</h3>
+                <p className="text-sm text-gray-500">이 작업은 되돌릴 수 없습니다</p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-3 mb-4">
+              <p className="text-sm font-medium text-gray-800">{deleteTarget.title}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {deleteTarget.department?.name || '-'} · {deleteTarget.period_start} ~ {deleteTarget.period_end}
+              </p>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5">
+              <p className="text-xs text-amber-700">
+                ⚠️ 장기 신청을 삭제해도 이미 생성된 개별 신청 건은 보존됩니다.
+                반복 패턴 정보와 결재 내역만 삭제됩니다.
+              </p>
+            </div>
+
+            {deleteError && (
+              <p className="text-sm text-red-600 mb-3">{deleteError}</p>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setDeleteTarget(null); setDeleteError(''); }}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deleting ? '삭제 중...' : '삭제'}
+              </button>
+            </div>
           </div>
         </div>
       )}
