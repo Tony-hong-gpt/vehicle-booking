@@ -46,6 +46,13 @@ export default function UsersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  /* 비밀번호 초기화 상태 */
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetUser, setResetUser] = useState<UserItem | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState(false);
+
   /* Excel import 상태 */
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
@@ -160,6 +167,39 @@ export default function UsersPage() {
     const json = await res.json();
     if (json.error) alert(json.error);
     else fetchAll();
+  }
+
+  function openResetModal(u: UserItem) {
+    setResetUser(u);
+    setNewPassword('');
+    setResetError('');
+    setResetSuccess(false);
+    setShowResetModal(true);
+  }
+
+  function closeResetModal() {
+    setShowResetModal(false);
+    setResetUser(null);
+    setNewPassword('');
+    setResetError('');
+    setResetSuccess(false);
+  }
+
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!resetUser) return;
+    setResetError('');
+    if (newPassword.length < 6) { setResetError('비밀번호는 최소 6자 이상이어야 합니다'); return; }
+    setSubmitting(true);
+    const res = await fetch(`/api/users/${resetUser.id}/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: newPassword }),
+    });
+    const json = await res.json();
+    if (json.error) setResetError(json.error);
+    else setResetSuccess(true);
+    setSubmitting(false);
   }
 
   async function handleDelete(u: UserItem) {
@@ -414,6 +454,7 @@ export default function UsersPage() {
                   <td className="px-5 py-4 text-right">
                     <div className="flex gap-3 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => openEditModal(u)} className="text-sm text-blue-600 hover:text-blue-700 font-medium">수정</button>
+                      <button onClick={() => openResetModal(u)} className="text-sm text-amber-600 hover:text-amber-700 font-medium">비밀번호 초기화</button>
                       <button
                         onClick={() => handleToggleActive(u)}
                         className={`text-sm font-medium ${u.is_active ? 'text-gray-400 hover:text-red-600' : 'text-emerald-600 hover:text-emerald-700'}`}
@@ -437,6 +478,69 @@ export default function UsersPage() {
           </div>
         )}
       </div>
+
+      {/* 비밀번호 초기화 모달 */}
+      {showResetModal && resetUser && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">비밀번호 초기화</h2>
+                <p className="text-xs text-gray-400 mt-0.5">{resetUser.name} ({resetUser.phone})</p>
+              </div>
+              <button onClick={closeResetModal} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="px-6 pb-6 pt-5">
+              {resetSuccess ? (
+                <div className="flex flex-col items-center py-4 gap-3">
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-800">비밀번호가 초기화되었습니다</p>
+                  <p className="text-xs text-gray-400">사용자에게 새 비밀번호를 전달해 주세요</p>
+                  <button onClick={closeResetModal}
+                    className="mt-2 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors">
+                    확인
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  {resetError && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600">{resetError}</div>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">새 비밀번호 *</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder="최소 6자 이상"
+                      autoFocus
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                  <div className="flex gap-3 pt-1">
+                    <button type="button" onClick={closeResetModal}
+                      className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                      취소
+                    </button>
+                    <button type="submit" disabled={submitting}
+                      className="flex-1 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60 transition-colors">
+                      {submitting ? '처리 중...' : '초기화하기'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 추가/수정 모달 */}
       {showModal && (
