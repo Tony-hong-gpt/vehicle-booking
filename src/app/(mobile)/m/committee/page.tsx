@@ -287,7 +287,7 @@ export default function CommitteeHomePage() {
           </div>
         </div>
 
-        {/* 최근 신청 목록 */}
+        {/* 최근 신청 목록 — pending(부서장 승인 전)은 위원회 업무 외이므로 제외 */}
         <div>
           <div className="flex items-center justify-between mb-2 px-1">
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">최근 신청</p>
@@ -295,28 +295,31 @@ export default function CommitteeHomePage() {
               className="text-xs text-purple-600 font-medium">전체 보기</button>
           </div>
           <div className="space-y-2">
-            {requests.slice(0, 5).map((req: any) => {
-              const roleBadge = ROLE_STATUS_OVERRIDE[user?.role]?.[req.status];
-              const badge = roleBadge ?? STATUS_BADGE[req.status] ?? { label: req.status, color: 'bg-gray-100 text-gray-600' };
-              const rolePending = ROLE_PENDING_MAP[user?.role] ?? ROLE_PENDING_MAP.committee_secretary;
-              const tabParam = rolePending.includes(req.status) ? 'pending' : 'done';
-              return (
-                <div key={req.id}
-                  onClick={() => router.push(`/m/committee/approvals?tab=${tabParam}`)}
-                  className="bg-white rounded-2xl border border-gray-100 px-4 py-3.5 flex items-center justify-between shadow-sm active:bg-gray-50">
-                  <div className="flex-1 min-w-0 mr-3">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{req.destination}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {req.requester?.name} · {req.start_datetime ? format(new Date(req.start_datetime), 'MM.dd HH:mm') : '-'}
-                    </p>
+            {requests
+              .filter((r: any) => r.status !== 'pending') // 부서장 승인 전 건은 위원회 업무 아님
+              .slice(0, 5)
+              .map((req: any) => {
+                const roleBadge = ROLE_STATUS_OVERRIDE[user?.role]?.[req.status];
+                const badge = roleBadge ?? STATUS_BADGE[req.status] ?? { label: req.status, color: 'bg-gray-100 text-gray-600' };
+                const rolePending = ROLE_PENDING_MAP[user?.role] ?? ROLE_PENDING_MAP.committee_secretary;
+                const tabParam = rolePending.includes(req.status) ? 'pending' : 'done';
+                return (
+                  <div key={req.id}
+                    onClick={() => router.push(`/m/committee/approvals?tab=${tabParam}`)}
+                    className="bg-white rounded-2xl border border-gray-100 px-4 py-3.5 flex items-center justify-between shadow-sm active:bg-gray-50">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{req.destination}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {req.requester?.name} · {req.start_datetime ? format(new Date(req.start_datetime), 'MM.dd HH:mm') : '-'}
+                      </p>
+                    </div>
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${badge.color}`}>
+                      {badge.label}
+                    </span>
                   </div>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${badge.color}`}>
-                    {badge.label}
-                  </span>
-                </div>
-              );
-            })}
-            {requests.length === 0 && (
+                );
+              })}
+            {requests.filter((r: any) => r.status !== 'pending').length === 0 && (
               <div className="bg-white rounded-2xl border border-gray-100 px-4 py-8 text-center text-gray-400 text-sm">
                 신청 내역이 없습니다
               </div>
