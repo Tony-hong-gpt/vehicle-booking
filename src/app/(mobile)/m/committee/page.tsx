@@ -101,7 +101,7 @@ export default function CommitteeHomePage() {
   useEffect(() => {
     Promise.all([
       fetch('/api/auth/me').then(r => r.json()),
-      fetch('/api/requests?page_size=200').then(r => r.json()),
+      fetch('/api/requests?page_size=200&exclude_recurring=true').then(r => r.json()),
       fetch('/api/recurring-requests?page_size=100').then(r => r.json()),
     ]).then(([me, reqs, rr]) => {
       const role = me.data?.role ?? '';
