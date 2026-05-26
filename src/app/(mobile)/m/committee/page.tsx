@@ -227,7 +227,8 @@ export default function CommitteeHomePage() {
         </div>
 
         {/* 장기 신청 결재 바로가기 */}
-        <button onClick={() => router.push('/m/committee/recurring')}
+        <button onClick={() => router.push(recurringPendingCount > 0 ? '/m/committee/recurring?tab=pending' : '/m/committee/recurring?tab=done')}
+
           className="w-full bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between shadow-sm active:bg-gray-50 transition-colors">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">

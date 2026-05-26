@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { describePattern, RECURRING_STATUS_CONFIG } from '@/lib/recurring-utils';
@@ -23,10 +23,14 @@ const ROLE_ACTION_LABEL: Record<string, string> = {
 
 export default function CommitteeRecurringPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'pending' | 'done'>('pending');
+  // URL ?tab=done 이면 처리완료 탭으로 시작, 없으면 처리대기
+  const [tab, setTab] = useState<'pending' | 'done'>(
+    () => searchParams.get('tab') === 'done' ? 'done' : 'pending'
+  );
 
   // 상세 모달
   const [selected, setSelected] = useState<any | null>(null);
