@@ -108,6 +108,7 @@ export default function CommitteeRecurringPage() {
     'committee_reviewing',
     'committee_vice_reviewing',
     'approved',
+    'dispatched',
     'rejected',
     'cancelled',
   ];
@@ -115,11 +116,11 @@ export default function CommitteeRecurringPage() {
 
   const pendingItems = items.filter(r =>
     fromStatus === '*'
-      ? !['approved', 'rejected', 'cancelled'].includes(r.status)
+      ? !['approved', 'dispatched', 'rejected', 'cancelled'].includes(r.status)
       : r.status === fromStatus
   );
   const doneItems = items.filter(r => {
-    if (fromStatus === '*') return ['approved', 'rejected', 'cancelled'].includes(r.status);
+    if (fromStatus === '*') return ['approved', 'dispatched', 'rejected', 'cancelled'].includes(r.status);
     // 내 처리 단계(fromStatus) 이후 상태 → 내가 처리 완료한 것
     const idx = STATUS_ORDER.indexOf(r.status);
     return idx > fromIdx;

@@ -173,6 +173,7 @@ export const RECURRING_STATUS_CONFIG: Record<string, { label: string; color: str
   committee_reviewing:      { label: '부위원장 결재 대기', color: 'text-violet-700',  bg: 'bg-violet-50',  dot: 'bg-violet-400' },
   committee_vice_reviewing: { label: '위원장 결재 대기',   color: 'text-fuchsia-700', bg: 'bg-fuchsia-50', dot: 'bg-fuchsia-400' },
   approved:                 { label: '승인 완료',          color: 'text-green-700',   bg: 'bg-green-50',   dot: 'bg-green-500'  },
+  dispatched:               { label: '배차 완료',          color: 'text-blue-700',    bg: 'bg-blue-50',    dot: 'bg-blue-500'   },
   rejected:                 { label: '반려',               color: 'text-red-700',     bg: 'bg-red-50',     dot: 'bg-red-400'    },
   on_hold:                  { label: '보류',               color: 'text-orange-700',  bg: 'bg-orange-50',  dot: 'bg-orange-400' },
   cancelled:                { label: '취소',               color: 'text-gray-500',    bg: 'bg-gray-50',    dot: 'bg-gray-300'   },

@@ -87,6 +87,12 @@ export async function POST(
         .in('id', requestIds.slice(i, i + BATCH));
     }
 
+    // 장기 신청 마스터 상태 → dispatched (배차 완료 표시)
+    await supabase
+      .from('recurring_requests')
+      .update({ status: 'dispatched', updated_at: new Date().toISOString() })
+      .eq('id', id);
+
     return Response.json({
       data: null,
       error: null,
